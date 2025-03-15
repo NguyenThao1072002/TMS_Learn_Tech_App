@@ -1,0 +1,42 @@
+name: tms
+description: "A new Flutter project."
+publish_to: "none" 
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.6.0
+
+
+dependencies:
+  flutter:
+    sdk: flutter
+  pin_code_fields: ^8.0.1 #thư viện nhập mã pin OTP  
+  fluttertoast: ^8.2.2 #thư viện thông báo toast
+  string_similarity: ^2.0.0 #THƯ VIỆN TÌM KIẾM
+  intl: ^0.18.1 #thư viện định đạng ngày tháng
+  image_picker: ^1.0.7 #thư viện ảnh
+  percent_indicator: ^4.2.2 #thư viện trực quan tiến trình
+  fl_chart: ^0.63.0 #thư viện biểu đồ
+  shared_preferences: ^2.0.6
+  http: ^0.13.3
+
+  cupertino_icons: ^1.0.8
+  go_router: ^14.8.0
+  google_sign_in: ^6.2.2
+  font_awesome_flutter: ^10.8.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+flutter:
+
+  uses-material-design: true
+
+  assets: 
+    - assets/images/
+    - assets/images/courses/
+    - assets/images/banners/
+    - assets/images/blogs/
