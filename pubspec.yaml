@@ -1,0 +1,75 @@
+name: tms_app
+description: "A new Flutter project."
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  timeago: ^3.5.0
+  flutter_html: ^3.0.0-beta.2
+  share_plus: ^7.2.1
+
+# 🌐 UI & Routing
+  cupertino_icons: ^1.0.8
+  provider: ^6.1.2
+  go_router: ^14.0.0
+  font_awesome_flutter: ^10.8.0
+
+  # ⚙️ Core & DI
+  get: ^4.6.5
+  get_it: ^7.6.4
+  mockito: ^5.0.17
+  # 🚀 Gọi API + xử lý JSON
+  dio: ^5.4.0
+  retrofit: ^4.0.3
+  json_annotation: ^4.8.1
+  logger: ^2.0.2
+  url_launcher: ^6.1.14
+
+  # 📦 Tiện ích bạn đang dùng
+  pin_code_fields: ^8.0.1
+  fluttertoast: ^8.2.2
+  string_similarity: ^2.0.0
+  intl: ^0.18.1
+  image_picker: ^1.0.7
+  percent_indicator: ^4.2.2
+  fl_chart: ^0.63.0
+  shared_preferences: ^2.5.3
+  google_sign_in: ^6.2.2
+  carousel_slider: ^5.0.0
+
+
+  #cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+# 🛠 Dev tool sinh code tự động
+  build_runner: ^2.4.7
+  retrofit_generator: ^7.0.8
+  json_serializable: ^6.7.1
+  flutter_lints: ^5.0.0
+  analyzer: ^6.11.0
+
+
+flutter:
+
+ 
+  uses-material-design: true
+
+  assets:
+    - assets/images/documents/
+    - assets/images/banners/
+    - assets/images/courses/
+    - assets/icons/
+    - assets/images/
+
