@@ -6,8 +6,10 @@ import 'package:tms_app/presentation/controller/course_controller.dart';
 import 'package:tms_app/presentation/widgets/course/my_course.dart';
 import 'package:tms_app/presentation/screens/my_account/setting/setting.dart';
 import 'package:tms_app/presentation/screens/my_account/overview/streak.dart';
+import 'package:tms_app/presentation/screens/my_account/my_wallet/my_wallet.dart';
 import 'dart:async';
-import 'package:tms_app/presentation/screens/my_account/cart.dart';
+import 'package:tms_app/presentation/screens/my_account/checkout/cart.dart';
+import 'package:tms_app/presentation/screens/my_account/learning_result/learning_result.dart';
 // import 'package:tms_app/core/app_export.dart';
 
 class StatCard extends StatefulWidget {
@@ -285,8 +287,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
             children: [
               IconButton(
                 icon: const Icon(Icons.chat, color: Colors.green),
-                onPressed: () {
-                },
+                onPressed: () {},
               ),
               if (_unreadMessageCount > 0)
                 Positioned(
@@ -345,6 +346,9 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
 
               // Phần tổng quan số liệu
               _buildOverviewSection(),
+
+              // Ví của tôi (My Wallet)
+              _buildWalletSection(),
 
               // Khóa học của tôi
               Padding(
@@ -539,12 +543,33 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
           ),
         ],
       ),
-      child: const Text(
-        'Kết quả học tập',
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Colors.red,
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const LearningResultScreen(),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Kết quả học tập',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Colors.red.withOpacity(0.7),
+            ),
+          ],
         ),
       ),
     );
@@ -702,6 +727,157 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
           fontSize: 18,
           fontWeight: FontWeight.bold,
           color: Color.fromARGB(255, 207, 9, 252),
+        ),
+      ),
+    );
+  }
+
+  // Widget hiển thị ví của tôi
+  Widget _buildWalletSection() {
+    final double balance = 500000; // 500,000 VND
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const MyWalletScreen(),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        splashColor: Colors.blue.withOpacity(0.1),
+        highlightColor: Colors.blue.withOpacity(0.05),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF3498DB), Color(0xFF2980B9)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF3498DB).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Ví của tôi',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.account_balance_wallet,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Text(
+                    'Số dư:',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${(balance / 1000).toStringAsFixed(0)}K VND',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(
+                              Icons.add,
+                              color: Color(0xFF3498DB),
+                              size: 16,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Nạp tiền',
+                              style: TextStyle(
+                                color: Color(0xFF3498DB),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Row(
+                    children: [
+                      Text(
+                        'Xem chi tiết',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.white,
+                        size: 12,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:tms_app/presentation/screens/my_account/checkout/payment.dart';
+// import 'package:tms_appv/presentation/widgets/custom_text_field.dart';
+// import 'package:tms_app/presentation/widgets/image_button.dart';
+// import 'package:tms_learn_tech_app/utils/constants/color_constants.dart';
+// import 'package:tms_app/utils/constants/constants.dart';
+// import 'package:tms_app/utils/providers/cart_provider.dart';
 
 class CartItem {
   final String id;
@@ -58,7 +65,7 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   // Danh sách mẫu các mục trong giỏ hàng
-  List<CartItem> _cartItems = [
+  final List<CartItem> _cartItems = [
     CartItem(
       id: '1',
       title: 'Khóa học Lập trình Flutter cơ bản',
@@ -261,54 +268,28 @@ class _CartScreenState extends State<CartScreen> {
   void _processPayment() {
     Navigator.pop(context); // Đóng bottom sheet
 
-    // Giả lập xử lý thanh toán
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Đang xử lý thanh toán...'),
-          ],
+    // Lấy danh sách các sản phẩm đã chọn
+    final selectedItems = _cartItems
+        .where((item) => item.isSelected)
+        .map((item) => {
+              'id': item.id,
+              'title': item.title,
+              'price': item.price,
+              'type': item.type,
+            })
+        .toList();
+
+    // Chuyển đến màn hình thanh toán tương ứng với phương thức thanh toán đã chọn
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PaymentScreen(
+          paymentMethod: _selectedPaymentMethodId,
+          amount: _finalAmount,
+          items: selectedItems,
         ),
       ),
     );
-
-    // Giả lập thời gian chờ thanh toán
-    Future.delayed(const Duration(seconds: 2), () {
-      Navigator.pop(context); // Đóng dialog loading
-
-      // Hiển thị thông báo thành công
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Thanh toán thành công'),
-          content: const Text(
-              'Cảm ơn bạn đã mua khóa học. Bạn có thể truy cập khóa học ngay bây giờ.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Đóng dialog thành công
-
-                // Xóa các mục đã thanh toán khỏi giỏ hàng
-                setState(() {
-                  _cartItems.removeWhere((item) => item.isSelected);
-                });
-
-                if (_cartItems.isEmpty) {
-                  Navigator.pop(
-                      context); // Quay về màn hình trước nếu giỏ hàng trống
-                }
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    });
   }
 
   // Kiểm tra xem có combo nào khả dụng cho các item đã chọn hay không
