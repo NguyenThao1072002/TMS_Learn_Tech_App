@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tms_app/presentation/screens/practice_test/practice_test_list.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int selectedIndex;
@@ -29,7 +30,19 @@ class BottomNavBar extends StatelessWidget {
         unselectedItemColor: const Color.fromARGB(
             255, 105, 105, 105), // Màu đen khi không được chọn
         showUnselectedLabels: true,
-        onTap: onTap, // Gọi trực tiếp onTap cho tất cả tab
+        onTap: (index) {
+          if (index == 3) {
+            // Nếu bấm vào tab Đề thi (index 3)
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const PracticeTestListScreen(),
+              ),
+            );
+          } else {
+            // Các tab khác giữ nguyên chức năng
+            onTap(index);
+          }
+        },
         backgroundColor: Colors.white, // Đảm bảo màu nền trắng
       ),
     );
@@ -51,8 +64,8 @@ class BottomNavBar extends StatelessWidget {
         label: 'Khoá học',
       ),
       BottomNavigationBarItem(
-        icon: Icon(Icons.notifications, size: selectedIndex == 3 ? 28 : 24),
-        label: 'Thông báo',
+        icon: Icon(Icons.quiz_outlined, size: selectedIndex == 3 ? 28 : 24),
+        label: 'Đề thi',
       ),
       BottomNavigationBarItem(
         icon: Icon(Icons.person, size: selectedIndex == 4 ? 28 : 24),

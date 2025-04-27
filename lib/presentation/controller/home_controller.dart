@@ -4,6 +4,7 @@ import 'package:tms_app/domain/usecases/course_usecase.dart';
 import 'package:tms_app/presentation/screens/course/course_screen.dart';
 import 'package:tms_app/presentation/screens/notification/notification_view.dart';
 import 'package:tms_app/presentation/screens/my_account/overview_my_account.dart';
+import 'package:tms_app/presentation/screens/practice_test/practice_test_list.dart';
 // import 'package:shared_preferences/shared_preferences.dart';
 // import '../../screens/Login/login.dart';
 
@@ -94,11 +95,11 @@ class HomeController {
       ),
       WillPopScope(
         onWillPop: () async {
-          // Chuyển về màn hình Home khi nhấn nút Back trong Notification
+          // Chuyển về màn hình Home khi nhấn nút Back trong Practice Tests
           selectedIndex.value = 0;
           return false;
         },
-        child: const NotificationScreen(), // Index 3: Notifications
+        child: const PracticeTestListScreen(), // Index 3: Practice Tests
       ),
       WillPopScope(
         onWillPop: () async {

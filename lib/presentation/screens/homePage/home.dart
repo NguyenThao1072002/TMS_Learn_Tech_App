@@ -285,49 +285,86 @@ class HomePage extends StatelessWidget {
                 ),
               ),
 
-              // Nút truy cập nhanh với thiết kế mới
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 16),
-                height: 110,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+              // Nút truy cập nhanh với thiết kế hiện đại
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildQuickAccessButton(
-                      context,
-                      icon: Icons.new_releases,
-                      title: 'Khóa học mới',
-                      color: const Color(0xFF4C6EF5),
-                      onTap: () {
-                        // Xử lý khi nhấn vào
-                      },
+                    const Text(
+                      'Khám phá',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
                     ),
-                    _buildQuickAccessButton(
-                      context,
-                      icon: Icons.discount,
-                      title: 'Giảm giá',
-                      color: const Color(0xFFF03E3E),
-                      onTap: () {
-                        // Xử lý khi nhấn vào
-                      },
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      height: 135,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildQuickAccessButton(
+                              context,
+                              icon: Icons.new_releases,
+                              title: 'Khóa học mới',
+                              startColor: const Color(0xFF6E8CF7),
+                              endColor: const Color(0xFF4C6EF5),
+                              onTap: () {
+                                // Xử lý khi nhấn vào
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildQuickAccessButton(
+                              context,
+                              icon: Icons.discount_outlined,
+                              title: 'Giảm giá',
+                              startColor: const Color(0xFFFF6B6B),
+                              endColor: const Color(0xFFE03131),
+                              onTap: () {
+                                // Xử lý khi nhấn vào
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    _buildQuickAccessButton(
-                      context,
-                      icon: Icons.star,
-                      title: 'Nổi bật',
-                      color: const Color(0xFFAE3EC9),
-                      onTap: () {
-                        // Xử lý khi nhấn vào
-                      },
-                    ),
-                    _buildQuickAccessButton(
-                      context,
-                      icon: Icons.history,
-                      title: 'Mới xem',
-                      color: const Color(0xFF37B24D),
-                      onTap: () {
-                        // Xử lý khi nhấn vào
-                      },
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 135,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildQuickAccessButton(
+                              context,
+                              icon: Icons.star_outline_rounded,
+                              title: 'Nổi bật',
+                              startColor: const Color(0xFFC471ED),
+                              endColor: const Color(0xFF9C46B0),
+                              onTap: () {
+                                // Xử lý khi nhấn vào
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildQuickAccessButton(
+                              context,
+                              icon: Icons.history_rounded,
+                              title: 'Mới xem',
+                              startColor: const Color(0xFF69DB7C),
+                              endColor: const Color(0xFF2F9E44),
+                              onTap: () {
+                                // Xử lý khi nhấn vào
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -537,56 +574,77 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // Widget cho nút truy cập nhanh - thiết kế mới đẹp hơn
+  // Widget cho nút truy cập nhanh - thiết kế hiện đại, trẻ trung
   Widget _buildQuickAccessButton(
     BuildContext context, {
     required IconData icon,
     required String title,
-    required Color color,
+    required Color startColor,
+    required Color endColor,
     required VoidCallback onTap,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [startColor, endColor],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: endColor.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 65,
-              height: 65,
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    color,
-                    color.withOpacity(0.8),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
                 icon,
                 color: Colors.white,
-                size: 30,
+                size: 28,
               ),
             ),
-            const SizedBox(height: 8),
+            const Spacer(),
             Text(
               title,
               style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: 0.5,
               ),
+            ),
+            const SizedBox(height: 5),
+            Row(
+              children: [
+                const Text(
+                  'Khám phá ngay',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.arrow_forward,
+                  color: Colors.white.withOpacity(0.7),
+                  size: 14,
+                ),
+              ],
             ),
           ],
         ),
