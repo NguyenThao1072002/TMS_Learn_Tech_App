@@ -7,9 +7,12 @@ import 'package:tms_app/presentation/widgets/course/my_course.dart';
 import 'package:tms_app/presentation/screens/my_account/setting/setting.dart';
 import 'package:tms_app/presentation/screens/my_account/overview/streak.dart';
 import 'package:tms_app/presentation/screens/my_account/my_wallet/my_wallet.dart';
+import 'package:tms_app/presentation/screens/my_account/my_course/my_course.dart';
 import 'dart:async';
 import 'package:tms_app/presentation/screens/my_account/checkout/cart.dart';
 import 'package:tms_app/presentation/screens/my_account/learning_result/learning_result.dart';
+import 'package:tms_app/presentation/screens/my_account/my_course/activate_course.dart';
+import 'package:tms_app/presentation/screens/my_account/overview/rank.dart';
 // import 'package:tms_app/core/app_export.dart';
 
 class StatCard extends StatefulWidget {
@@ -239,6 +242,18 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
         backgroundColor: const Color.fromARGB(255, 255, 255, 255),
         elevation: 0,
         actions: [
+          // Kích hoạt khóa học
+          IconButton(
+            icon: const Icon(Icons.key, color: Colors.blue),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ActivateCourseScreen(),
+                ),
+              );
+            },
+          ),
           //giỏ hàng
           Stack(
             alignment: Alignment.center,
@@ -356,7 +371,48 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
-                    : MyCourses(courses: _myCourses),
+                    : GestureDetector(
+                        onTap: () => _navigateToMyCourses(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      height: 24,
+                                      width: 4,
+                                      decoration: BoxDecoration(
+                                        color: blueColor,
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      "Khóa học của tôi",
+                                      style: titleLarge.copyWith(
+                                        color: blueColor,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    _navigateToMyCourses();
+                                  },
+                                  child: const Text("Xem thêm"),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            // Danh sách khóa học có thể nhấn để điều hướng
+                            MyCourses(courses: _myCourses),
+                          ],
+                        ),
+                      ),
               ),
 
               // Kết quả học tập
@@ -489,12 +545,18 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
                 value: "250",
                 icon: Icons.star,
                 color: accentColor,
+                onTap: () {
+                  _navigateToRank();
+                },
               ),
               _buildStatCard(
                 title: "Khoá học",
                 value: "4",
                 icon: Icons.school,
                 color: blueColor,
+                onTap: () {
+                  _navigateToMyCourses();
+                },
               ),
               _buildStatCard(
                 title: "Tài liệu",
@@ -879,6 +941,26 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _navigateToMyCourses() {
+    // Chuyển đến màn hình Khóa học của tôi với hiệu ứng hero
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MyCourseScreen(),
+      ),
+    );
+  }
+
+  void _navigateToRank() {
+    // Chuyển đến màn hình Rank với hiệu ứng hero
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const RankScreen(),
       ),
     );
   }

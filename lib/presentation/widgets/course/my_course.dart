@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tms_app/data/models/course_card_model.dart';
 import 'package:tms_app/presentation/screens/course/course_screen.dart';
 import 'package:tms_app/presentation/widgets/course/course_card_simple.dart';
+import 'package:tms_app/presentation/screens/my_account/my_course/my_course.dart';
 
 class MyCourses extends StatelessWidget {
   final List<CourseCardModel> courses;
@@ -30,9 +31,7 @@ class MyCourses extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const CourseScreen(
-                      initialFilter: 'popular',
-                    ),
+                    builder: (context) => const MyCourseScreen(),
                   ),
                 );
               },
@@ -67,8 +66,13 @@ class MyCourses extends StatelessWidget {
                     return CourseCardSimple(
                       course: courses[index],
                       onTap: (course) {
-                        // Xử lý khi nhấn vào khóa học
-                        // TODO: Chuyển đến trang chi tiết khóa học
+                        // Điều hướng đến trang Khóa học của tôi
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MyCourseScreen(),
+                          ),
+                        );
                       },
                     );
                   },

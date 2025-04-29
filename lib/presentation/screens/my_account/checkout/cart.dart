@@ -57,7 +57,10 @@ class PaymentMethod {
 }
 
 class CartScreen extends StatefulWidget {
-  const CartScreen({Key? key}) : super(key: key);
+  final String?
+      preSelectedCourseId; // Thêm tham số để nhận ID khóa học cần chọn sẵn
+
+  const CartScreen({Key? key, this.preSelectedCourseId}) : super(key: key);
 
   @override
   State<CartScreen> createState() => _CartScreenState();
@@ -148,6 +151,35 @@ class _CartScreenState extends State<CartScreen> {
   double _discountPercent = 0;
   bool _isApplyingPromo = false;
   bool _promoApplied = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Nếu có preSelectedCourseId, tự động tích chọn khóa học này
+    if (widget.preSelectedCourseId != null) {
+      // Tìm và chọn khóa học có ID tương ứng
+      _selectPreselectedItem();
+    }
+  }
+
+  // Phương thức chọn khóa học được gửi từ màn hình chi tiết
+  void _selectPreselectedItem() {
+    if (widget.preSelectedCourseId == null) return;
+
+    for (var item in _cartItems) {
+      if (item.id == widget.preSelectedCourseId) {
+        setState(() {
+          item.isSelected = true;
+        });
+        // Hiển thị thông báo đã thêm khóa học vào giỏ hàng
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showSnackBar('Đã thêm khóa học vào giỏ hàng', Colors.green);
+        });
+        break;
+      }
+    }
+  }
 
   // Hàm tính tổng tiền cho các mục đã chọn
   double get _totalSelectedAmount {
