@@ -13,6 +13,7 @@ import 'package:tms_app/presentation/screens/my_account/checkout/cart.dart';
 import 'package:tms_app/presentation/screens/my_account/learning_result/learning_result.dart';
 import 'package:tms_app/presentation/screens/my_account/my_course/activate_course.dart';
 import 'package:tms_app/presentation/screens/my_account/overview/rank.dart';
+import 'package:tms_app/presentation/screens/my_account/chat.dart';
 // import 'package:tms_app/core/app_export.dart';
 
 class StatCard extends StatefulWidget {
@@ -302,7 +303,14 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
             children: [
               IconButton(
                 icon: const Icon(Icons.chat, color: Colors.green),
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ChatScreen(),
+                    ),
+                  );
+                },
               ),
               if (_unreadMessageCount > 0)
                 Positioned(

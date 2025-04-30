@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
+import 'package:tms_app/presentation/screens/my_account/my_course/enroll_course.dart';
 
 class MyCourseScreen extends StatefulWidget {
   const MyCourseScreen({Key? key}) : super(key: key);
@@ -514,174 +515,60 @@ class _MyCourseScreenState extends State<MyCourseScreen>
   }
 
   void _navigateToCourseDetail(Map<String, dynamic> course) {
-    // Navigate to course detail
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.8,
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                course['title'],
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  course['image'],
-                  width: double.infinity,
-                  height: 200,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: double.infinity,
-                      height: 200,
-                      color: Colors.grey[300],
-                      child: Center(
-                        child: Text(
-                          course['title'][0],
-                          style: const TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 20),
-              LinearProgressIndicator(
-                value: course['progress'],
-                backgroundColor: Colors.grey[300],
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.orange),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Tiến độ: ${(course['progress'] * 100).toInt()}%',
-                    style: const TextStyle(
-                      color: Colors.grey,
-                    ),
-                  ),
-                  Text(
-                    course['timeLeft'],
-                    style: const TextStyle(
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  // Continue learning
-                  _showContinueLearningOptions(course);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Vào học',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 30),
-              const Text(
-                'Thông tin khóa học',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Khóa học này sẽ giúp bạn nắm vững các kiến thức cơ bản và nâng cao về lập trình, thực hành với nhiều bài tập thực tế và dự án nhỏ để áp dụng kiến thức đã học.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    // Fix the thumbnail URL to properly handle asset images
+    String thumbnailUrl = '';
+
+    // Check if the image is an asset or a network image
+    if (course['image'].toString().startsWith('assets/')) {
+      // For asset images, we'll just pass the asset path
+      thumbnailUrl = course['image'];
+    } else {
+      // For network images
+      thumbnailUrl = course['image'];
+    }
+
+    // Instead of using bottom sheet, directly show the continue learning dialog
+    EnrollCourseScreen.showContinueLearningDialog(
+      context,
+      courseTitle: course['title'],
+      courseProgress: (course['progress'] * 100).toInt(),
+      lastLessonTitle: 'Bài tiếp theo: ${course['title']}',
+      thumbnailUrl: thumbnailUrl,
+    ).then((result) {
+      if (result == 1) {
+        // Option 1: Continue learning - Show lesson content tab (don't start video)
+        _navigateToCourseEnroll(course, showLessonContent: true);
+      } else if (result == 2) {
+        // Option 2: View course materials - Open materials tab
+        _navigateToCourseEnroll(course, showMaterials: true);
+      } else if (result == 3) {
+        // Option 3: View all lessons - Show lessons list
+        _navigateToCourseEnroll(course, viewAllLessons: true);
+      }
+    });
   }
 
-  void _showContinueLearningOptions(Map<String, dynamic> course) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tiếp tục học'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading:
-                  const Icon(Icons.play_circle_filled, color: Colors.orange),
-              title: const Text('Bài học tiếp theo'),
-              onTap: () {
-                Navigator.pop(context);
-                // Navigate to next lesson
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.book, color: Colors.blue),
-              title: const Text('Tài liệu học tập'),
-              onTap: () {
-                Navigator.pop(context);
-                // Navigate to course materials
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.quiz, color: Colors.green),
-              title: const Text('Bài tập thực hành'),
-              onTap: () {
-                Navigator.pop(context);
-                // Navigate to practice exercises
-              },
-            ),
-          ],
+  // Update _navigateToCourseEnroll to handle additional parameters
+  void _navigateToCourseEnroll(
+    Map<String, dynamic> course, {
+    bool startOver = false,
+    bool viewAllLessons = false,
+    bool startVideo = false,
+    bool showMaterials = false,
+    bool showLessonContent = false,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EnrollCourseScreen(
+          courseId: 1, // Get ID from course or use default value
+          courseTitle: course['title'],
+          startOver: startOver,
+          viewAllLessons: viewAllLessons,
+          startVideo: startVideo,
+          showMaterials: showMaterials,
+          showLessonContent: showLessonContent,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng'),
-          ),
-        ],
       ),
     );
   }
