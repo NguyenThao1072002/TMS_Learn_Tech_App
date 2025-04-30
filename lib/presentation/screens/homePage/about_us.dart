@@ -266,18 +266,21 @@ class AboutUsScreen extends StatelessWidget {
                         role: 'Giảng viên AI & Machine Learning',
                         imageUrl:
                             'https://randomuser.me/api/portraits/men/32.jpg',
+                        context: context,
                       ),
                       _buildTeamMemberCard(
                         name: 'Trần Thị B',
                         role: 'Giảng viên Web Development',
                         imageUrl:
                             'https://randomuser.me/api/portraits/women/44.jpg',
+                        context: context,
                       ),
                       _buildTeamMemberCard(
                         name: 'Lê Văn C',
                         role: 'Giảng viên Mobile Development',
                         imageUrl:
                             'https://randomuser.me/api/portraits/men/46.jpg',
+                        context: context,
                       ),
                     ],
                   ),
@@ -553,62 +556,69 @@ class AboutUsScreen extends StatelessWidget {
     required String name,
     required String role,
     required String imageUrl,
+    required BuildContext context,
   }) {
-    return Container(
-      width: 150,
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 2,
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(15),
-              topRight: Radius.circular(15),
+    return GestureDetector(
+      onTap: () {
+        // Navigate to teaching staff screen when a team member card is clicked
+        Navigator.pushNamed(context, '/teaching_staff');
+      },
+      child: Container(
+        width: 150,
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              spreadRadius: 2,
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
-            child: Image.network(
-              imageUrl,
-              height: 100,
-              width: double.infinity,
-              fit: BoxFit.cover,
+          ],
+        ),
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(15),
+                topRight: Radius.circular(15),
+              ),
+              child: Image.network(
+                imageUrl,
+                height: 100,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              children: [
-                Text(
-                  name,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  Text(
+                    name,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  role,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.black54,
+                  const SizedBox(height: 5),
+                  Text(
+                    role,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.black54,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

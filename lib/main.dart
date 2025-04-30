@@ -3,6 +3,8 @@ import 'package:tms_app/core/DI/service_locator.dart';
 import 'package:tms_app/presentation/screens/blog/blog_list.dart';
 import 'package:tms_app/presentation/screens/document/document_list_screen.dart';
 import 'package:tms_app/presentation/screens/homePage/home.dart';
+import 'package:tms_app/presentation/screens/homePage/teaching_staff.dart';
+import 'package:tms_app/presentation/screens/homePage/about_us.dart';
 import 'package:tms_app/presentation/screens/login/login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tms_app/domain/repositories/account_repository.dart';
@@ -35,6 +37,10 @@ class MyApp extends StatelessWidget {
       title: 'TMS App',
       debugShowCheckedModeBanner: false,
       navigatorKey: GlobalKey<NavigatorState>(),
+      routes: {
+        '/teaching_staff': (context) => const TeachingStaffScreen(),
+        '/about_us': (context) => const AboutUsScreen(),
+      },
       home: FutureBuilder<bool>(
         future: _checkLoginStatus(),
         builder: (context, snapshot) {

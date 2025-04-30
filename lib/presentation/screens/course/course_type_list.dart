@@ -4,9 +4,9 @@ import 'package:tms_app/presentation/screens/course/course_detail.dart';
 import 'package:tms_app/presentation/widgets/course/course_card.dart';
 
 class CourseTypeList extends StatelessWidget {
-  final String title; 
-  final List<CourseCardModel> courses; 
-  final String buttonText; 
+  final String title;
+  final List<CourseCardModel> courses;
+  final String buttonText;
   final VoidCallback? onViewAll;
 
   const CourseTypeList({
@@ -28,7 +28,7 @@ class CourseTypeList extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                title, 
+                title,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -49,7 +49,7 @@ class CourseTypeList extends StatelessWidget {
           ),
         ),
         SizedBox(
-          height: 260, // Chiều cao cố định cho phần cuộn ngang
+          height: 290, // Tăng chiều cao để phù hợp với card khóa học mới
           child: ListView.builder(
             scrollDirection: Axis.horizontal, // Cuộn ngang
             itemCount: courses.length,

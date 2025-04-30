@@ -26,7 +26,7 @@ class CourseCard extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: 240,
-        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(15),
           color: isSelected
@@ -56,7 +56,7 @@ class CourseCard extends StatelessWidget {
                         ? course.imageUrl
                         : 'assets/images/courses/courseExample.png',
                     width: double.infinity,
-                    height: 110,
+                    height: 120,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       print(
@@ -64,7 +64,7 @@ class CourseCard extends StatelessWidget {
                       return Image.asset(
                         'assets/images/courses/courseExample.png',
                         width: double.infinity,
-                        height: 110,
+                        height: 120,
                         fit: BoxFit.cover,
                       );
                     },
@@ -96,35 +96,42 @@ class CourseCard extends StatelessWidget {
               ],
             ),
             Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Text(
-                        course.categoryName,
-                        style:
-                            const TextStyle(fontSize: 12, color: Colors.blue),
+                      Expanded(
+                        child: Text(
+                          course.categoryName,
+                          style:
+                              const TextStyle(fontSize: 12, color: Colors.blue),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 4),
                       Text(
                         "GV: ${course.author}",
                         style:
                             const TextStyle(fontSize: 12, color: Colors.grey),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Text(
                     course.title,
                     maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       const Icon(Icons.book, size: 14, color: Colors.grey),
@@ -138,7 +145,7 @@ class CourseCard extends StatelessWidget {
                           style: const TextStyle(fontSize: 12)),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       const Icon(Icons.star, size: 14, color: Colors.orange),
