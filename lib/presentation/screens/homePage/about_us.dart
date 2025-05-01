@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:tms_app/core/theme/app_styles.dart';
+import 'package:tms_app/core/theme/app_dimensions.dart';
+
 
 class AboutUsScreen extends StatelessWidget {
   const AboutUsScreen({Key? key}) : super(key: key);

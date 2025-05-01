@@ -10,6 +10,9 @@ import 'package:tms_app/presentation/widgets/component/footer.dart';
 import 'package:tms_app/presentation/widgets/course/course_categories.dart';
 import 'package:tms_app/presentation/widgets/course/discount_courses.dart';
 import 'package:tms_app/presentation/widgets/course/popular_courses.dart';
+import 'package:tms_app/presentation/widgets/home/home_app_bar.dart';
+import 'package:tms_app/presentation/widgets/home/home_discover_widget.dart';
+import 'package:tms_app/presentation/widgets/home/home_user_header.dart';
 import 'package:tms_app/presentation/widgets/navbar/bottom_navbar_widget.dart';
 import 'package:tms_app/core/theme/app_dimensions.dart';
 import 'package:tms_app/core/theme/app_styles.dart';
@@ -73,309 +76,31 @@ class HomePage extends StatelessWidget {
     final popularCourses = courseUseCase.getPopularCourses();
     final discountCourses = courseUseCase.getAllCourses();
 
-    // Số lượng thông báo chưa đọc
-    final int unreadNotifications = 3;
+    // // Số lượng thông báo chưa đọc
+    // final int unreadNotifications = 3;
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF3498DB),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.school,
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 10),
-            const Text(
-              'TMS Learning',
-              style: TextStyle(
-                color: Color(0xFF3498DB),
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          // Nút thông báo với hiển thị số lượng
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(
-                  Icons.notifications_none_outlined,
-                  color: Color(0xFF3498DB),
-                  size: 26,
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const NotificationScreen()),
-                  );
-                },
-              ),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 16,
-                    minHeight: 16,
-                  ),
-                  child: Text(
-                    '$unreadNotifications',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+
+      appBar: const HomeAppBarWidget(
+        unreadNotifications: 3,
       ),
+      
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Thanh tìm kiếm và thông tin người dùng
-              Container(
-                padding: const EdgeInsets.only(
-                    left: 16, right: 16, top: 10, bottom: 20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF3498DB).withOpacity(0.05),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Phần chào mừng cá nhân hóa
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 25,
-                          backgroundColor: Colors.white,
-                          backgroundImage: const NetworkImage(
-                            'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YXZhdGFyfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60',
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Xin chào, Nguyen Van A!',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF333333),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      height: 5,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(5),
-                                        color: Colors.grey.shade300,
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            width: MediaQuery.of(context)
-                                                    .size
-                                                    .width *
-                                                0.4,
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(5),
-                                              color: const Color(0xFF3498DB),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '60%',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey.shade700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Hoàn thành Flutter - cơ bản đến nâng cao',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey.shade700,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Thanh tìm kiếm được thiết kế đẹp hơn
-                    Container(
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(25),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.2),
-                            spreadRadius: 1,
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: 'Tìm kiếm khóa học, tài liệu...',
-                          hintStyle: TextStyle(
-                            fontSize: 15,
-                            color: Colors.grey.shade500,
-                          ),
-                          prefixIcon: const Icon(Icons.search,
-                              color: Color(0xFF3498DB)),
-                          border: InputBorder.none,
-                          contentPadding:
-                              const EdgeInsets.symmetric(vertical: 15),
-                        ),
-                        textAlignVertical: TextAlignVertical.center,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Nút truy cập nhanh với thiết kế hiện đại
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Khám phá',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      height: 135,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _buildQuickAccessButton(
-                              context,
-                              icon: Icons.new_releases,
-                              title: 'Khóa học mới',
-                              startColor: const Color(0xFF6E8CF7),
-                              endColor: const Color(0xFF4C6EF5),
-                              onTap: () {
-                                // Xử lý khi nhấn vào
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildQuickAccessButton(
-                              context,
-                              icon: Icons.discount_outlined,
-                              title: 'Giảm giá',
-                              startColor: const Color(0xFFFF6B6B),
-                              endColor: const Color(0xFFE03131),
-                              onTap: () {
-                                // Xử lý khi nhấn vào
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 135,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _buildQuickAccessButton(
-                              context,
-                              icon: Icons.star_outline_rounded,
-                              title: 'Nổi bật',
-                              startColor: const Color(0xFFC471ED),
-                              endColor: const Color(0xFF9C46B0),
-                              onTap: () {
-                                // Xử lý khi nhấn vào
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildQuickAccessButton(
-                              context,
-                              icon: Icons.history_rounded,
-                              title: 'Mới xem',
-                              startColor: const Color(0xFF69DB7C),
-                              endColor: const Color(0xFF2F9E44),
-                              onTap: () {
-                                // Xử lý khi nhấn vào
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
+              const HomeUserHeader(),
+              //Khám phá nhanh
+              const HomeDiscoverWidget(),
               // Banner
               const BannerSlider(),
-
+              //Danh mục
               const CategoryWidget(),
 
-              // FutureBuilder cho khóa học phổ biến
+              //Khóa học phổ biến
               FutureBuilder<List<CourseCardModel>>(
                 future: popularCourses,
                 builder: (context, snapshot) {
@@ -399,7 +124,7 @@ class HomePage extends StatelessWidget {
               ),
 
               const SizedBox(height: AppDimensions.blockSpacing),
-
+              //Khóa học giảm giá
               FutureBuilder<List<CourseCardModel>>(
                 future: discountCourses, // Lấy danh sách khóa học giảm giá
                 builder: (context, snapshot) {
@@ -564,89 +289,12 @@ class HomePage extends StatelessWidget {
                 ),
               ),
 
+              const SizedBox(height: AppDimensions.blockSpacing),
+
               // Thêm footer vào đây
-              const SizedBox(height: 50),
               const AppFooter(),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  // Widget cho nút truy cập nhanh - thiết kế hiện đại, trẻ trung
-  Widget _buildQuickAccessButton(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required Color startColor,
-    required Color endColor,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [startColor, endColor],
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: endColor.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                icon,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-            const Spacer(),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Row(
-              children: [
-                const Text(
-                  'Khám phá ngay',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.arrow_forward,
-                  color: Colors.white.withOpacity(0.7),
-                  size: 14,
-                ),
-              ],
-            ),
-          ],
         ),
       ),
     );

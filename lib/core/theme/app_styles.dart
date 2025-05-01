@@ -58,4 +58,44 @@ class AppStyles {
   static const Color infoToastBackgroundColor = Colors.blue;
   static const Color toastTextColor = Colors.white;
   static const double toastFontSize = 16.0;
+
+  static const TextStyle sectionTitle = TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.bold,
+    letterSpacing: 0.5,
+    color: Colors.black,
+  );
+
+  static const TextStyle discoverSubtitle = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: Colors.white,
+  );
+
+  static const TextStyle discoverTitle = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.bold,
+    color: Colors.white,
+    letterSpacing: 0.5,
+  );
+
+// static const TextStyle sectionTitle = TextStyle(
+//     fontSize: 20,
+//     fontWeight: FontWeight.bold,
+//     color: Colors.black,
+//   );
+
+  static const TextStyle whiteTitle = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.bold,
+    color: Colors.white,
+  );
+
+  static const TextStyle italicWhite = TextStyle(
+    fontSize: 14,
+    color: Colors.white,
+    fontStyle: FontStyle.italic,
+  );
+
+
 }
