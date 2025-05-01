@@ -13,6 +13,7 @@ import 'package:tms_app/presentation/widgets/course/popular_courses.dart';
 import 'package:tms_app/presentation/widgets/home/home_app_bar.dart';
 import 'package:tms_app/presentation/widgets/home/home_discover_widget.dart';
 import 'package:tms_app/presentation/widgets/home/home_user_header.dart';
+import 'package:tms_app/presentation/widgets/home/teaching_staff_list.dart';
 import 'package:tms_app/presentation/widgets/navbar/bottom_navbar_widget.dart';
 import 'package:tms_app/core/theme/app_dimensions.dart';
 import 'package:tms_app/core/theme/app_styles.dart';
@@ -81,11 +82,9 @@ class HomePage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-
       appBar: const HomeAppBarWidget(
         unreadNotifications: 3,
       ),
-      
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -96,7 +95,7 @@ class HomePage extends StatelessWidget {
               //Khám phá nhanh
               const HomeDiscoverWidget(),
               // Banner
-              const BannerSlider(),
+              const BannerSlider(showText: false),
               //Danh mục
               const CategoryWidget(),
 
@@ -290,6 +289,9 @@ class HomePage extends StatelessWidget {
               ),
 
               const SizedBox(height: AppDimensions.blockSpacing),
+
+              // Đội ngũ của chúng tôi
+              const TeachingStaffList(),
 
               // Thêm footer vào đây
               const AppFooter(),

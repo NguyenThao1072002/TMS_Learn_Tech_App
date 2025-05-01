@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:tms_app/core/theme/app_styles.dart';
 import 'package:tms_app/core/theme/app_dimensions.dart';
 
-
 class AboutUsScreen extends StatelessWidget {
   const AboutUsScreen({Key? key}) : super(key: key);
 
@@ -16,7 +15,7 @@ class AboutUsScreen extends StatelessWidget {
             expandedHeight: 250.0,
             floating: false,
             pinned: true,
-            backgroundColor: const Color(0xFF3498DB), // Màu xanh dương sáng
+            backgroundColor: AppStyles.primaryColor,
             flexibleSpace: FlexibleSpaceBar(
               title: const Text(
                 'Về TMS Learn Tech',
@@ -60,7 +59,8 @@ class AboutUsScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(15),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(15),
+                            borderRadius: BorderRadius.circular(
+                                AppDimensions.borderRadius),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.2),
@@ -70,10 +70,10 @@ class AboutUsScreen extends StatelessWidget {
                               ),
                             ],
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.school,
-                            color: Color(0xFF3498DB),
-                            size: 60,
+                            color: AppStyles.primaryColor,
+                            size: AppDimensions.iconSize * 2,
                           ),
                         ),
                       ],
@@ -99,30 +99,24 @@ class AboutUsScreen extends StatelessWidget {
                 // Tagline
                 Container(
                   width: double.infinity,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-                  color: const Color(0xFF3498DB),
-                  child: const Column(
+                  padding: EdgeInsets.symmetric(
+                      vertical: AppDimensions.blockSpacing,
+                      horizontal: AppDimensions.screenPadding),
+                  color: AppStyles.primaryColor,
+                  child: Column(
                     children: [
                       Text(
                         'NỀN TẢNG HỌC TẬP CÔNG NGHỆ HÀNG ĐẦU',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                        style: AppStyles.whiteTitle.copyWith(
                           letterSpacing: 1.2,
                         ),
                       ),
-                      SizedBox(height: 10),
+                      SizedBox(height: AppDimensions.smallSpacing * 2),
                       Text(
                         'Nâng tầm kỹ năng công nghệ của bạn cùng TMS Learn Tech',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white,
-                          fontStyle: FontStyle.italic,
-                        ),
+                        style: AppStyles.italicWhite,
                       ),
                     ],
                   ),
@@ -135,7 +129,7 @@ class AboutUsScreen extends StatelessWidget {
                   title: 'Sứ mệnh của chúng tôi',
                   content:
                       'TMS Learn Tech ra đời với sứ mệnh cung cấp nền tảng học tập công nghệ chất lượng cao, giúp người học dễ dàng tiếp cận kiến thức và phát triển kỹ năng trong lĩnh vực công nghệ thông tin.',
-                  color: const Color(0xFF3498DB),
+                  color: AppStyles.primaryColor,
                 ),
 
                 // Vision
@@ -150,11 +144,13 @@ class AboutUsScreen extends StatelessWidget {
 
                 // Core Values
                 Container(
-                  margin:
-                      const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+                  margin: EdgeInsets.symmetric(
+                      vertical: AppDimensions.blockSpacing,
+                      horizontal: AppDimensions.screenPadding),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius:
+                        BorderRadius.circular(AppDimensions.borderRadius),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.grey.withOpacity(0.2),
@@ -169,11 +165,13 @@ class AboutUsScreen extends StatelessWidget {
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(15),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFE74C3C), // Màu đỏ
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE74C3C), // Màu đỏ
                           borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(15),
-                            topRight: Radius.circular(15),
+                            topLeft:
+                                Radius.circular(AppDimensions.borderRadius),
+                            topRight:
+                                Radius.circular(AppDimensions.borderRadius),
                           ),
                         ),
                         child: Row(
@@ -183,13 +181,12 @@ class AboutUsScreen extends StatelessWidget {
                               color: Colors.white,
                               size: 24,
                             ),
-                            const SizedBox(width: 10),
+                            SizedBox(width: AppDimensions.smallSpacing * 2),
                             Text(
                               'Giá trị cốt lõi',
-                              style: TextStyle(
+                              style: AppStyles.whiteTitle.copyWith(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
                                 shadows: [
                                   Shadow(
                                     offset: const Offset(1, 1),
@@ -203,7 +200,7 @@ class AboutUsScreen extends StatelessWidget {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.all(20),
+                        padding: EdgeInsets.all(AppDimensions.blockSpacing),
                         child: Column(
                           children: [
                             _buildValueCard(
@@ -211,7 +208,7 @@ class AboutUsScreen extends StatelessWidget {
                               content:
                                   'Cam kết cung cấp các khóa học chất lượng cao với nội dung cập nhật, thực tiễn.',
                               icon: Icons.verified_outlined,
-                              color: const Color(0xFF3498DB),
+                              color: AppStyles.primaryColor,
                             ),
                             _buildValueCard(
                               title: 'Đổi mới',
@@ -244,14 +241,13 @@ class AboutUsScreen extends StatelessWidget {
 
                 // Team
                 Container(
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  child: const Text(
+                  margin: EdgeInsets.symmetric(
+                      horizontal: AppDimensions.screenPadding,
+                      vertical: AppDimensions.smallSpacing * 2),
+                  child: Text(
                     'Đội ngũ của chúng tôi',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF3498DB),
+                    style: AppStyles.sectionTitle.copyWith(
+                      color: AppStyles.primaryColor,
                     ),
                   ),
                 ),
@@ -259,10 +255,12 @@ class AboutUsScreen extends StatelessWidget {
                 // Team Cards
                 Container(
                   height: 200,
-                  margin: const EdgeInsets.only(bottom: 30),
+                  margin:
+                      EdgeInsets.only(bottom: AppDimensions.blockSpacing + 10),
                   child: ListView(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    padding: EdgeInsets.symmetric(
+                        horizontal: AppDimensions.screenPadding - 5),
                     children: [
                       _buildTeamMemberCard(
                         name: 'Nguyễn Văn A',
@@ -291,16 +289,18 @@ class AboutUsScreen extends StatelessWidget {
 
                 // Contact
                 Container(
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  padding: const EdgeInsets.all(20),
+                  margin: EdgeInsets.symmetric(
+                      horizontal: AppDimensions.screenPadding,
+                      vertical: AppDimensions.smallSpacing * 2),
+                  padding: EdgeInsets.all(AppDimensions.blockSpacing),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF3498DB), Color(0xFF2980B9)],
+                    gradient: LinearGradient(
+                      colors: [AppStyles.primaryColor, const Color(0xFF2980B9)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius:
+                        BorderRadius.circular(AppDimensions.borderRadius),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.grey.withOpacity(0.3),
@@ -313,15 +313,14 @@ class AboutUsScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Liên hệ với chúng tôi',
-                        style: TextStyle(
+                        style: AppStyles.whiteTitle.copyWith(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 15),
+                      SizedBox(height: AppDimensions.formSpacing + 3),
                       _buildContactItem(Icons.location_on_outlined,
                           'Trường Đại học Công Thương TP. HCM'),
                       _buildContactItem(
@@ -336,12 +335,14 @@ class AboutUsScreen extends StatelessWidget {
 
                 // Call to Action
                 Container(
-                  margin:
-                      const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
-                  padding: const EdgeInsets.all(25),
+                  margin: EdgeInsets.symmetric(
+                      vertical: AppDimensions.headingSpacing + 6,
+                      horizontal: AppDimensions.screenPadding),
+                  padding: EdgeInsets.all(AppDimensions.blockSpacing + 5),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius:
+                        BorderRadius.circular(AppDimensions.borderRadius),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.grey.withOpacity(0.2),
@@ -353,24 +354,19 @@ class AboutUsScreen extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      const Text(
+                      Text(
                         'Sẵn sàng để học hỏi?',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF3498DB),
+                        style: AppStyles.sectionTitle.copyWith(
+                          color: AppStyles.primaryColor,
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      const Text(
+                      SizedBox(height: AppDimensions.smallSpacing * 2),
+                      Text(
                         'Khám phá hàng trăm khóa học công nghệ với TMS Learn Tech ngay hôm nay',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.black54,
-                        ),
+                        style: AppStyles.subText,
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: AppDimensions.blockSpacing),
                       ElevatedButton(
                         onPressed: () {
                           // Điều hướng đến trang Home
@@ -378,17 +374,18 @@ class AboutUsScreen extends StatelessWidget {
                               context); // Quay về trang trước đó (Home)
                         },
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 30, vertical: 15),
-                          backgroundColor: const Color(0xFF3498DB),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: AppDimensions.headingSpacing + 6,
+                              vertical: AppDimensions.formSpacing + 3),
+                          backgroundColor: AppStyles.primaryColor,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
+                            borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusRounded),
                           ),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Khám phá khóa học',
-                          style: TextStyle(
-                            fontSize: 16,
+                          style: AppStyles.whiteButtonText.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -400,23 +397,23 @@ class AboutUsScreen extends StatelessWidget {
                 // Footer
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  padding: EdgeInsets.symmetric(
+                      vertical: AppDimensions.blockSpacing),
                   color: const Color(0xFF2C3E50),
-                  child: const Column(
+                  child: Column(
                     children: [
                       Text(
                         '© 2025 TMS Learn Tech',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
+                        style: AppStyles.subText.copyWith(
                           color: Colors.white70,
                         ),
                       ),
-                      SizedBox(height: 5),
+                      SizedBox(height: AppDimensions.smallSpacing),
                       Text(
                         'Bảo lưu mọi quyền',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: AppStyles.subText.copyWith(
                           fontSize: 12,
                           color: Colors.white54,
                         ),
@@ -440,11 +437,13 @@ class AboutUsScreen extends StatelessWidget {
     required Color color,
   }) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      padding: const EdgeInsets.all(20),
+      margin: EdgeInsets.symmetric(
+          horizontal: AppDimensions.screenPadding,
+          vertical: AppDimensions.smallSpacing * 2),
+      padding: EdgeInsets.all(AppDimensions.blockSpacing),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.2),
@@ -470,7 +469,7 @@ class AboutUsScreen extends StatelessWidget {
                 color: color,
                 size: 24,
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: AppDimensions.smallSpacing * 2),
               Text(
                 title,
                 style: TextStyle(
@@ -481,7 +480,7 @@ class AboutUsScreen extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 15),
+          SizedBox(height: AppDimensions.formSpacing + 3),
           Text(
             content,
             style: const TextStyle(
@@ -503,21 +502,23 @@ class AboutUsScreen extends StatelessWidget {
     bool isLast = false,
   }) {
     return Container(
-      margin: EdgeInsets.only(bottom: isLast ? 0 : 15),
-      padding: const EdgeInsets.all(15),
+      margin:
+          EdgeInsets.only(bottom: isLast ? 0 : AppDimensions.formSpacing + 3),
+      padding: EdgeInsets.all(AppDimensions.formSpacing + 3),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppDimensions.borderRadius - 2),
         border: Border.all(color: Colors.grey.withOpacity(0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.all(AppDimensions.smallSpacing * 2),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius:
+                  BorderRadius.circular(AppDimensions.borderRadius - 2),
             ),
             child: Icon(
               icon,
@@ -525,24 +526,21 @@ class AboutUsScreen extends StatelessWidget {
               size: 24,
             ),
           ),
-          const SizedBox(width: 15),
+          SizedBox(width: AppDimensions.formSpacing + 3),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                  style: AppStyles.whiteTitle.copyWith(
                     color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 5),
+                SizedBox(height: AppDimensions.smallSpacing),
                 Text(
                   content,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: AppStyles.subText.copyWith(
                     color: Colors.black54,
                     height: 1.4,
                   ),
@@ -571,7 +569,7 @@ class AboutUsScreen extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.2),
@@ -584,9 +582,9 @@ class AboutUsScreen extends StatelessWidget {
         child: Column(
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(15),
-                topRight: Radius.circular(15),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(AppDimensions.borderRadius),
+                topRight: Radius.circular(AppDimensions.borderRadius),
               ),
               child: Image.network(
                 imageUrl,
@@ -596,7 +594,7 @@ class AboutUsScreen extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(AppDimensions.formSpacing),
               child: Column(
                 children: [
                   Text(
@@ -608,11 +606,11 @@ class AboutUsScreen extends StatelessWidget {
                       color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 5),
+                  SizedBox(height: AppDimensions.smallSpacing),
                   Text(
                     role,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: AppStyles.subText.copyWith(
                       fontSize: 12,
                       color: Colors.black54,
                     ),
@@ -628,7 +626,7 @@ class AboutUsScreen extends StatelessWidget {
 
   Widget _buildContactItem(IconData icon, String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: AppDimensions.smallSpacing * 2),
       child: Row(
         children: [
           Icon(
@@ -636,11 +634,10 @@ class AboutUsScreen extends StatelessWidget {
             color: Colors.white,
             size: 18,
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: AppDimensions.smallSpacing * 2),
           Text(
             text,
-            style: const TextStyle(
-              fontSize: 14,
+            style: AppStyles.subText.copyWith(
               color: Colors.white,
             ),
           ),
