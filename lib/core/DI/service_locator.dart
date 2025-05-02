@@ -3,7 +3,7 @@ import 'package:get_it/get_it.dart';
 
 import 'package:tms_app/data/repositories/course_repository_impl.dart';
 import 'package:tms_app/data/services/auth_service.dart'; // Import AuthService
-import 'package:tms_app/data/services/course_service.dart';
+import 'package:tms_app/data/services/course_service.dart'; // Import CourseService
 import 'package:tms_app/data/services/user_service.dart'; // Import UserService
 import 'package:tms_app/data/repositories/account_repository_impl.dart';
 import 'package:tms_app/domain/repositories/account_repository.dart';
@@ -23,7 +23,6 @@ import 'package:tms_app/data/services/category_service.dart'; // Import Category
 import 'package:tms_app/data/repositories/category_repository_impl.dart'; // Import CategoryRepositoryImpl
 import 'package:tms_app/domain/repositories/category_repository.dart'; // Import CategoryRepository
 import 'package:tms_app/domain/usecases/category_usecase.dart'; // Import CategoryUseCase
-import 'package:tms_app/core/network/vietnamese_encoding_interceptor.dart';
 
 // Đảm bảo các import không bị xóa bởi công cụ IDE
 // ignore: unused_element
@@ -45,9 +44,33 @@ final sl = GetIt.instance;
 void setupLocator() {
   // Đăng ký Dio cho các yêu cầu HTTP
   sl.registerLazySingleton<Dio>(() {
-    final dio = Dio();
-    // Thêm interceptor xử lý encoding tiếng Việt
-  //  dio.interceptors.add(VietnameseEncodingInterceptor());
+    final dio = Dio(
+      BaseOptions(
+        // Bỏ baseUrl từ cấu hình toàn cục để tránh xung đột
+        // baseUrl: 'https://tmslearn.azurewebsites.net/api',
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
+
+    // Add logging interceptor for debugging
+    dio.interceptors.add(
+      LogInterceptor(
+        requestHeader: true,
+        requestBody: true,
+        responseHeader: true,
+        responseBody: true,
+        error: true,
+        logPrint: (log) {
+          print('🌐 DIO: $log');
+        },
+      ),
+    );
+
     return dio;
   });
 
@@ -61,15 +84,21 @@ void setupLocator() {
   _registerUseCases();
 
   // Đăng ký các Controller
-  sl.registerLazySingleton(() => VerifyOtpController(
-      forgotPasswordController: sl<ForgotPasswordController>()));
+  sl.registerLazySingleton(
+    () => VerifyOtpController(
+      forgotPasswordController: sl<ForgotPasswordController>(),
+    ),
+  );
 }
 
 // Đăng ký tất cả các Service
 void _registerServices() {
   sl.registerLazySingleton(() => AuthService(sl())); // Đăng ký AuthService
   sl.registerLazySingleton(() => UserService(sl())); // Đăng ký UserService
-  sl.registerLazySingleton(() => CourseService(sl())); // Đăng ký CourseService
+
+  // Sử dụng lớp CourseService gốc
+  sl.registerLazySingleton(() => CourseService(sl()));
+
   sl.registerLazySingleton(() => BlogDataSource()); // Đăng ký BlogDataSource
   sl.registerLazySingleton(() => BannerService()); // Đăng ký BannerService
   sl.registerLazySingleton(() => CategoryService()); // Đăng ký CategoryService
@@ -83,8 +112,10 @@ void _registerRepositories() {
       userService: sl(),
     ),
   ); // Đăng ký AccountRepository
-  sl.registerLazySingleton<CourseRepository>(() =>
-      CourseRepositoryImpl(courseService: sl())); // Đăng ký CourseRepository
+
+  sl.registerLazySingleton<CourseRepository>(
+      () => CourseRepositoryImpl(courseService: sl<CourseService>()));
+
   sl.registerLazySingleton<BannerRepository>(() =>
       BannerRepositoryImpl(bannerService: sl())); // Đăng ký BannerRepository
   sl.registerLazySingleton<CategoryRepository>(() => CategoryRepositoryImpl(

@@ -97,5 +97,9 @@ class AppStyles {
     fontStyle: FontStyle.italic,
   );
 
-
+  static const TextStyle errorText = TextStyle(
+    fontSize: 14,
+    color: Colors.red,
+    fontWeight: FontWeight.w500,
+  );
 }

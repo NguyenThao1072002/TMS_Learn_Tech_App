@@ -68,234 +68,324 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final courseUseCase = GetIt.instance<CourseUseCase>();
+
+  late Future<List<CourseCardModel>> popularCoursesFuture;
+  late Future<List<CourseCardModel>> discountCoursesFuture;
+  bool hasError = false;
+  String errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize futures
+    _loadCourses();
+  }
+
+  void _loadCourses() {
+    setState(() {
+      hasError = false;
+      errorMessage = '';
+    });
+
+    print('🚀 Bắt đầu tải khóa học phổ biến');
+    popularCoursesFuture =
+        courseUseCase.getPopularCourses().catchError((error) {
+      print('❌ Lỗi khi tải khóa học phổ biến: $error');
+      setState(() {
+        hasError = true;
+        errorMessage = error.toString();
+      });
+      return <CourseCardModel>[];
+    });
+
+    print('🚀 Bắt đầu tải khóa học giảm giá');
+    discountCoursesFuture = courseUseCase.getAllCourses().catchError((error) {
+      print('❌ Lỗi khi tải tất cả khóa học: $error');
+      return <CourseCardModel>[];
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final courseUseCase = GetIt.instance<CourseUseCase>();
-    final popularCourses = courseUseCase.getPopularCourses();
-    final discountCourses = courseUseCase.getAllCourses();
-
-    // // Số lượng thông báo chưa đọc
-    // final int unreadNotifications = 3;
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: const HomeAppBarWidget(
         unreadNotifications: 3,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Thanh tìm kiếm và thông tin người dùng
-              const HomeUserHeader(),
-              //Khám phá nhanh
-              const HomeDiscoverWidget(),
-              // Banner
-              const BannerSlider(showText: false),
-              //Danh mục
-              const CategoryWidget(),
+        child: RefreshIndicator(
+          onRefresh: () async {
+            setState(() {
+              _loadCourses();
+            });
+          },
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Thanh tìm kiếm và thông tin người dùng
+                const HomeUserHeader(),
+                //Khám phá nhanh
+                const HomeDiscoverWidget(),
+                // Banner
+                const BannerSlider(showText: false),
+                //Danh mục
+                const CategoryWidget(),
 
-              //Khóa học phổ biến
-              FutureBuilder<List<CourseCardModel>>(
-                future: popularCourses,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const SizedBox(
-                      height: 200,
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  } else if (snapshot.hasError) {
-                    return Center(
-                        child: Text("Error: ${snapshot.error}",
-                            style: AppStyles.subText));
-                  } else if (snapshot.hasData) {
-                    return PopularCourses(courses: snapshot.data!);
-                  } else {
-                    return const Center(
-                        child: Text("No data available",
-                            style: AppStyles.subText));
-                  }
-                },
-              ),
-
-              const SizedBox(height: AppDimensions.blockSpacing),
-              //Khóa học giảm giá
-              FutureBuilder<List<CourseCardModel>>(
-                future: discountCourses, // Lấy danh sách khóa học giảm giá
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const SizedBox(
-                      height: 200,
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  } else if (snapshot.hasError) {
-                    return Center(
-                        child: Text("Error: ${snapshot.error}",
-                            style: AppStyles.subText));
-                  } else if (snapshot.hasData) {
-                    return DiscountCourses(
-                        courses: snapshot.data!); // Hiển thị khóa học giảm giá
-                  } else {
-                    return const Center(
-                        child: Text("No data available",
-                            style: AppStyles.subText));
-                  }
-                },
-              ),
-
-              const SizedBox(height: AppDimensions.blockSpacing),
-
-              // Blog Section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // Hiển thị lỗi nếu có
+                if (hasError)
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
                       children: [
-                        const Text(
-                          'Blog công nghệ',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Text(
+                          'Không thể tải khóa học: $errorMessage',
+                          style: AppStyles.errorText,
+                          textAlign: TextAlign.center,
                         ),
-                        TextButton(
+                        const SizedBox(height: 10),
+                        ElevatedButton(
                           onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const BlogListScreen(),
-                              ),
-                            );
+                            setState(() {
+                              _loadCourses();
+                            });
                           },
-                          child: const Text('Xem tất cả'),
+                          child: const Text('Thử lại'),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Builder(builder: (context) {
-                      try {
-                        final blogDataSource = GetIt.instance<BlogDataSource>();
-                        final featuredBlog = blogDataSource.getFeaturedBlog();
+                  ),
 
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const BlogListScreen(),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.2),
-                                  spreadRadius: 1,
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(12),
-                                  ),
-                                  child: Image.network(
-                                    featuredBlog.imageUrl,
-                                    height: 150,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        featuredBlog.title,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        featuredBlog.summary,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Row(
-                                        children: [
-                                          CircleAvatar(
-                                            backgroundImage: NetworkImage(
-                                                featuredBlog.authorAvatar),
-                                            radius: 12,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            featuredBlog.author,
-                                            style: const TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          Text(
-                                            '${featuredBlog.readTime} phút đọc',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey.shade600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                //Khóa học phổ biến
+                FutureBuilder<List<CourseCardModel>>(
+                  future: popularCoursesFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const PopularCourses(
+                        courses: [],
+                        isLoading: true,
+                      );
+                    } else if (snapshot.hasError) {
+                      print(
+                          '❌ Error loading popular courses in UI: ${snapshot.error}');
+                      return PopularCourses(
+                        courses: [],
+                        error: 'Không thể tải khóa học: ${snapshot.error}',
+                      );
+                    } else if (snapshot.hasData) {
+                      final courses = snapshot.data!;
+                      print(
+                          '✅ Popular courses loaded in UI: ${courses.length} items');
+                      if (courses.isEmpty) {
+                        return const PopularCourses(
+                          courses: [],
+                          error: "Không có khóa học phổ biến",
+                        );
+                      }
+                      // In ra thông tin khóa học đầu tiên để kiểm tra
+                      if (courses.isNotEmpty) {
+                        final first = courses.first;
+                        print(
+                            '📘 First course: ${first.title}, ID: ${first.id}, Students: ${first.numberOfStudents}');
+                      }
+                      return PopularCourses(courses: courses);
+                    } else {
+                      print('⚠️ No data returned for popular courses');
+                      return const PopularCourses(
+                        courses: [],
+                        error: "Không có dữ liệu",
+                      );
+                    }
+                  },
+                ),
+
+                const SizedBox(height: AppDimensions.blockSpacing),
+                //Khóa học giảm giá
+                FutureBuilder<List<CourseCardModel>>(
+                  future:
+                      discountCoursesFuture, // Lấy danh sách khóa học giảm giá
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const SizedBox(
+                        height: 200,
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    } else if (snapshot.hasError) {
+                      return Center(
+                          child: Text("Error: ${snapshot.error}",
+                              style: AppStyles.subText));
+                    } else if (snapshot.hasData) {
+                      return DiscountCourses(
+                          courses:
+                              snapshot.data!); // Hiển thị khóa học giảm giá
+                    } else {
+                      return const Center(
+                          child: Text("No data available",
+                              style: AppStyles.subText));
+                    }
+                  },
+                ),
+
+                const SizedBox(height: AppDimensions.blockSpacing),
+
+                // Blog Section
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Blog công nghệ',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        );
-                      } catch (e) {
-                        return const Center(
-                            child: Text("Error loading featured blog",
-                                style: AppStyles.subText));
-                      }
-                    }),
-                  ],
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const BlogListScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text('Xem tất cả'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Builder(builder: (context) {
+                        try {
+                          final blogDataSource =
+                              GetIt.instance<BlogDataSource>();
+                          final featuredBlog = blogDataSource.getFeaturedBlog();
+
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const BlogListScreen(),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.2),
+                                    spreadRadius: 1,
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(12),
+                                    ),
+                                    child: Image.network(
+                                      featuredBlog.imageUrl,
+                                      height: 150,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          featuredBlog.title,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          featuredBlog.summary,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          children: [
+                                            CircleAvatar(
+                                              backgroundImage: NetworkImage(
+                                                  featuredBlog.authorAvatar),
+                                              radius: 12,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              featuredBlog.author,
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            const Spacer(),
+                                            Text(
+                                              '${featuredBlog.readTime} phút đọc',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey.shade600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        } catch (e) {
+                          return const Center(
+                              child: Text("Error loading featured blog",
+                                  style: AppStyles.subText));
+                        }
+                      }),
+                    ],
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: AppDimensions.blockSpacing),
+                const SizedBox(height: AppDimensions.blockSpacing),
 
-              // Đội ngũ của chúng tôi
-              const TeachingStaffList(),
+                // Đội ngũ của chúng tôi
+                const TeachingStaffList(),
 
-              // Thêm footer vào đây
-              const AppFooter(),
-            ],
+                // Thêm footer vào đây
+                const AppFooter(),
+              ],
+            ),
           ),
         ),
       ),

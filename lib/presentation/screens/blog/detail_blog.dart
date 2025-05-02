@@ -379,7 +379,7 @@ class _DetailBlogScreenState extends State<DetailBlogScreen> {
       {
         'title': 'Top 10 ngôn ngữ lập trình được yêu thích nhất 2023',
         'imageUrl':
-            'https://miro.medium.com/max/1200/1*eqa5gLZAOXZM2C5QmldAuw.jpeg',
+            'https://ik.imagekit.io/kbxte3uo1/Screenshot_2025-03-24_154756.png',
       },
       {
         'title': 'Cách AI đang thay đổi quá trình phát triển phần mềm',

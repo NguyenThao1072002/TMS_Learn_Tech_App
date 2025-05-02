@@ -51,7 +51,8 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen> {
       id: '1',
       title: 'Flutter UI Components Professional Test',
       description: 'Kiểm tra kiến thức sâu về Widget và UI trong Flutter',
-      imageUrl: 'https://miro.medium.com/max/1400/1*TFZQzyVAHLVXI_wNreokGA.png',
+      imageUrl:
+          'https://ik.imagekit.io/kbxte3uo1/Screenshot_2025-03-24_154756.png',
       questionCount: 50,
       price: 199000,
       isPurchased: false,
@@ -91,7 +92,8 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen> {
       title: 'Mobile Architecture Patterns',
       description:
           'Kiểm tra kiến thức về các mẫu kiến trúc trong phát triển ứng dụng di động',
-      imageUrl: 'https://miro.medium.com/max/1400/1*yjH3SiDaVWtpBX0g_2q68g.png',
+      imageUrl:
+          'https://ik.imagekit.io/kbxte3uo1/Screenshot_2025-03-24_154756.png',
       questionCount: 35,
       price: 299000,
       isPurchased: false,
@@ -111,6 +113,32 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen> {
       category: 'Frontend',
       rating: 4.9,
       ratingCount: 142,
+    ),
+    PracticeTest(
+      id: '6',
+      title: 'MySQL Practice Test',
+      description: 'Test your knowledge of MySQL database management system',
+      imageUrl:
+          'https://ik.imagekit.io/kbxte3uo1/Screenshot_2025-03-24_200740.png',
+      questionCount: 50,
+      price: 199000,
+      isPurchased: false,
+      category: 'Backend',
+      rating: 4.8,
+      ratingCount: 124,
+    ),
+    PracticeTest(
+      id: '7',
+      title: 'MongoDB Practice Test',
+      description: 'Test your knowledge of MongoDB NoSQL database',
+      imageUrl:
+          'https://ik.imagekit.io/kbxte3uo1/Screenshot_2025-03-24_205026.png',
+      questionCount: 50,
+      price: 199000,
+      isPurchased: false,
+      category: 'Backend',
+      rating: 4.8,
+      ratingCount: 124,
     ),
   ];
 

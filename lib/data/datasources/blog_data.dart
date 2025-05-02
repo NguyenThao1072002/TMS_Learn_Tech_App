@@ -18,7 +18,8 @@ class BlogDataSource {
       summary:
           'Khám phá những tính năng mới và cải tiến trong Flutter 3.10 giúp tăng hiệu suất phát triển ứng dụng.',
       content: 'Nội dung chi tiết về Flutter 3.10...',
-      imageUrl: 'https://miro.medium.com/max/1200/1*7lHaqe7CaS3RuduK9Nm4Ew.png',
+      imageUrl:
+          'https://ik.imagekit.io/kbxte3uo1/Screenshot_2025-03-24_154756.png',
       author: 'Nguyễn Văn A',
       authorAvatar: 'https://i.pravatar.cc/150?img=1',
       category: 'Lập trình',

@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:tms_app/core/utils/vietnamese_decoder.dart';
 
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
@@ -54,16 +53,10 @@ class ApiClient {
         // Đảm bảo decode đúng UTF-8
         String responseBody = utf8.decode(response.bodyBytes);
 
-        // Kiểm tra và sửa lỗi encoding tiếng Việt
-        responseBody = VietnameseDecoder.fixEncoding(responseBody);
-
         // Parse JSON sau khi đã sửa encoding
         dynamic jsonData = jsonDecode(responseBody);
 
-        // Đối với mảng hoặc đối tượng, áp dụng sửa lỗi cho các trường text
-        if (jsonData is Map && jsonData.containsKey('data')) {
-          jsonData = _fixEncodingInJson(jsonData);
-        }
+      
 
         return jsonData;
       } catch (e) {
@@ -75,23 +68,5 @@ class ApiClient {
     }
   }
 
-  // Hàm đệ quy để sửa lỗi encoding cho tất cả các trường trong JSON
-  dynamic _fixEncodingInJson(dynamic json) {
-    if (json is Map) {
-      Map result = {};
-      json.forEach((key, value) {
-        if (value is String) {
-          result[key] = VietnameseDecoder.fixEncoding(value);
-        } else if (value is Map || value is List) {
-          result[key] = _fixEncodingInJson(value);
-        } else {
-          result[key] = value;
-        }
-      });
-      return result;
-    } else if (json is List) {
-      return json.map((item) => _fixEncodingInJson(item)).toList();
-    }
-    return json;
-  }
+ 
 }

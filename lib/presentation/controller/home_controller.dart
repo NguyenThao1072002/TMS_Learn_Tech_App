@@ -18,8 +18,12 @@ class HomeController {
   // Phương thức tính toán discountPercent và sắp xếp theo số lượng học viên
   List<CourseCardModel> _calculateDiscountPercentAndSortByPopularity(
       List<CourseCardModel> courses) {
-    // Tính toán phần trăm giảm giá cho tất cả khóa học
+    // Tính toán phần trăm giảm giá chỉ cho các khóa học chưa có discountPercent từ API
     for (var course in courses) {
+      // Nếu API đã trả về discountPercent (>0), sử dụng giá trị từ API
+      if (course.discountPercent > 0) continue;
+
+      // Nếu không, tính toán dựa trên oldPrice và price
       if (course.oldPriceAsDouble != null &&
           course.oldPriceAsDouble! > course.price) {
         course.discountPercent = ((course.oldPriceAsDouble! - course.price) /
