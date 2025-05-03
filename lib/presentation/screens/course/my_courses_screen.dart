@@ -3,7 +3,6 @@ import 'package:get_it/get_it.dart';
 import 'package:tms_app/data/models/course_card_model.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
 import 'package:tms_app/presentation/controller/course_controller.dart';
-import 'package:tms_app/presentation/widgets/course/my_course.dart';
 
 class MyCoursesTabbedScreen extends StatefulWidget {
   const MyCoursesTabbedScreen({Key? key}) : super(key: key);

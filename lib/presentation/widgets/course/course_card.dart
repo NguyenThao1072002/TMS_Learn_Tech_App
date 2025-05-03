@@ -18,8 +18,7 @@ class CourseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    bool isSelected = selectedIndex ==
-        course.id; // Kiểm tra xem có phải khóa học này được chọn không
+    bool isSelected = selectedIndex == course.id;
 
     return GestureDetector(
       onTap: () => onTap?.call(course),
@@ -51,28 +50,44 @@ class CourseCard extends StatelessWidget {
                     topLeft: Radius.circular(15),
                     topRight: Radius.circular(15),
                   ),
-                  child: Image.asset(
-                    course.imageUrl.isNotEmpty
-                        ? course.imageUrl
-                        : 'assets/images/courses/courseExample.png',
-                    width: double.infinity,
-                    height: 120,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      print(
-                          "Error loading image from path: ${course.imageUrl}");
-                      return Image.asset(
-                        'assets/images/courses/courseExample.png',
-                        width: double.infinity,
-                        height: 120,
-                        fit: BoxFit.cover,
-                      );
-                    },
-                  ),
+                  child: course.imageUrl.isNotEmpty &&
+                          course.imageUrl.startsWith('http')
+                      ? Image.network(
+                          course.imageUrl,
+                          width: double.infinity,
+                          height: 120,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            print(
+                                "Error loading image from URL: ${course.imageUrl}");
+                            return Image.asset(
+                              'assets/images/courses/courseExample.png',
+                              width: double.infinity,
+                              height: 120,
+                              fit: BoxFit.cover,
+                            );
+                          },
+                        )
+                      : Image.asset(
+                          course.imageUrl.isNotEmpty
+                              ? course.imageUrl
+                              : 'assets/images/courses/courseExample.png',
+                          width: double.infinity,
+                          height: 120,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            print(
+                                "Error loading image from path: ${course.imageUrl}");
+                            return Image.asset(
+                              'assets/images/courses/courseExample.png',
+                              width: double.infinity,
+                              height: 120,
+                              fit: BoxFit.cover,
+                            );
+                          },
+                        ),
                 ),
-                // Nếu khóa học có giảm giá, hiển thị thông báo giảm giá
-                if (course.discountPercent >
-                    0) // Kiểm tra discountPercent lớn hơn 0
+                if (course.discountPercent > 0)
                   Positioned(
                     top: 8,
                     right: 8,
@@ -84,7 +99,7 @@ class CourseCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(15),
                       ),
                       child: Text(
-                        "-${course.discountPercent}%", // Hiển thị phần trăm giảm giá
+                        "-${course.discountPercent}%",
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -167,8 +182,7 @@ class CourseCard extends StatelessWidget {
                         ),
                       const SizedBox(width: 6),
                       Text(
-                        currencyFormatter.format(
-                            course.price.toInt()), // ✅ Hiển thị có dấu chấm
+                        currencyFormatter.format(course.price.toInt()),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,

@@ -1,9 +1,10 @@
 import 'package:dio/dio.dart';
 import '../models/user_model.dart';
+import '../../core/utils/constants.dart';
 
 class UserService {
   final Dio dio;
-  final String baseUrl = 'http://103.166.143.198:8080';
+  final String baseUrl = Constants.BASE_URL;
 
   UserService(this.dio);
 

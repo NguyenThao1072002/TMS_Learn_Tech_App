@@ -96,22 +96,19 @@ class _HomePageState extends State<HomePage> {
       errorMessage = '';
     });
 
-    print('🚀 Bắt đầu tải khóa học phổ biến');
-    popularCoursesFuture =
-        courseUseCase.getPopularCourses().catchError((error) {
-      print('❌ Lỗi khi tải khóa học phổ biến: $error');
-      setState(() {
-        hasError = true;
-        errorMessage = error.toString();
-      });
-      return <CourseCardModel>[];
-    });
+    // popularCoursesFuture =
+    //     courseUseCase.getPopularCourses().catchError((error) {
+    //   setState(() {
+    //     hasError = true;
+    //     errorMessage = error.toString();
+    //   });
+    //   return <CourseCardModel>[];
+    // });
 
-    print('🚀 Bắt đầu tải khóa học giảm giá');
-    discountCoursesFuture = courseUseCase.getAllCourses().catchError((error) {
-      print('❌ Lỗi khi tải tất cả khóa học: $error');
-      return <CourseCardModel>[];
-    });
+    // discountCoursesFuture = courseUseCase.getAllCourses().catchError((error) {
+    //   print('❌ Lỗi khi tải tất cả khóa học: $error');
+    //   return <CourseCardModel>[];
+    // });
   }
 
   @override

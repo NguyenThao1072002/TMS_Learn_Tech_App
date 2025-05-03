@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/utils/constants.dart';
 
 class AuthService {
   final Dio dio;
-  final String baseUrl = 'http://103.166.143.198:8080/account'; // API base URL
+  final String baseUrl =
+      '${Constants.BASE_URL}/account'; // Sử dụng URL từ constants
 
   AuthService(this.dio);
 
@@ -158,6 +160,4 @@ class AuthService {
       return false;
     }
   }
-  
 }
-

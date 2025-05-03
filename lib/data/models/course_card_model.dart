@@ -60,13 +60,22 @@ class CourseCardModel {
 
   factory CourseCardModel.fromJson(Map<String, dynamic> json) {
     try {
-      print('🔍 Đang parse CourseCardModel: ${json.keys.toList()}');
-
-      // Xử lý các tên trường có thể thay đổi hoặc thiếu
       final id = json['id'] ?? 0;
       final title = json['title'] ?? json['name'] ?? '';
-      final imageUrl =
+
+      // Xử lý URL ảnh: ưu tiên các trường chứa URL ảnh
+      String imageUrl =
           json['imageUrl'] ?? json['image'] ?? json['thumbnail'] ?? '';
+
+      // Đảm bảo URL ảnh đầy đủ
+      if (imageUrl.isNotEmpty &&
+          !imageUrl.startsWith('http') &&
+          !imageUrl.startsWith('assets/')) {
+        // Nếu là đường dẫn tương đối từ API, thêm domain vào
+        imageUrl = 'http://103.166.143.198:8080' +
+            (imageUrl.startsWith('/') ? '' : '/') +
+            imageUrl;
+      }
 
       // Số lượng học viên
       final studentsCount = json['studentCount'] ??
@@ -122,9 +131,6 @@ class CourseCardModel {
         deletedDate: json['deletedDate'],
       );
     } catch (e) {
-      print('❌ Lỗi khi parse CourseCardModel: $e');
-      print('💡 JSON data: $json');
-
       // Tạo một đối tượng với giá trị mặc định an toàn
       return CourseCardModel(
         id: 0,

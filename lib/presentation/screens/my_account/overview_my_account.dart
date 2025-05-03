@@ -3,7 +3,6 @@ import 'package:get_it/get_it.dart';
 import 'package:tms_app/data/models/course_card_model.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
 import 'package:tms_app/presentation/controller/course_controller.dart';
-import 'package:tms_app/presentation/widgets/course/my_course.dart';
 import 'package:tms_app/presentation/screens/my_account/setting/setting.dart';
 import 'package:tms_app/presentation/screens/my_account/overview/streak.dart';
 import 'package:tms_app/presentation/screens/my_account/my_wallet/my_wallet.dart';
@@ -372,56 +371,6 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
 
               // Ví của tôi (My Wallet)
               _buildWalletSection(),
-
-              // Khóa học của tôi
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : GestureDetector(
-                        onTap: () => _navigateToMyCourses(),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      height: 24,
-                                      width: 4,
-                                      decoration: BoxDecoration(
-                                        color: blueColor,
-                                        borderRadius: BorderRadius.circular(2),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      "Khóa học của tôi",
-                                      style: titleLarge.copyWith(
-                                        color: blueColor,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    _navigateToMyCourses();
-                                  },
-                                  child: const Text("Xem thêm"),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            // Danh sách khóa học có thể nhấn để điều hướng
-                            MyCourses(courses: _myCourses),
-                          ],
-                        ),
-                      ),
-              ),
 
               // Kết quả học tập
               _buildLearningOutcomesSection(),

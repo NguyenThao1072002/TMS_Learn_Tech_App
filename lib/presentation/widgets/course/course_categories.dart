@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:get_it/get_it.dart';
+//import 'package:get_it/get_it.dart';
 import 'package:tms_app/core/DI/service_locator.dart';
 import 'package:tms_app/data/models/category_model.dart';
 import 'package:tms_app/data/repositories/category_repository_impl.dart';
 import 'package:tms_app/data/services/category_service.dart';
-import 'package:tms_app/domain/repositories/category_repository.dart';
+//import 'package:tms_app/domain/repositories/category_repository.dart';
 import 'package:tms_app/domain/usecases/category_usecase.dart';
 import 'package:tms_app/presentation/screens/course/course_screen.dart';
-import 'dart:convert';
+//import 'dart:convert';
 
 class CategoryWidget extends StatefulWidget {
   const CategoryWidget({super.key});
@@ -18,7 +18,7 @@ class CategoryWidget extends StatefulWidget {
 
 class _CategoryWidgetState extends State<CategoryWidget> {
   late Future<List<CategoryModel>> _categoriesFuture;
-  int? selectedIndex; // Lưu trạng thái ô được nhấn
+  int? selectedIndex;
 
   @override
   void initState() {
@@ -28,14 +28,10 @@ class _CategoryWidgetState extends State<CategoryWidget> {
 
   void _loadCategories() {
     CategoryUseCase? categoryUseCase;
-
-    // Thử lấy CategoryUseCase trực tiếp từ sl instance đã được export
     try {
-      // Cố gắng lấy từ dependency injection
       categoryUseCase = sl<CategoryUseCase>();
     } catch (e) {
       print('Error getting CategoryUseCase from GetIt: $e');
-      // Nếu không thể lấy được từ GetIt, tạo mới thủ công
       try {
         final categoryService = CategoryService();
         final categoryRepository =
@@ -48,64 +44,16 @@ class _CategoryWidgetState extends State<CategoryWidget> {
     }
 
     if (categoryUseCase != null) {
-      // Không xử lý encoding nữa, trực tiếp lấy dữ liệu
       _categoriesFuture = categoryUseCase.getCategories();
     } else {
-      // Fallback: load mẫu dữ liệu tĩnh nếu không lấy được usecase
-      print('Using static categories as fallback');
-      _categoriesFuture = Future.value(_getStaticCategories());
+      _categoriesFuture = Future.value([]);
     }
-  }
-
-  List<CategoryModel> _getStaticCategories() {
-    return [
-      CategoryModel(
-          id: 1,
-          name: "Cyber Security",
-          level: 3,
-          type: "COURSE",
-          description: "Khóa học về bảo mật thông tin",
-          itemCount: 145,
-          status: "ACTIVE",
-          createdAt: "2025-03-18T22:02:27.889464",
-          updatedAt: "2025-05-01T08:28:03.378102"),
-      CategoryModel(
-          id: 2,
-          name: "Data Science",
-          level: 3,
-          type: "COURSE",
-          description: "Khóa học về khoa học dữ liệu",
-          itemCount: 120,
-          status: "ACTIVE",
-          createdAt: "2025-03-18T22:02:27.889464",
-          updatedAt: "2025-05-01T08:28:03.378102"),
-      CategoryModel(
-          id: 3,
-          name: "Cloud Computing",
-          level: 3,
-          type: "COURSE",
-          description: "Khóa học về điện toán đám mây",
-          itemCount: 100,
-          status: "ACTIVE",
-          createdAt: "2025-03-18T22:02:27.889464",
-          updatedAt: "2025-05-01T08:28:03.378102"),
-      CategoryModel(
-          id: 4,
-          name: "Blockchain",
-          level: 3,
-          type: "COURSE",
-          description: "Khóa học về blockchain",
-          itemCount: 80,
-          status: "ACTIVE",
-          createdAt: "2025-03-18T22:02:27.889464",
-          updatedAt: "2025-05-01T08:28:03.378102"),
-    ];
   }
 
   @override
   Widget build(BuildContext context) {
     double itemWidth =
-        MediaQuery.of(context).size.width * 0.42; // Tăng kích thước mỗi item
+        MediaQuery.of(context).size.width * 0.52; // Tăng kích thước mỗi item
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -161,7 +109,7 @@ class _CategoryWidgetState extends State<CategoryWidget> {
 
                       return Container(
                         margin: const EdgeInsets.only(
-                            right: 18), // Tăng khoảng cách giữa các cột
+                            right: 16), // Tăng khoảng cách giữa các cột
                         width: itemWidth,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
