@@ -12,15 +12,13 @@ class ApiResponse<T> {
   factory ApiResponse.fromJson(
       Map<String, dynamic> json, T Function(Map<String, dynamic>) fromJsonT) {
     try {
-      print('🔍 Parsing ApiResponse: ${json.keys.toList()}');
       return ApiResponse(
         status: json['status'],
         message: json['message'],
         data: fromJsonT(json['data']),
       );
     } catch (e) {
-      print('❌ Error parsing ApiResponse: $e');
-      rethrow; // Re-throw to handle in the service
+      rethrow; 
     }
   }
 }
@@ -55,15 +53,7 @@ class PagedResponse<T> {
   factory PagedResponse.fromJson(
       Map<String, dynamic> json, T Function(Map<String, dynamic>) fromJsonT) {
     try {
-      print('🔍 Parsing PagedResponse: ${json.keys.toList()}');
-
       final contentList = json['content'] as List;
-      print('📋 Content list length: ${contentList.length}');
-
-      if (contentList.isNotEmpty) {
-        print(
-            '📄 Sample content item keys: ${(contentList.first as Map<String, dynamic>).keys.toList()}');
-      }
 
       return PagedResponse(
         totalElements: json['totalElements'],
@@ -81,8 +71,7 @@ class PagedResponse<T> {
         empty: json['empty'],
       );
     } catch (e) {
-      print('❌ Error parsing PagedResponse: $e');
-      rethrow; // Re-throw to handle in the service
+      rethrow; 
     }
   }
 }
@@ -115,7 +104,6 @@ class PageInfo {
         unpaged: json['unpaged'],
       );
     } catch (e) {
-      print('❌ Error parsing PageInfo: $e');
       rethrow;
     }
   }
@@ -140,7 +128,6 @@ class SortInfo {
         unsorted: json['unsorted'],
       );
     } catch (e) {
-      print('❌ Error parsing SortInfo: $e');
       rethrow;
     }
   }
