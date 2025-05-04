@@ -63,51 +63,36 @@ class ApiResponseHelper {
 
           if (apiData.containsKey('content')) {
             final contentList = apiData['content'] as List;
-            print(
-                '[ApiResponseHelper] Số lượng phần tử trong content: ${contentList.length}');
 
             if (contentList.isEmpty) {
-              print('[ApiResponseHelper] Danh sách content trống');
               return [];
             }
 
             try {
-              print(
-                  '[ApiResponseHelper] Mẫu phần tử đầu tiên: ${contentList.first}');
               final result = contentList
                   .map((item) => fromJson(item as Map<String, dynamic>))
                   .toList();
-              print(
-                  '[ApiResponseHelper] Đã xử lý thành công: ${result.length} phần tử');
               return result;
             } catch (e) {
-              print('[ApiResponseHelper] Lỗi khi chuyển đổi phần tử: $e');
               print(
                   '[ApiResponseHelper] Stack trace: ${e is Error ? e.stackTrace : ""}');
               return [];
             }
           } else {
-            print(
-                '[ApiResponseHelper] Không tìm thấy khóa "content" trong data');
             return [];
           }
         }
         // Trường hợp khác của data
         else {
-          print('[ApiResponseHelper] Cấu trúc data không hỗ trợ: $apiData');
           return [];
         }
       }
 
       // Trường hợp 2: API response trực tiếp là đối tượng phân trang
       if (data.containsKey('content') && data['content'] is List) {
-        print('[ApiResponseHelper] Phát hiện đối tượng phân trang trực tiếp');
         final contentList = data['content'] as List;
-        print(
-            '[ApiResponseHelper] Số lượng phần tử trong content: ${contentList.length}');
 
         if (contentList.isEmpty) {
-          print('[ApiResponseHelper] Danh sách content trống');
           return [];
         }
 
@@ -115,22 +100,13 @@ class ApiResponseHelper {
           final result = contentList
               .map((item) => fromJson(item as Map<String, dynamic>))
               .toList();
-          print(
-              '[ApiResponseHelper] Đã xử lý thành công: ${result.length} phần tử');
           return result;
         } catch (e) {
-          print('[ApiResponseHelper] Lỗi khi chuyển đổi phần tử: $e');
           return [];
         }
       }
-
-      // Không nhận dạng được cấu trúc
-      print('[ApiResponseHelper] Không nhận dạng được cấu trúc API: $data');
       return [];
     } catch (e) {
-      print('[ApiResponseHelper] Lỗi khi xử lý phản hồi API: $e');
-      print(
-          '[ApiResponseHelper] Stack trace: ${e is Error ? e.stackTrace : "Không có stack trace"}');
       return [];
     }
   }
@@ -172,7 +148,6 @@ class ApiResponseHelper {
       }
       return 1;
     } catch (e) {
-      print('Lỗi khi lấy tổng số trang: $e');
       return 1;
     }
   }
@@ -195,7 +170,6 @@ class ApiResponseHelper {
       }
       return 0;
     } catch (e) {
-      print('Lỗi khi lấy tổng số phần tử: $e');
       return 0;
     }
   }
