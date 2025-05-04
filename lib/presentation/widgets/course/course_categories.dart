@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 //import 'package:get_it/get_it.dart';
 import 'package:tms_app/core/DI/service_locator.dart';
-import 'package:tms_app/data/models/category_model.dart';
+import 'package:tms_app/data/models/categories/category_model.dart';
 import 'package:tms_app/data/repositories/category_repository_impl.dart';
 import 'package:tms_app/data/services/category_service.dart';
 //import 'package:tms_app/domain/repositories/category_repository.dart';
@@ -44,7 +44,7 @@ class _CategoryWidgetState extends State<CategoryWidget> {
     }
 
     if (categoryUseCase != null) {
-      _categoriesFuture = categoryUseCase.getCategories();
+      _categoriesFuture = categoryUseCase.getCourseCategories();
     } else {
       _categoriesFuture = Future.value([]);
     }

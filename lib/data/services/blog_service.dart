@@ -23,7 +23,6 @@ class BlogService {
 
         print('API response status: ${response.statusCode}');
         if (response.statusCode == 200) {
-          print('API response data: ${response.data}');
           final blogs = ApiResponseHelper.processList(
               response.data, BlogCardModel.fromJson);
           print('Số lượng bài viết đã xử lý: ${blogs.length}');
