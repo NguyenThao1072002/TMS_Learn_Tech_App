@@ -51,7 +51,7 @@ class BannerService {
               banner.status)
           .toList()
         ..sort((a, b) =>
-            a.priority.compareTo(b.priority)); // Sắp xếp theo priority
+            a.priority.compareTo(b.priority)); //priority : ưu tiên hiển thị
     } catch (e) {
       return [];
     }

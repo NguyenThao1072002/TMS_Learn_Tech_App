@@ -8,13 +8,15 @@ import 'package:url_launcher/url_launcher.dart';
 class BannerSlider extends StatefulWidget {
   final String position;
   final String platform;
-  final bool showText; // Thêm tùy chọn để ẩn/hiện text
+  final bool showText;
+  final List<BannerModel>? banners;
 
   const BannerSlider({
     Key? key,
-    this.position = 'course', // Mặc định hiển thị banner ở vị trí "course"
-    this.platform = 'ALL', // Mặc định hiển thị banner cho tất cả nền tảng
-    this.showText = false, // Mặc định không hiển thị text
+    this.position = 'home',
+    this.platform = 'MOBILE',
+    this.showText = false,
+    required this.banners,
   }) : super(key: key);
 
   @override
@@ -26,47 +28,21 @@ class _BannerSliderState extends State<BannerSlider> {
   int _currentIndex = 0;
   Timer? _timer;
   List<BannerModel> _banners = [];
-  bool _isLoading = true;
+  bool _isLoading = false;
   String _errorMessage = '';
 
   @override
   void initState() {
     super.initState();
-    _loadBanners();
-  }
+    // Gán giá trị từ widget.banners cho _banners
+    if (widget.banners != null) {
+      setState(() {
+        _banners = widget.banners!;
+      });
 
-  Future<void> _loadBanners() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
-    });
-
-    try {
-      final bannerUseCase = GetIt.instance<BannerUseCase>();
-
-      // Sử dụng usecase để lấy banner theo position và platform
-      final banners = await bannerUseCase.getBannersByPositionAndPlatform(
-          widget.position, widget.platform);
-
-      print('Loaded ${banners.length} banners for position ${widget.position}');
-      if (banners.isNotEmpty) {
-        print('First banner URL: ${banners[0].imageUrl}');
+      if (_banners.isNotEmpty) {
+        _startAutoSlide();
       }
-
-      setState(() {
-        _banners = banners;
-        _isLoading = false;
-
-        if (_banners.isNotEmpty) {
-          _startAutoSlide();
-        }
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Không thể tải banner: $e';
-        print(_errorMessage);
-      });
     }
   }
 
@@ -115,7 +91,7 @@ class _BannerSliderState extends State<BannerSlider> {
       return const SizedBox(
         height: 180,
         child: Center(
-          child: CircularProgressIndicator(),
+          child: Text('Không có banner nào'),
         ),
       );
     }
@@ -132,7 +108,11 @@ class _BannerSliderState extends State<BannerSlider> {
       );
     }
 
-    if (_banners.isEmpty) {
+    // Kiểm tra lại danh sách banner từ widget
+    final banners =
+        _banners.isEmpty && widget.banners != null ? widget.banners! : _banners;
+
+    if (banners.isEmpty) {
       return const SizedBox(
         height: 180,
         child: Center(
@@ -147,7 +127,7 @@ class _BannerSliderState extends State<BannerSlider> {
           height: 180,
           child: PageView.builder(
             controller: _pageController,
-            itemCount: _banners.length,
+            itemCount: banners.length,
             onPageChanged: (index) {
               setState(() {
                 _currentIndex = index;
@@ -156,12 +136,12 @@ class _BannerSliderState extends State<BannerSlider> {
               _startAutoSlide();
             },
             itemBuilder: (context, index) {
-              return _buildBanner(_banners[index]);
+              return _buildBanner(banners[index]);
             },
           ),
         ),
         const SizedBox(height: 10),
-        _buildIndicator(), // Thanh indicator hiển thị trang
+        _buildIndicator(banners.length), // Thanh indicator hiển thị trang
       ],
     );
   }
@@ -287,11 +267,11 @@ class _BannerSliderState extends State<BannerSlider> {
   }
 
   // Widget indicator dưới banner
-  Widget _buildIndicator() {
+  Widget _buildIndicator(int length) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(
-        _banners.length,
+        length,
         (index) => Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
           width: _currentIndex == index ? 12 : 8,

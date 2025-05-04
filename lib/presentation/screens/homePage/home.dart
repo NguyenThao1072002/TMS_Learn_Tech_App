@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:tms_app/data/models/banner_model.dart';
 import 'package:tms_app/data/models/course_card_model.dart';
+import 'package:tms_app/domain/usecases/banner_usecase.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
 import 'package:tms_app/presentation/screens/blog/blog_list.dart';
 import 'package:tms_app/presentation/screens/document/document_list_screen.dart';
@@ -34,13 +36,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-
-    final courseUseCase = GetIt.instance<CourseUseCase>();
-    _controller = HomeController(courseUseCase);
+    _controller = HomeController();
     _screens = _controller.getScreens(
       HomePage(),
       DocumentListScreen(),
-      //PopularCourses(courses: []),
     );
   }
 
@@ -76,39 +75,35 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // Biến đối tượng của các usecase
   final courseUseCase = GetIt.instance<CourseUseCase>();
+  final bannerUseCase = GetIt.instance<BannerUseCase>();
 
+  // Biến lưu trữ các danh sách
   late Future<List<CourseCardModel>> popularCoursesFuture;
   late Future<List<CourseCardModel>> discountCoursesFuture;
+  late Future<List<BannerModel>> bannersFuture;
+
   bool hasError = false;
   String errorMessage = '';
 
   @override
   void initState() {
     super.initState();
-    // Initialize futures
-    _loadCourses();
+    _loadData(); // Gọi hàm tải dữ liệu khi khởi tạo
   }
 
-  void _loadCourses() {
+  void _loadData() {
     setState(() {
       hasError = false;
       errorMessage = '';
     });
-
-    // popularCoursesFuture =
-    //     courseUseCase.getPopularCourses().catchError((error) {
-    //   setState(() {
-    //     hasError = true;
-    //     errorMessage = error.toString();
-    //   });
-    //   return <CourseCardModel>[];
-    // });
-
-    // discountCoursesFuture = courseUseCase.getAllCourses().catchError((error) {
-    //   print('❌ Lỗi khi tải tất cả khóa học: $error');
-    //   return <CourseCardModel>[];
-    // });
+    popularCoursesFuture =
+        courseUseCase.getPopularCourses(); // Khóa học phổ biến
+    discountCoursesFuture =
+        courseUseCase.getDiscountCourses(); // Khóa học giảm giá
+    bannersFuture = bannerUseCase.getBannersByPositionAndPlatform(
+        'home', 'mobile'); // Banner
   }
 
   @override
@@ -122,7 +117,7 @@ class _HomePageState extends State<HomePage> {
         child: RefreshIndicator(
           onRefresh: () async {
             setState(() {
-              _loadCourses();
+              _loadData(); // Tải lại dữ liệu khi kéo màn hình
             });
           },
           child: SingleChildScrollView(
@@ -131,11 +126,28 @@ class _HomePageState extends State<HomePage> {
               children: [
                 // Thanh tìm kiếm và thông tin người dùng
                 const HomeUserHeader(),
-                //Khám phá nhanh
+                // Khám phá nhanh
                 const HomeDiscoverWidget(),
                 // Banner
-                const BannerSlider(showText: false),
-                //Danh mục
+                FutureBuilder<List<BannerModel>>(
+                  future: bannersFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasError) {
+                      return Center(
+                          child:
+                              Text('Error loading banners: ${snapshot.error}'));
+                    } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                      final banners = snapshot.data!;
+                      return BannerSlider(banners: banners);
+                    } else {
+                      return const Center(
+                          child: Text('No data available for banners'));
+                    }
+                  },
+                ),
+                // Danh mục
                 const CategoryWidget(),
 
                 // Hiển thị lỗi nếu có
@@ -153,7 +165,7 @@ class _HomePageState extends State<HomePage> {
                         ElevatedButton(
                           onPressed: () {
                             setState(() {
-                              _loadCourses();
+                              _loadData(); // Cập nhật lại dữ liệu
                             });
                           },
                           child: const Text('Thử lại'),
@@ -162,72 +174,50 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
 
-                //Khóa học phổ biến
+                // Khóa học phổ biến
                 FutureBuilder<List<CourseCardModel>>(
                   future: popularCoursesFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const PopularCourses(
-                        courses: [],
-                        isLoading: true,
-                      );
+                      return const PopularCourses(courses: [], isLoading: true);
                     } else if (snapshot.hasError) {
-                      print(
-                          '❌ Error loading popular courses in UI: ${snapshot.error}');
                       return PopularCourses(
                         courses: [],
                         error: 'Không thể tải khóa học: ${snapshot.error}',
                       );
-                    } else if (snapshot.hasData) {
+                    } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                       final courses = snapshot.data!;
-                      print(
-                          '✅ Popular courses loaded in UI: ${courses.length} items');
-                      if (courses.isEmpty) {
-                        return const PopularCourses(
-                          courses: [],
-                          error: "Không có khóa học phổ biến",
-                        );
-                      }
-                      // In ra thông tin khóa học đầu tiên để kiểm tra
-                      if (courses.isNotEmpty) {
-                        final first = courses.first;
-                        print(
-                            '📘 First course: ${first.title}, ID: ${first.id}, Students: ${first.numberOfStudents}');
-                      }
                       return PopularCourses(courses: courses);
                     } else {
-                      print('⚠️ No data returned for popular courses');
                       return const PopularCourses(
                         courses: [],
-                        error: "Không có dữ liệu",
+                        error: 'Không có khóa học phổ biến',
                       );
                     }
                   },
                 ),
 
                 const SizedBox(height: AppDimensions.blockSpacing),
-                //Khóa học giảm giá
+                // Khóa học giảm giá
                 FutureBuilder<List<CourseCardModel>>(
-                  future:
-                      discountCoursesFuture, // Lấy danh sách khóa học giảm giá
+                  future: discountCoursesFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const SizedBox(
-                        height: 200,
-                        child: Center(child: CircularProgressIndicator()),
-                      );
+                      return const DiscountCourses(
+                          courses: [], isLoading: true);
                     } else if (snapshot.hasError) {
-                      return Center(
-                          child: Text("Error: ${snapshot.error}",
-                              style: AppStyles.subText));
-                    } else if (snapshot.hasData) {
                       return DiscountCourses(
-                          courses:
-                              snapshot.data!); // Hiển thị khóa học giảm giá
+                        courses: [],
+                        error: 'Không thể tải khóa học: ${snapshot.error}',
+                      );
+                    } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                      final courses = snapshot.data!;
+                      return DiscountCourses(courses: courses);
                     } else {
-                      return const Center(
-                          child: Text("No data available",
-                              style: AppStyles.subText));
+                      return const DiscountCourses(
+                        courses: [],
+                        error: 'Không có khóa học giảm giá',
+                      );
                     }
                   },
                 ),

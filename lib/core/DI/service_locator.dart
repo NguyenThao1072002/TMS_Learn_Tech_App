@@ -46,8 +46,6 @@ void setupLocator() {
   sl.registerLazySingleton<Dio>(() {
     final dio = Dio(
       BaseOptions(
-        // Bỏ baseUrl từ cấu hình toàn cục để tránh xung đột
-        // baseUrl: 'https://tmslearn.azurewebsites.net/api',
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
         headers: {
@@ -57,7 +55,6 @@ void setupLocator() {
       ),
     );
 
-    // Add logging interceptor for debugging
     dio.interceptors.add(
       LogInterceptor(
         requestHeader: true,
@@ -93,15 +90,15 @@ void setupLocator() {
 
 // Đăng ký tất cả các Service
 void _registerServices() {
-  sl.registerLazySingleton(() => AuthService(sl())); // Đăng ký AuthService
-  sl.registerLazySingleton(() => UserService(sl())); // Đăng ký UserService
+  sl.registerLazySingleton(() => AuthService(sl())); 
+  sl.registerLazySingleton(() => UserService(sl())); 
 
   // Sử dụng lớp CourseService gốc
   sl.registerLazySingleton(() => CourseService(sl()));
 
-  sl.registerLazySingleton(() => BlogDataSource()); // Đăng ký BlogDataSource
-  sl.registerLazySingleton(() => BannerService()); // Đăng ký BannerService
-  sl.registerLazySingleton(() => CategoryService()); // Đăng ký CategoryService
+  sl.registerLazySingleton(() => BlogDataSource()); 
+  sl.registerLazySingleton(() => BannerService()); 
+  sl.registerLazySingleton(() => CategoryService()); 
 }
 
 // Đăng ký tất cả các Repository
@@ -117,29 +114,23 @@ void _registerRepositories() {
       () => CourseRepositoryImpl(courseService: sl<CourseService>()));
 
   sl.registerLazySingleton<BannerRepository>(() =>
-      BannerRepositoryImpl(bannerService: sl())); // Đăng ký BannerRepository
+      BannerRepositoryImpl(bannerService: sl())); 
   sl.registerLazySingleton<CategoryRepository>(() => CategoryRepositoryImpl(
-      categoryService: sl())); // Đăng ký CategoryRepository
+      categoryService: sl()));
 }
 
 // Đăng ký tất cả các UseCase
 void _registerUseCases() {
-  // Đăng ký UseCase cho Login
   sl.registerFactory(() => LoginUseCase(sl()));
 
-  // Đăng ký UseCase cho Course
   sl.registerFactory(() => CourseUseCase(sl()));
 
-  // Đăng ký UseCase cho Register
   sl.registerFactory(() => RegisterUseCase(accountRepository: sl()));
 
-  // Đăng ký UseCase cho ForgotPassword
   sl.registerFactory(() => ForgotPasswordUseCase(sl()));
 
-  // Đăng ký UseCase cho Banner
   sl.registerFactory(() => BannerUseCase(sl()));
 
-  // Đăng ký UseCase cho Category - dùng registerLazySingleton
   sl.registerLazySingleton(() {
     final repo = sl<CategoryRepository>();
     return CategoryUseCase(repo);

@@ -1,19 +1,36 @@
 import 'package:flutter/material.dart';
-import 'package:tms_app/data/models/course_card_model.dart';
-import 'package:tms_app/domain/usecases/course_usecase.dart';
+import 'package:get_it/get_it.dart'; // Đảm bảo đã import GetIt
+import 'package:tms_app/domain/usecases/course_usecase.dart'; // Lấy từ Service Locator
+import 'package:tms_app/domain/usecases/banner_usecase.dart'; // Lấy từ Service Locator
+import 'package:tms_app/data/models/course_card_model.dart'; // Bạn vẫn cần import model nếu bạn sử dụng nó trong UI
+import 'package:tms_app/data/models/banner_model.dart'; // Bạn vẫn cần import model nếu bạn sử dụng nó trong UI
 import 'package:tms_app/presentation/screens/course/course_screen.dart';
-import 'package:tms_app/presentation/screens/notification/notification_view.dart';
-import 'package:tms_app/presentation/screens/my_account/overview_my_account.dart';
 import 'package:tms_app/presentation/screens/practice_test/practice_test_list.dart';
-// import 'package:shared_preferences/shared_preferences.dart';
-// import '../../screens/Login/login.dart';
+import 'package:tms_app/presentation/screens/my_account/overview_my_account.dart';
 
 class HomeController {
   final ValueNotifier<int> selectedIndex = ValueNotifier(0);
-  final CourseUseCase courseUseCase;
 
-  // Constructor của HomeController
-  HomeController(this.courseUseCase);
+  // Lấy instance của CourseUseCase và BannerUseCase từ GetIt (không cần import vào đây)
+  final CourseUseCase courseUseCase = GetIt.instance<CourseUseCase>();
+  final BannerUseCase bannerUseCase = GetIt.instance<BannerUseCase>();
+
+  // Các biến liên quan đến Banner
+  final ValueNotifier<List<BannerModel>> bannerList = ValueNotifier([]);
+
+  // Constructor không cần tham số vì GetIt đã cung cấp các instance
+  HomeController();
+
+// Phương thức lấy danh sách banner
+  Future<void> getHomePageBannerForMobile() async {
+    try {
+      List<BannerModel> banners = await bannerUseCase.getBannersByPositionAndPlatform('home', 'mobile');
+      bannerList.value = banners; 
+    } catch (e) {
+      print("Lỗi khi tải banner trang chủ cho phiên bản di động: $e");
+      bannerList.value = []; 
+    }
+  }
 
   // Phương thức tính toán discountPercent và sắp xếp theo số lượng học viên
   List<CourseCardModel> _calculateDiscountPercentAndSortByPopularity(
@@ -83,7 +100,6 @@ class HomeController {
       homePage, // Index 0: Home
       WillPopScope(
         onWillPop: () async {
-          // Chuyển về màn hình Home khi nhấn nút Back trong Document
           selectedIndex.value = 0;
           return false; // Không thực hiện hành động "pop" mặc định
         },
@@ -91,7 +107,6 @@ class HomeController {
       ),
       WillPopScope(
         onWillPop: () async {
-          // Chuyển về màn hình Home khi nhấn nút Back trong Course
           selectedIndex.value = 0;
           return false;
         },
@@ -99,7 +114,6 @@ class HomeController {
       ),
       WillPopScope(
         onWillPop: () async {
-          // Chuyển về màn hình Home khi nhấn nút Back trong Practice Tests
           selectedIndex.value = 0;
           return false;
         },
@@ -107,7 +121,6 @@ class HomeController {
       ),
       WillPopScope(
         onWillPop: () async {
-          // Chuyển về màn hình Home khi nhấn nút Back trong Account
           selectedIndex.value = 0;
           return false;
         },
@@ -120,7 +133,10 @@ class HomeController {
     selectedIndex.value = index;
   }
 
+  //Phương thức giải phóng tài nguyên
+  // Phương thức này sẽ được gọi khi widget bị hủy
   void dispose() {
     selectedIndex.dispose();
+    bannerList.dispose();
   }
 }
