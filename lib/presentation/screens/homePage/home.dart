@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tms_app/data/models/banner_model.dart';
+import 'package:tms_app/data/models/blog_card_model.dart';
 import 'package:tms_app/data/models/course_card_model.dart';
 import 'package:tms_app/domain/usecases/banner_usecase.dart';
+import 'package:tms_app/domain/usecases/blog_usercase.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
 import 'package:tms_app/presentation/screens/blog/blog_list.dart';
 import 'package:tms_app/presentation/screens/document/document_list_screen.dart';
@@ -19,7 +21,7 @@ import 'package:tms_app/presentation/widgets/home/teaching_staff_list.dart';
 import 'package:tms_app/presentation/widgets/navbar/bottom_navbar_widget.dart';
 import 'package:tms_app/core/theme/app_dimensions.dart';
 import 'package:tms_app/core/theme/app_styles.dart';
-import 'package:tms_app/data/datasources/blog_data.dart';
+// import 'package:tms_app/data/datasources/blog_data.dart';
 import '../../controller/home_controller.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -78,11 +80,13 @@ class _HomePageState extends State<HomePage> {
   // Biến đối tượng của các usecase
   final courseUseCase = GetIt.instance<CourseUseCase>();
   final bannerUseCase = GetIt.instance<BannerUseCase>();
+  final blogUseCase = GetIt.instance<BlogUsercase>();
 
   // Biến lưu trữ các danh sách
   late Future<List<CourseCardModel>> popularCoursesFuture;
   late Future<List<CourseCardModel>> discountCoursesFuture;
   late Future<List<BannerModel>> bannersFuture;
+  late Future<List<BlogCardModel>> blogsFuture;
 
   bool hasError = false;
   String errorMessage = '';
@@ -104,6 +108,7 @@ class _HomePageState extends State<HomePage> {
         courseUseCase.getDiscountCourses(); // Khóa học giảm giá
     bannersFuture = bannerUseCase.getBannersByPositionAndPlatform(
         'home', 'mobile'); // Banner
+    blogsFuture = blogUseCase.getAllBlogs(); // Blogs
   }
 
   @override
@@ -254,112 +259,162 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      Builder(builder: (context) {
-                        try {
-                          final blogDataSource =
-                              GetIt.instance<BlogDataSource>();
-                          final featuredBlog = blogDataSource.getFeaturedBlog();
-
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const BlogListScreen(),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.withOpacity(0.2),
-                                    spreadRadius: 1,
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
+                      FutureBuilder<List<BlogCardModel>>(
+                        future: blogsFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                                child: CircularProgressIndicator());
+                          } else if (snapshot.hasError) {
+                            return Center(
+                              child: Text(
+                                'Không thể tải bài viết: ${snapshot.error}',
+                                style: AppStyles.errorText,
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(12),
-                                    ),
-                                    child: Image.network(
-                                      featuredBlog.imageUrl,
-                                      height: 150,
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                    ),
+                            );
+                          } else if (snapshot.hasData &&
+                              snapshot.data!.isNotEmpty) {
+                            final featuredBlog =
+                                snapshot.data!.first; // Lấy bài viết đầu tiên
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const BlogListScreen(),
                                   ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          featuredBlog.title,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          featuredBlog.summary,
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Row(
-                                          children: [
-                                            CircleAvatar(
-                                              backgroundImage: NetworkImage(
-                                                  featuredBlog.authorAvatar),
-                                              radius: 12,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              featuredBlog.author,
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w500,
+                                );
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.grey.withOpacity(0.2),
+                                      spreadRadius: 1,
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(12),
+                                      ),
+                                      child: Image.network(
+                                        featuredBlog.image,
+                                        height: 150,
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return Container(
+                                            height: 150,
+                                            color: Colors.grey.shade200,
+                                            child: const Center(
+                                              child: Icon(
+                                                Icons.image_not_supported,
+                                                color: Colors.grey,
+                                                size: 50,
                                               ),
                                             ),
-                                            const Spacer(),
-                                            Text(
-                                              '${featuredBlog.readTime} phút đọc',
-                                              style: TextStyle(
-                                                fontSize: 12,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            featuredBlog.title,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            featuredBlog.sumary,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Row(
+                                            children: [
+                                              CircleAvatar(
+                                                radius: 12,
+                                                backgroundColor:
+                                                    Colors.grey.shade200,
+                                                child: Text(
+                                                  featuredBlog
+                                                          .authorName.isNotEmpty
+                                                      ? featuredBlog
+                                                          .authorName[0]
+                                                          .toUpperCase()
+                                                      : "A",
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.grey.shade700,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                featuredBlog.authorName,
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              const Spacer(),
+                                              Icon(
+                                                Icons.access_time,
+                                                size: 14,
                                                 color: Colors.grey.shade600,
                                               ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                '${featuredBlog.views} lượt xem',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        } catch (e) {
-                          return const Center(
-                              child: Text("Error loading featured blog",
-                                  style: AppStyles.subText));
-                        }
-                      }),
+                            );
+                          } else {
+                            return Center(
+                              child: Text(
+                                "Chưa có bài viết nào",
+                                style: AppStyles.subText,
+                              ),
+                            );
+                          }
+                        },
+                      ),
                     ],
                   ),
                 ),

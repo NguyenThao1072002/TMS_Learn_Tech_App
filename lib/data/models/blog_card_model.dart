@@ -1,14 +1,14 @@
 class BlogCardModel {
-  final int id;
+  final String id;
   final String title;
   final String content;
   final String sumary;
-  final int authorId;
+  final String authorId;
   final DateTime createdAt;
   final DateTime? updatedAt;
   final bool status;
   final bool featured;
-  final int cat_blog_id;
+  final String cat_blog_id;
   final String image;
   final int views;
   final int commentCount;
@@ -39,22 +39,25 @@ class BlogCardModel {
 
   factory BlogCardModel.fromJson(Map<String, dynamic> json) {
     return BlogCardModel(
-      id: json['id'] ?? 0,
+      id: json['id'] ?? "",
       title: json['title'] ?? '',
       content: json['content'] ?? '',
-      sumary: json['sumary'] ?? '',
-      authorId: json['author_id'] ?? 0,
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      sumary: json['summary'] ?? '',
+      authorId: json['author_id'] ?? "",
+      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toString()),
+      updatedAt:
+          json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
       status: json['status'] ?? false,
       featured: json['featured'] ?? false,
-      cat_blog_id: json['cat_blog_id'] ?? 0,
+      cat_blog_id: json['cat_blog_id'] ?? "",
       image: json['image'] ?? '',
       views: json['views'] ?? 0,
-      commentCount: json['comment_count'] ?? 0,
-      deletedDate: json['deleted_date'] != null ? DateTime.parse(json['deleted_date']) : null,
-      catergoryName: json['catergory_name'] ?? '',
-      authorName: json['author_name'] ?? '',
+      commentCount: json['commentCount'] ?? 0,
+      deletedDate: json['deletedDate'] != null
+          ? DateTime.parse(json['deletedDate'])
+          : null,
+      catergoryName: json['categoryName'] ?? '',
+      authorName: json['authorName'] ?? '',
       deleted: json['deleted'] ?? false,
     );
   }
@@ -64,19 +67,19 @@ class BlogCardModel {
       'id': id,
       'title': title,
       'content': content,
-      'sumary': sumary,
+      'summary': sumary,
       'author_id': authorId,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
       'status': status,
       'featured': featured,
       'cat_blog_id': cat_blog_id,
       'image': image,
       'views': views,
-      'comment_count': commentCount,
-      'deleted_date': deletedDate?.toIso8601String(),
-      'catergory_name': catergoryName,
-      'author_name': authorName,
+      'commentCount': commentCount,
+      'deletedDate': deletedDate?.toIso8601String(),
+      'categoryName': catergoryName,
+      'authorName': authorName,
       'deleted': deleted,
     };
   }

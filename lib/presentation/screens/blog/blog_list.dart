@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:tms_app/domain/entities/blog.dart';
+import 'package:get_it/get_it.dart';
+import 'package:tms_app/data/models/blog_card_model.dart';
+import 'package:tms_app/domain/usecases/blog_usercase.dart';
 import 'package:tms_app/presentation/screens/blog/detail_blog.dart';
 import 'package:tms_app/presentation/widgets/blog/blog_card.dart';
-import 'package:tms_app/data/datasources/blog_data.dart';
 
 class BlogListScreen extends StatefulWidget {
   const BlogListScreen({Key? key}) : super(key: key);
@@ -14,15 +15,26 @@ class BlogListScreen extends StatefulWidget {
 class _BlogListScreenState extends State<BlogListScreen> {
   late TextEditingController _searchController;
   String _selectedCategory = 'Tất cả';
-  late List<String> _categories;
-  late final BlogDataSource _blogDataSource;
+  List<String> _categories = [
+    'Tất cả',
+    'Công nghệ',
+    'Lập trình',
+    'Trí tuệ nhân tạo',
+    'Blockchain',
+    'IoT'
+  ];
+  final BlogUsercase _blogUsecase = GetIt.instance<BlogUsercase>();
+  late Future<List<BlogCardModel>> _blogsFuture;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
-    _blogDataSource = BlogDataSource();
-    _categories = _blogDataSource.getCategories();
+    _loadBlogs();
+  }
+
+  void _loadBlogs() {
+    _blogsFuture = _blogUsecase.getAllBlogs();
   }
 
   @override
@@ -151,12 +163,24 @@ class _BlogListScreenState extends State<BlogListScreen> {
   }
 
   Widget _buildBlogList() {
-    // Lấy danh sách blog theo danh mục đã chọn
-    final blogs = _blogDataSource.getBlogsByCategory(_selectedCategory);
-
     return Expanded(
-      child: blogs.isEmpty
-          ? Center(
+      child: FutureBuilder<List<BlogCardModel>>(
+        future: _blogsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Không thể tải bài viết: ${snapshot.error}',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 16,
+                ),
+              ),
+            );
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(
               child: Text(
                 'Không có bài viết nào trong danh mục $_selectedCategory',
                 style: TextStyle(
@@ -164,59 +188,84 @@ class _BlogListScreenState extends State<BlogListScreen> {
                   fontSize: 16,
                 ),
               ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: blogs.length,
-              itemBuilder: (context, index) {
-                final blog = blogs[index];
+            );
+          }
 
-                // Kiểm tra xem có phải blog đầu tiên và là blog nổi bật không
-                if (index == 0) {
-                  // Hiển thị bài viết đầu tiên với giao diện nổi bật
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Bài viết nổi bật',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+          // Lọc blog theo danh mục
+          final blogs = _selectedCategory == 'Tất cả'
+              ? snapshot.data!
+              : snapshot.data!
+                  .where((blog) =>
+                      blog.catergoryName.toLowerCase() ==
+                      _selectedCategory.toLowerCase())
+                  .toList();
+
+          if (blogs.isEmpty) {
+            return Center(
+              child: Text(
+                'Không có bài viết nào trong danh mục $_selectedCategory',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 16,
+                ),
+              ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: blogs.length,
+            itemBuilder: (context, index) {
+              final blog = blogs[index];
+
+              // Kiểm tra xem có phải blog đầu tiên không
+              if (index == 0) {
+                // Hiển thị bài viết đầu tiên với giao diện nổi bật
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Bài viết nổi bật',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(height: 16),
-                      _buildFeaturedBlogCard(blog),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Tất cả bài viết',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildFeaturedBlogCard(blog),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Tất cả bài viết',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(height: 16),
-                    ],
-                  );
-                } else {
-                  // Hiển thị các bài viết còn lại
-                  return BlogCard(
-                    blog: blog,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DetailBlogScreen(blog: blog),
-                        ),
-                      );
-                    },
-                  );
-                }
-              },
-            ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              } else {
+                // Hiển thị các bài viết còn lại
+                return BlogCard(
+                  blog: blog,
+                  onTap: (blogModel) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DetailBlogScreen(blog: blogModel),
+                      ),
+                    );
+                  },
+                );
+              }
+            },
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildFeaturedBlogCard(Blog blog) {
+  Widget _buildFeaturedBlogCard(BlogCardModel blog) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -249,8 +298,18 @@ class _BlogListScreenState extends State<BlogListScreen> {
               child: AspectRatio(
                 aspectRatio: 16 / 9,
                 child: Image.network(
-                  blog.imageUrl,
+                  blog.image,
                   fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey.shade200,
+                      child: Icon(
+                        Icons.image_not_supported,
+                        color: Colors.grey.shade400,
+                        size: 40,
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -269,7 +328,7 @@ class _BlogListScreenState extends State<BlogListScreen> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          blog.category,
+                          blog.catergoryName,
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -279,7 +338,7 @@ class _BlogListScreenState extends State<BlogListScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '${blog.readTime} phút đọc',
+                        '${blog.views} lượt xem',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade600,
@@ -299,7 +358,7 @@ class _BlogListScreenState extends State<BlogListScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    blog.summary,
+                    blog.sumary,
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey.shade600,
@@ -311,12 +370,22 @@ class _BlogListScreenState extends State<BlogListScreen> {
                   Row(
                     children: [
                       CircleAvatar(
-                        backgroundImage: NetworkImage(blog.authorAvatar),
                         radius: 15,
+                        backgroundColor: Colors.grey.shade200,
+                        child: Text(
+                          blog.authorName.isNotEmpty
+                              ? blog.authorName[0].toUpperCase()
+                              : "?",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        blog.author,
+                        blog.authorName,
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,

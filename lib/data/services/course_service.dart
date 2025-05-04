@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:tms_app/core/utils/constants.dart';
 import 'package:tms_app/data/models/course_card_model.dart';
+import 'package:tms_app/core/utils/api_response_helper.dart';
 
 class CourseService {
   final String apiUrl = "${Constants.BASE_URL}/api";
@@ -12,6 +13,7 @@ class CourseService {
     try {
       return await getPopularCourses();
     } catch (e) {
+      print('Lỗi khi tải tất cả khóa học: $e');
       return [];
     }
   }
@@ -28,14 +30,18 @@ class CourseService {
             ));
 
         if (response.statusCode == 200) {
-          return _processApiResponse(response.data);
+          return ApiResponseHelper.processList(
+              response.data, CourseCardModel.fromJson);
         } else {
+          print('Lỗi API khóa học phổ biến: ${response.statusCode}');
           return [];
         }
       } on DioException catch (e) {
+        print('Lỗi dio khi tải khóa học phổ biến: $e');
         return [];
       }
     } catch (e) {
+      print('Lỗi chung khi tải khóa học phổ biến: $e');
       return [];
     }
   }
@@ -52,81 +58,18 @@ class CourseService {
             ));
 
         if (response.statusCode == 200) {
-          return _processApiResponse(response.data);
+          return ApiResponseHelper.processList(
+              response.data, CourseCardModel.fromJson);
         } else {
+          print('Lỗi API khóa học giảm giá: ${response.statusCode}');
           return [];
         }
       } on DioException catch (e) {
+        print('Lỗi dio khi tải khóa học giảm giá: $e');
         return [];
       }
     } catch (e) {
-      return [];
-    }
-  }
-
-  List<CourseCardModel> _processApiResponse(dynamic responseData) {
-    try {
-      if (responseData is! Map) {
-        return [];
-      }
-
-      final Map<String, dynamic> data = Map<String, dynamic>.from(responseData);
-      
-      // Cấu trúc API dạng {status, message, data: [...]}
-      if (data.containsKey('status') && data.containsKey('data')) {
-        final apiData = data['data'];
-
-        if (apiData is List) {
-
-          if (apiData.isEmpty) {
-            return [];
-          }
-
-          final courses =
-              apiData.map((item) => CourseCardModel.fromJson(item)).toList();
-          return courses;
-        } else if (apiData is Map &&
-            apiData.containsKey('content') &&
-            apiData['content'] is List) {
-          final contentList = apiData['content'] as List;
-
-          if (contentList.isEmpty) {
-            return [];
-          }
-
-          final courses = contentList
-              .map((item) => CourseCardModel.fromJson(item))
-              .toList();
-
-          return courses;
-        }
-      }
-
-      // Cấu trúc API trực tiếp là danh sách
-      if (data.containsKey('content') && data['content'] is List) {
-        final contentList = data['content'] as List;
-
-        if (contentList.isEmpty) {
-          return [];
-        }
-
-        final courses =
-            contentList.map((item) => CourseCardModel.fromJson(item)).toList();
-
-        return courses;
-      }
-
-      // Trường hợp data là mảng trực tiếp
-      if (responseData is List) {
-        final courses = (responseData as List)
-            .map((item) => CourseCardModel.fromJson(item))
-            .toList();
-
-        return courses;
-      }
-
-      return [];
-    } catch (e) {
+      print('Lỗi chung khi tải khóa học giảm giá: $e');
       return [];
     }
   }

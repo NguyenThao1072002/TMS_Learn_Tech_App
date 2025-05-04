@@ -1,3 +1,6 @@
+//định nghĩa các model classes (lớp dữ liệu) đại diện cho cấu trúc phản hồi API
+//Giúp phân tích (parse) dữ liệu JSON thành các đối tượng Dart
+
 class ApiResponse<T> {
   final int status;
   final String message;

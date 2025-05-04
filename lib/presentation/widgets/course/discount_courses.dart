@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tms_app/data/models/course_card_model.dart';
 import 'package:tms_app/presentation/screens/course/course_screen.dart';
 import 'package:tms_app/presentation/screens/course/course_type_list.dart';
+import 'package:tms_app/core/theme/app_styles.dart';
 
 class DiscountCourses extends StatelessWidget {
   final List<CourseCardModel> courses;
@@ -27,14 +28,45 @@ class DiscountCourses extends StatelessWidget {
       return Center(
         child: Text(
           'Không thể tải khóa học: $error',
-          style: TextStyle(color: Colors.red),
+          style: const TextStyle(color: Colors.red),
         ),
       );
     }
 
     // Hiển thị danh sách khóa học nếu có dữ liệu
     if (courses.isEmpty) {
-      return const Center(child: Text('Không có khóa học giảm giá.'));
+      return Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
+            children: [
+              const Text(
+                'Hiện chưa có khóa học giảm giá nào!',
+                style: AppStyles.subText,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Hãy quay lại sau để xem các chương trình khuyến mãi mới nhất từ chúng tôi.',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CourseScreen(),
+                    ),
+                  );
+                },
+                child: const Text('Xem các khóa học khác'),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return CourseTypeList(

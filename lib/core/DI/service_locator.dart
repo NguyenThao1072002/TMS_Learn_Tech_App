@@ -1,13 +1,17 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
+import 'package:tms_app/data/repositories/blog_repository_impl.dart';
 
 import 'package:tms_app/data/repositories/course_repository_impl.dart';
 import 'package:tms_app/data/services/auth_service.dart'; // Import AuthService
+import 'package:tms_app/data/services/blog_service.dart';
 import 'package:tms_app/data/services/course_service.dart'; // Import CourseService
 import 'package:tms_app/data/services/user_service.dart'; // Import UserService
 import 'package:tms_app/data/repositories/account_repository_impl.dart';
 import 'package:tms_app/domain/repositories/account_repository.dart';
+import 'package:tms_app/domain/repositories/blog_repository.dart';
 import 'package:tms_app/domain/repositories/course_repository.dart';
+import 'package:tms_app/domain/usecases/blog_usercase.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
 import 'package:tms_app/domain/usecases/forgot_password_usecase.dart';
 import 'package:tms_app/domain/usecases/login_usecase.dart';
@@ -95,8 +99,7 @@ void _registerServices() {
 
   // Sử dụng lớp CourseService gốc
   sl.registerLazySingleton(() => CourseService(sl()));
-
-  sl.registerLazySingleton(() => BlogDataSource()); 
+  sl.registerLazySingleton(() => BlogService(sl()));
   sl.registerLazySingleton(() => BannerService()); 
   sl.registerLazySingleton(() => CategoryService()); 
 }
@@ -115,8 +118,13 @@ void _registerRepositories() {
 
   sl.registerLazySingleton<BannerRepository>(() =>
       BannerRepositoryImpl(bannerService: sl())); 
+
   sl.registerLazySingleton<CategoryRepository>(() => CategoryRepositoryImpl(
       categoryService: sl()));
+
+  sl.registerLazySingleton<BlogRepository>(() => BlogRepositoryImpl(
+        blogService: sl(),
+      )); 
 }
 
 // Đăng ký tất cả các UseCase
@@ -130,6 +138,8 @@ void _registerUseCases() {
   sl.registerFactory(() => ForgotPasswordUseCase(sl()));
 
   sl.registerFactory(() => BannerUseCase(sl()));
+
+  sl.registerFactory(() => BlogUsercase(sl()));
 
   sl.registerLazySingleton(() {
     final repo = sl<CategoryRepository>();

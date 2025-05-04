@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:tms_app/core/utils/constants.dart';
 import 'package:tms_app/data/models/banner_model.dart';
 import 'package:get_it/get_it.dart';
+import 'package:tms_app/core/utils/api_response_helper.dart';
 
 class BannerService {
   final String baseUrl = Constants.BASE_URL;
@@ -22,21 +23,15 @@ class BannerService {
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = response.data;
-
-        if (responseData['data'] != null) {
-          final List<dynamic> bannerData = responseData['data'];
-          final banners =
-              bannerData.map((json) => BannerModel.fromJson(json)).toList();
-
-          return banners;
-        } else {
-          throw Exception('Failed to load banners: ${responseData['message']}');
-        }
+        // Sử dụng ApiResponseHelper để xử lý phản hồi
+        return ApiResponseHelper.processList(
+            response.data, BannerModel.fromJson);
       } else {
+        print('Lỗi khi lấy banner: ${response.statusCode}');
         throw Exception('Failed to load banners: ${response.statusCode}');
       }
     } catch (e) {
+      print('Lỗi khi lấy danh sách banner: $e');
       return [];
     }
   }
@@ -45,16 +40,39 @@ class BannerService {
   Future<List<BannerModel>> getBannersByPosition(String position) async {
     try {
       final allBanners = await getBanners();
-      return allBanners
+      final filteredBanners = allBanners
           .where((banner) =>
               banner.position.toLowerCase() == position.toLowerCase() &&
               banner.status)
           .toList()
         ..sort((a, b) =>
-            a.priority.compareTo(b.priority)); //priority : ưu tiên hiển thị
+            a.priority.compareTo(b.priority)); // priority : ưu tiên hiển thị
+
+      print('Tìm thấy ${filteredBanners.length} banner cho vị trí: $position');
+      return filteredBanners;
     } catch (e) {
+      print('Lỗi khi lọc banner theo vị trí: $e');
       return [];
     }
   }
 
+  // Lọc banner theo vị trí và platform
+  Future<List<BannerModel>> getBannersByPositionAndPlatform(
+      String position, String platform) async {
+    try {
+      final positionBanners = await getBannersByPosition(position);
+      final filteredBanners = positionBanners
+          .where((banner) =>
+              banner.platform.toLowerCase() == platform.toLowerCase() ||
+              banner.platform.toLowerCase() == 'all')
+          .toList();
+
+      print(
+          'Tìm thấy ${filteredBanners.length} banner cho vị trí: $position, platform: $platform');
+      return filteredBanners;
+    } catch (e) {
+      print('Lỗi khi lọc banner theo vị trí và platform: $e');
+      return [];
+    }
+  }
 }

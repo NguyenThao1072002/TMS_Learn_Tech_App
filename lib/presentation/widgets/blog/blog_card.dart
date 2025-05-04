@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
-import 'package:tms_app/domain/entities/blog.dart';
-
+import 'package:tms_app/data/models/blog_card_model.dart';
 class BlogCard extends StatelessWidget {
-  final Blog blog;
-  final VoidCallback onTap;
+  final BlogCardModel blog;
+  final int? selectedIndex;
+  final void Function(BlogCardModel)? onTap;
   final bool isHorizontal;
 
   const BlogCard({
     Key? key,
     required this.blog,
-    required this.onTap,
+    this.selectedIndex,
+    this.onTap,
     this.isHorizontal = false,
   }) : super(key: key);
 
@@ -24,7 +25,7 @@ class BlogCard extends StatelessWidget {
 
   Widget _buildVerticalCard(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () => onTap?.call(blog),
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
@@ -49,7 +50,7 @@ class BlogCard extends StatelessWidget {
               child: AspectRatio(
                 aspectRatio: 16 / 9,
                 child: Image.network(
-                  blog.imageUrl,
+                  blog.image,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
@@ -69,7 +70,7 @@ class BlogCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildCategoryChip(blog.category),
+                  _buildCategoryChip(blog.catergoryName),
                   const SizedBox(height: 8),
                   Text(
                     blog.title,
@@ -82,7 +83,7 @@ class BlogCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    blog.summary,
+                    blog.sumary,
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey.shade600,
@@ -103,7 +104,7 @@ class BlogCard extends StatelessWidget {
 
   Widget _buildHorizontalCard(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () => onTap?.call(blog),
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
@@ -129,7 +130,7 @@ class BlogCard extends StatelessWidget {
                 width: 120,
                 height: 120,
                 child: Image.network(
-                  blog.imageUrl,
+                  blog.image,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
@@ -150,7 +151,7 @@ class BlogCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildCategoryChip(blog.category),
+                    _buildCategoryChip(blog.catergoryName),
                     const SizedBox(height: 6),
                     Text(
                       blog.title,
@@ -163,7 +164,7 @@ class BlogCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      blog.summary,
+                      blog.sumary,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -176,7 +177,7 @@ class BlogCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          timeago.format(blog.publishDate, locale: 'vi'),
+                          timeago.format(blog.createdAt, locale: 'vi'),
                           style: TextStyle(
                             fontSize: 11,
                             color: Colors.grey.shade500,
@@ -241,13 +242,21 @@ class BlogCard extends StatelessWidget {
         Row(
           children: [
             CircleAvatar(
-              backgroundImage: NetworkImage(blog.authorAvatar),
               radius: 15,
               backgroundColor: Colors.grey.shade200,
+              child: Text(
+                blog.authorName.isNotEmpty
+                    ? blog.authorName[0]
+                    : '?',
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             const SizedBox(width: 8),
             Text(
-              blog.author,
+              blog.authorName,
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -258,7 +267,7 @@ class BlogCard extends StatelessWidget {
         Row(
           children: [
             Text(
-              timeago.format(blog.publishDate, locale: 'vi'),
+              timeago.format(blog.createdAt, locale: 'vi'),
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey.shade500,
