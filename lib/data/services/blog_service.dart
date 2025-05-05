@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:tms_app/core/utils/api_response_helper.dart';
 import 'package:tms_app/core/utils/constants.dart';
-import 'package:tms_app/data/models/blog_card_model.dart';
+import 'package:tms_app/data/models/blog/blog_card_model.dart';
 
 class BlogService {
   final String baseUrl = "${Constants.BASE_URL}/api";

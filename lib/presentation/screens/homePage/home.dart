@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tms_app/data/models/banner_model.dart';
-import 'package:tms_app/data/models/blog_card_model.dart';
-import 'package:tms_app/data/models/course_card_model.dart';
+import 'package:tms_app/data/models/blog/blog_card_model.dart';
+import 'package:tms_app/data/models/course/course_card_model.dart';
 import 'package:tms_app/domain/usecases/banner_usecase.dart';
 import 'package:tms_app/domain/usecases/blog_usercase.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
-import 'package:tms_app/data/models/blog_card_model.dart';
+import 'package:tms_app/data/models/blog/blog_card_model.dart';
 import 'package:tms_app/domain/usecases/blog_usercase.dart';
 import 'package:tms_app/presentation/screens/blog/detail_blog.dart';
 import 'package:tms_app/presentation/widgets/blog/blog_card.dart';

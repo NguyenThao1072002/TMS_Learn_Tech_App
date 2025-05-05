@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
-import 'package:tms_app/data/models/course_card_model.dart';
+import 'package:tms_app/data/models/course/course_card_model.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
 import 'package:tms_app/presentation/controller/course_controller.dart';
 import 'package:tms_app/presentation/widgets/component/search_widget.dart';

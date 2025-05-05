@@ -1,7 +1,8 @@
-import 'package:tms_app/data/models/user_model.dart';
-import 'package:tms_app/data/services/auth_service.dart';
-import 'package:tms_app/data/services/user_service.dart';
-import 'package:tms_app/domain/repositories/account_repository.dart'; // Đảm bảo import đúng AccountRepository
+
+import '../../domain/repositories/account_repository.dart';
+import '../models/user_model.dart';
+import '../services/auth_service.dart';
+import '../services/user_service.dart'; // Đảm bảo import đúng AccountRepository
 
 class AccountRepositoryImpl implements AccountRepository {
   final AuthService authService;

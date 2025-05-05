@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tms_app/data/models/course_card_model.dart';
+import 'package:tms_app/data/models/course/course_card_model.dart';
 import 'package:tms_app/presentation/screens/course/course_detail.dart';
 import 'package:tms_app/presentation/widgets/course/course_card.dart';
 

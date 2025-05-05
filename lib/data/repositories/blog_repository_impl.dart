@@ -1,8 +1,8 @@
 
 
-import 'package:tms_app/data/models/blog_card_model.dart';
-import 'package:tms_app/data/services/blog_service.dart';
-import 'package:tms_app/domain/repositories/blog_repository.dart';
+import '../../domain/repositories/blog_repository.dart';
+import '../models/blog/blog_card_model.dart';
+import '../services/blog_service.dart';
 
 class BlogRepositoryImpl implements BlogRepository {
   final BlogService blogService;

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tms_app/data/models/course_card_model.dart';
+import 'package:tms_app/data/models/course/course_card_model.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
 
 class CourseController {

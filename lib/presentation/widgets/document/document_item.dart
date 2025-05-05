@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tms_app/data/models/document_model.dart';
+import 'package:tms_app/data/models/document/document_model.dart';
 
 class DocumentItem extends StatefulWidget {
   final DocumentModel document;

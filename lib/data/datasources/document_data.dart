@@ -1,4 +1,4 @@
-import '../models/document_model.dart';
+import '../models/document/document_model.dart';
 
 class DocumentRemoteDatasource {
   Future<List<DocumentModel>> getDocuments() async {

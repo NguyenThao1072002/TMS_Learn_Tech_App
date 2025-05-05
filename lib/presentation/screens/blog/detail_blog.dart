@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:flutter_html/flutter_html.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:tms_app/data/models/blog_card_model.dart';
+import 'package:tms_app/data/models/blog/blog_card_model.dart';
 
 class DetailBlogScreen extends StatefulWidget {
   final BlogCardModel blog;

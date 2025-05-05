@@ -16,8 +16,10 @@ class CategoryService {
   // Phương thức lấy danh mục khóa học
   Future<List<CourseCategory>> getCourseCategories() async {
     try {
+      print(
+          'Đang gọi API danh mục khóa học: $baseUrl/api/categories/level3/course');
       final response = await dio.get(
-        '$baseUrl/categories/level3/course',
+        '$baseUrl/api/categories/level3/course',
         options: Options(
           headers: {
             'Content-Type': 'application/json',
@@ -25,16 +27,26 @@ class CategoryService {
         ),
       );
 
+      print('API response status: ${response.statusCode}');
+      print('API response data: ${response.data}');
+
       if (response.statusCode == 200) {
         final categories = ApiResponseHelper.processList(
             response.data, CourseCategory.fromJson);
+        print('Số lượng danh mục khóa học: ${categories.length}');
+
+        // Trả về danh sách danh mục từ API
         return categories;
       } else {
         print('Lỗi khi lấy danh mục khóa học: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      print('Lỗi khi lấy danh mục khóa học: $e');
+      print('Exception khi lấy danh mục khóa học: $e');
+      if (e is DioException) {
+        print('DioError response: ${e.response?.data}');
+        print('DioError message: ${e.message}');
+      }
       return [];
     }
   }
@@ -43,7 +55,7 @@ class CategoryService {
   Future<List<DocumentCategory>> getDocumentCategories() async {
     try {
       final response = await dio.get(
-        '$baseUrl/categories/level3/document',
+        '$baseUrl/api/categories/level3/document',
         options: Options(
           headers: {
             'Content-Type': 'application/json',
@@ -69,7 +81,7 @@ class CategoryService {
   Future<List<BlogCategory>> getBlogCategories() async {
     try {
       final response = await dio.get(
-        '$baseUrl/categories/level3/blog',
+        '$baseUrl/api/categories/level3/blog',
         options: Options(
           headers: {
             'Content-Type': 'application/json',

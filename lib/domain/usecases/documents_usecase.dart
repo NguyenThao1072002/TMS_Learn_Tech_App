@@ -1,4 +1,4 @@
-import 'package:tms_app/data/models/document_model.dart';
+import 'package:tms_app/data/models/document/document_model.dart';
 import 'package:tms_app/domain/repositories/document_repository.dart';
 
 class FetchDocumentsUseCase {

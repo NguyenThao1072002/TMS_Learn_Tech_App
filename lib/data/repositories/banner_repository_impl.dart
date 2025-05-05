@@ -1,6 +1,7 @@
-import 'package:tms_app/data/models/banner_model.dart';
-import 'package:tms_app/data/services/banner_service.dart';
-import 'package:tms_app/domain/repositories/banner_repository.dart';
+
+import '../../domain/repositories/banner_repository.dart';
+import '../models/banner_model.dart';
+import '../services/banner_service.dart';
 
 class BannerRepositoryImpl implements BannerRepository {
   final BannerService bannerService;

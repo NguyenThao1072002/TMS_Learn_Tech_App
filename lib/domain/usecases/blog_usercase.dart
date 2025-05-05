@@ -1,5 +1,5 @@
 
-import 'package:tms_app/data/models/blog_card_model.dart';
+import 'package:tms_app/data/models/blog/blog_card_model.dart';
 import 'package:tms_app/domain/repositories/blog_repository.dart';
 
 class BlogUsercase {

@@ -5,7 +5,7 @@ import 'package:tms_app/data/repositories/blog_repository_impl.dart';
 import 'package:tms_app/data/repositories/course_repository_impl.dart';
 import 'package:tms_app/data/services/auth_service.dart'; // Import AuthService
 import 'package:tms_app/data/services/blog_service.dart';
-import 'package:tms_app/data/services/course_service.dart'; // Import CourseService
+import 'package:tms_app/data/services/course/course_service.dart';
 import 'package:tms_app/data/services/user_service.dart'; // Import UserService
 import 'package:tms_app/data/repositories/account_repository_impl.dart';
 import 'package:tms_app/domain/repositories/account_repository.dart';
@@ -17,8 +17,7 @@ import 'package:tms_app/domain/usecases/forgot_password_usecase.dart';
 import 'package:tms_app/domain/usecases/login_usecase.dart';
 import 'package:tms_app/domain/usecases/register_usecase.dart';
 import 'package:tms_app/presentation/controller/forgot_password_controller.dart';
-import 'package:tms_app/presentation/controller/verify_otp_controller.dart'; // Import LoginUseCase
-import 'package:tms_app/data/datasources/blog_data.dart'; // Import BlogDataSource
+import 'package:tms_app/presentation/controller/verify_otp_controller.dart'; // Import LoginUseCase// Import BlogDataSource
 import 'package:tms_app/data/services/banner_service.dart'; // Import BannerService
 import 'package:tms_app/data/repositories/banner_repository_impl.dart'; // Import BannerRepositoryImpl
 import 'package:tms_app/domain/repositories/banner_repository.dart'; // Import BannerRepository

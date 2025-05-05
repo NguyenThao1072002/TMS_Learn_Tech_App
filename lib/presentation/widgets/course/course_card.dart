@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:tms_app/data/models/course_card_model.dart';
+//Xử lý phản hồi API
+
+import 'package:tms_app/data/models/course/course_card_model.dart';
 
 class CourseCard extends StatelessWidget {
   final CourseCardModel course;

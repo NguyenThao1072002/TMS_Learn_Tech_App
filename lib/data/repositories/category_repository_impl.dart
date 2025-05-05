@@ -1,8 +1,9 @@
-import 'package:tms_app/data/models/categories/blog_category.dart';
-import 'package:tms_app/data/models/categories/course_category.dart';
-import 'package:tms_app/data/models/categories/document_category.dart';
-import 'package:tms_app/data/services/category_service.dart';
-import 'package:tms_app/domain/repositories/category_repository.dart';
+
+import '../../domain/repositories/category_repository.dart';
+import '../models/categories/blog_category.dart';
+import '../models/categories/course_category.dart';
+import '../models/categories/document_category.dart';
+import '../services/category_service.dart';
 
 class CategoryRepositoryImpl implements CategoryRepository {
   final CategoryService categoryService;

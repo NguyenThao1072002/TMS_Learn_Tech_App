@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-//import 'package:get_it/get_it.dart';
 import 'package:tms_app/core/DI/service_locator.dart';
-import 'package:tms_app/data/models/categories/category_model.dart';
+import 'package:tms_app/data/models/categories/course_category.dart';
 import 'package:tms_app/data/repositories/category_repository_impl.dart';
 import 'package:tms_app/data/services/category_service.dart';
-//import 'package:tms_app/domain/repositories/category_repository.dart';
 import 'package:tms_app/domain/usecases/category_usecase.dart';
 import 'package:tms_app/presentation/screens/course/course_screen.dart';
-//import 'dart:convert';
 
 class CategoryWidget extends StatefulWidget {
   const CategoryWidget({super.key});
@@ -17,7 +14,7 @@ class CategoryWidget extends StatefulWidget {
 }
 
 class _CategoryWidgetState extends State<CategoryWidget> {
-  late Future<List<CategoryModel>> _categoriesFuture;
+  late Future<List<CourseCategory>> _categoriesFuture;
   int? selectedIndex;
 
   @override
@@ -64,7 +61,7 @@ class _CategoryWidgetState extends State<CategoryWidget> {
             "Danh mục khoá học",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          FutureBuilder<List<CategoryModel>>(
+          FutureBuilder<List<CourseCategory>>(
             future: _categoriesFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -104,7 +101,7 @@ class _CategoryWidgetState extends State<CategoryWidget> {
                       int endIndex = (startIndex + 3 > categories.length)
                           ? categories.length
                           : startIndex + 3;
-                      List<CategoryModel> columnItems =
+                      List<CourseCategory> columnItems =
                           categories.sublist(startIndex, endIndex);
 
                       return Container(
@@ -116,7 +113,7 @@ class _CategoryWidgetState extends State<CategoryWidget> {
                           children: columnItems.asMap().entries.map((entry) {
                             int index =
                                 startIndex + entry.key; // Xác định index tổng
-                            CategoryModel category = entry.value;
+                            CourseCategory category = entry.value;
                             bool isSelected = selectedIndex == index;
 
                             return GestureDetector(

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart'; // Đảm bảo đã import GetIt
 import 'package:tms_app/domain/usecases/course_usecase.dart'; // Lấy từ Service Locator
 import 'package:tms_app/domain/usecases/banner_usecase.dart'; // Lấy từ Service Locator
-import 'package:tms_app/data/models/course_card_model.dart'; // Bạn vẫn cần import model nếu bạn sử dụng nó trong UI
+import 'package:tms_app/data/models/course/course_card_model.dart'; // Bạn vẫn cần import model nếu bạn sử dụng nó trong UI
 import 'package:tms_app/data/models/banner_model.dart'; // Bạn vẫn cần import model nếu bạn sử dụng nó trong UI
 import 'package:tms_app/presentation/screens/course/course_screen.dart';
 import 'package:tms_app/presentation/screens/practice_test/practice_test_list.dart';

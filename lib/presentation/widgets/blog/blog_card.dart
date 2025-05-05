@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
-import 'package:tms_app/data/models/blog_card_model.dart';
+import 'package:tms_app/data/models/blog/blog_card_model.dart';
 class BlogCard extends StatelessWidget {
   final BlogCardModel blog;
   final int? selectedIndex;

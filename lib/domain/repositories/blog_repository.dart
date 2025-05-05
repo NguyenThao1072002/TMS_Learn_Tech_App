@@ -1,4 +1,4 @@
-import 'package:tms_app/data/models/blog_card_model.dart';
+import 'package:tms_app/data/models/blog/blog_card_model.dart';
 
 abstract class BlogRepository {
   Future<List<BlogCardModel>> getAllBlogs();

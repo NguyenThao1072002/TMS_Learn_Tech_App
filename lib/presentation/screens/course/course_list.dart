@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:tms_app/data/models/course_card_model.dart';
+import 'package:tms_app/data/models/course/course_card_model.dart';
 import 'package:tms_app/presentation/widgets/course/course_card.dart';
+import 'package:tms_app/presentation/screens/course/course_detail.dart';
 
 class CourseList extends StatelessWidget {
   final List<CourseCardModel> courses;
@@ -19,7 +20,12 @@ class CourseList extends StatelessWidget {
           course: course,
           selectedIndex: null,
           onTap: (course) {
-            // Điều hướng đến trang chi tiết khóa học
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CourseDetailScreen(course: course),
+              ),
+            );
           },
         );
       },
