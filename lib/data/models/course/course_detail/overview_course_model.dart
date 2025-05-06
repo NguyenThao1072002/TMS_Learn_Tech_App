@@ -62,14 +62,21 @@ class OverviewCourseModel {
       this.certificate});
 
   factory OverviewCourseModel.fromJson(Map<String, dynamic> json) {
+    // In dữ liệu để debug
+    print('OverviewCourseModel.fromJson - raw data:');
+    print('Description: ${json['description']}');
+    print('CourseOutput: ${json['courseOutput']}');
+
     return OverviewCourseModel(
       id: json['id'] as int,
       title: json['title'] as String,
-      description: json['description'] as String?,
+      description:
+          json['description'] != null ? json['description'].toString() : null,
       imageUrl: json['imageUrl'] as String? ?? '',
       language: json['language'] as String?,
       author: json['author'] as String? ?? '',
-      courseOutput: json['courseOutput'] as String? ?? '',
+      courseOutput:
+          json['courseOutput'] != null ? json['courseOutput'].toString() : '',
       cost: (json['cost'] as num?)?.toDouble() ?? 0.0,
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       duration: json['duration'] as int? ?? 0,

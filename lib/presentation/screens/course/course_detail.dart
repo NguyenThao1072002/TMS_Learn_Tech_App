@@ -12,6 +12,7 @@ import 'package:tms_app/presentation/screens/my_account/checkout/cart.dart'
     as import_cart;
 import 'package:tms_app/presentation/widgets/component/navbar_add_to_card.dart';
 import 'package:tms_app/presentation/widgets/course/course_detail/info_general_course.dart';
+import 'package:flutter_html/flutter_html.dart';
 
 class CourseDetailScreen extends StatefulWidget {
   final CourseCardModel course;
@@ -65,7 +66,6 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
         _isLoadingOverview = false;
       });
     } catch (e) {
-      print('Lỗi khi tải thông tin tổng quan: $e');
       setState(() {
         _isLoadingOverview = false;
       });
@@ -81,7 +81,6 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
         _isLoadingStructure = false;
       });
     } catch (e) {
-      print('Lỗi khi tải cấu trúc khóa học: $e');
       setState(() {
         _isLoadingStructure = false;
       });
@@ -96,7 +95,6 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
         _isLoadingReviews = false;
       });
     } catch (e) {
-      print('Lỗi khi tải đánh giá: $e');
       setState(() {
         _isLoadingReviews = false;
       });
@@ -105,22 +103,42 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
 
   Future<void> _loadRelatedCourses() async {
     try {
+      // Kiểm tra xem đã tải _overviewCourse chưa
+      if (_overviewCourse == null) {
+        // Nếu chưa tải, đợi một chút và thử lại
+        await Future.delayed(Duration(milliseconds: 500));
+        if (_overviewCourse == null) {
+          setState(() {
+            _isLoadingRelated = false;
+          });
+          return;
+        }
+      }
+
+      // Đảm bảo chúng ta có courseCategoryId
       if (_overviewCourse?.courseCategoryId != null) {
+        // Gọi API để lấy khóa học liên quan
         final relatedCourses = await _courseUseCase
             .getRelatedCourse(int.parse(_overviewCourse!.courseCategoryId));
 
-        setState(() {
-          // Sử dụng relatedCourses trực tiếp là danh sách OverviewCourseModel
-          _relatedCourses = relatedCourses;
-          _isLoadingRelated = false;
-        });
+        // Debug
+        print("Đã tải ${relatedCourses.length} khóa học liên quan");
+        for (var course in relatedCourses) {
+          print("Khóa học liên quan: ${course.title}");
+        }
+
+        if (mounted) {
+          setState(() {
+            _relatedCourses = relatedCourses;
+            _isLoadingRelated = false;
+          });
+        }
       } else {
         setState(() {
           _isLoadingRelated = false;
         });
       }
     } catch (e) {
-      print('Lỗi khi tải khóa học liên quan: $e');
       setState(() {
         _isLoadingRelated = false;
       });
@@ -137,9 +155,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
           _isPurchased = status;
         });
       }
-    } catch (e) {
-      print('Lỗi khi kiểm tra trạng thái mua: $e');
-    }
+    } catch (e) {}
   }
 
   @override
@@ -289,10 +305,35 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
               ],
             ),
             padding: EdgeInsets.all(16),
-            child: CourseDescriptionWidget(
-              description: _overviewCourse?.description ??
-                  "Thông tin mô tả khóa học đang được cập nhật.",
-            ),
+            child: _overviewCourse?.description != null
+                ? Html(
+                    data: _overviewCourse!.description!,
+                    style: {
+                      "body": Style(
+                        fontSize: FontSize(14),
+                        color: Colors.grey.shade800,
+                      ),
+                      "p": Style(
+                        margin: Margins(bottom: Margin(8)),
+                      ),
+                      "li": Style(
+                        margin: Margins(bottom: Margin(4)),
+                      ),
+                      "ul": Style(
+                        margin: Margins(left: Margin(16), bottom: Margin(16)),
+                      ),
+                      "strong": Style(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    },
+                  )
+                : Text(
+                    "Thông tin mô tả khóa học đang được cập nhật.",
+                    style: TextStyle(
+                      fontStyle: FontStyle.italic,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
           ),
 
           SizedBox(height: 24),
@@ -313,9 +354,40 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
               ],
             ),
             padding: EdgeInsets.all(16),
-            child: Column(
-              children: _buildLearningOutcomes(),
-            ),
+            child: _overviewCourse?.courseOutput.isNotEmpty == true
+                ? Html(
+                    data: _overviewCourse!.courseOutput,
+                    style: {
+                      "body": Style(
+                        fontSize: FontSize(14),
+                        color: Colors.grey.shade800,
+                      ),
+                      "p": Style(
+                        margin: Margins(bottom: Margin(8)),
+                      ),
+                      "li": Style(
+                        margin: Margins(bottom: Margin(4)),
+                      ),
+                      "ul": Style(
+                        margin: Margins(left: Margin(16), bottom: Margin(16)),
+                      ),
+                      "strong": Style(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    },
+                  )
+                : Column(
+                    children: [
+                      _buildModernLearningOutcome(
+                          "1", "Hiểu sâu về các kiến thức trong khóa học"),
+                      SizedBox(height: 16),
+                      _buildModernLearningOutcome(
+                          "2", "Áp dụng được kiến thức vào thực tế"),
+                      SizedBox(height: 16),
+                      _buildModernLearningOutcome(
+                          "3", "Phát triển kỹ năng chuyên môn"),
+                    ],
+                  ),
           ),
 
           SizedBox(height: 24),
@@ -459,8 +531,14 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
   }
 
   List<Widget> _buildLearningOutcomes() {
-    if (_overviewCourse?.courseOutput == null ||
-        _overviewCourse!.courseOutput.isEmpty) {
+    if (_overviewCourse == null) {
+      return [
+        Text("Không có thông tin đầu ra khóa học",
+            style: TextStyle(fontStyle: FontStyle.italic))
+      ];
+    }
+
+    if (_overviewCourse!.courseOutput.isEmpty) {
       return [
         _buildModernLearningOutcome(
             "1", "Hiểu sâu về các kiến thức trong khóa học"),
@@ -471,15 +549,21 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
       ];
     }
 
-    final List<Widget> outcomes = [];
-    final List<String> outcomesList = _overviewCourse!.courseOutput.split('\n');
-
-    for (int i = 0; i < outcomesList.length; i++) {
-      if (i > 0) outcomes.add(SizedBox(height: 16));
-      outcomes.add(_buildModernLearningOutcome("${i + 1}", outcomesList[i]));
-    }
-
-    return outcomes;
+    // Hiển thị nội dung courseOutput bằng widget HTML
+    return [
+      Html(
+        data: _overviewCourse!.courseOutput,
+        style: {
+          "body": Style(
+            fontSize: FontSize(14),
+            color: Colors.grey.shade800,
+          ),
+          "li": Style(
+            margin: Margins(bottom: Margin(8)),
+          ),
+        },
+      ),
+    ];
   }
 
   List<Widget> _buildReviewsList() {
@@ -1130,12 +1214,24 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Text(
-            "Không có khóa học liên quan",
-            style: TextStyle(
-              fontStyle: FontStyle.italic,
-              color: Colors.grey.shade600,
-            ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.school_outlined,
+                size: 64,
+                color: Colors.grey.shade400,
+              ),
+              SizedBox(height: 16),
+              Text(
+                "Không có khóa học liên quan",
+                style: TextStyle(
+                  fontStyle: FontStyle.italic,
+                  fontSize: 16,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -1145,20 +1241,38 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
       padding: EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: _relatedCourses.map((course) {
-          return Column(
-            children: [
-              _buildRelatedCourseItem(
-                course.title,
-                course.rating.toString(),
-                "${course.duration} giờ học",
-                course.imageUrl,
-                course,
+        children: [
+          // Hiển thị số lượng kết quả
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Text(
+              "Tìm thấy ${_relatedCourses.length} khóa học liên quan",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
               ),
-              SizedBox(height: 16),
-            ],
-          );
-        }).toList(),
+            ),
+          ),
+
+          // Danh sách khóa học liên quan
+          ..._relatedCourses.map((course) {
+            // Debug
+            print("Hiển thị khóa học: ${course.title}");
+
+            return Column(
+              children: [
+                _buildRelatedCourseItem(
+                  course.title,
+                  course.rating.toString(),
+                  "${course.duration} giờ học",
+                  course.imageUrl,
+                  course,
+                ),
+                SizedBox(height: 16),
+              ],
+            );
+          }).toList(),
+        ],
       ),
     );
   }
@@ -1167,52 +1281,43 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
       String imageUrl, OverviewCourseModel course) {
     return InkWell(
       onTap: () {
-        // Chuyển đổi từ OverviewCourseModel sang CourseCardModel khi cần chuyển màn hình
-        final courseCard = CourseCardModel(
-            id: course.id,
-            title: course.title,
-            imageUrl: course.imageUrl,
-            price: course.price,
-            cost: course.cost,
-            numberOfStudents: course.studentCount,
-            averageRating: course.rating,
-            author: course.author,
-            courseOutput: course.courseOutput,
-            description: course.description ?? "",
-            duration: course.duration,
-            language: course.language ?? "Tiếng Việt",
-            status: course.status ?? true,
-            type: course.type,
-            categoryName: course.categoryName,
-            discountPercent: 0);
-
-        Navigator.pushReplacement(
+        // Sử dụng OverviewCourseModel trực tiếp
+        Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => CourseDetailScreen(course: courseCard),
+            builder: (context) =>
+                CourseDetailScreenWithOverview(overviewCourse: course),
           ),
         );
       },
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: Offset(0, 3),
+            ),
+          ],
         ),
         child: Row(
           children: [
             ClipRRect(
               borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(8),
-                bottomLeft: Radius.circular(8),
+                topLeft: Radius.circular(12),
+                bottomLeft: Radius.circular(12),
               ),
               child: Image.network(
                 imageUrl,
                 width: 120,
-                height: 80,
+                height: 90,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
                   width: 120,
-                  height: 80,
+                  height: 90,
                   color: Colors.blue.shade100,
                   child: Icon(Icons.image, color: Colors.blue.shade800),
                 ),
@@ -1230,8 +1335,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(height: 4),
+                    SizedBox(height: 8),
                     Row(
                       children: [
                         Icon(Icons.star, color: Colors.amber, size: 14),
@@ -1254,6 +1361,16 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                           ),
                         ),
                       ],
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      course.author,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                          fontStyle: FontStyle.italic),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -1505,20 +1622,49 @@ class _CourseDescriptionWidgetState extends State<CourseDescriptionWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Kiểm tra xem description có phải là chuỗi HTML không
+    bool isHtml =
+        widget.description.contains('<') && widget.description.contains('>');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.description,
-          style: TextStyle(
-            fontSize: 14,
-            height: 1.5,
-            color: Colors.grey.shade800,
+        // Container với giới hạn chiều cao khi chưa mở rộng
+        Container(
+          constraints: BoxConstraints(
+            maxHeight: _expanded ? double.infinity : 150,
           ),
-          maxLines: _expanded ? null : 5,
-          overflow: _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
+          child: isHtml
+              ? Html(
+                  data: widget.description,
+                  style: {
+                    "body": Style(
+                      fontSize: FontSize(14),
+                      color: Colors.grey.shade800,
+                    ),
+                    "p": Style(
+                      margin: Margins(bottom: Margin(8)),
+                    ),
+                    "li": Style(
+                      margin: Margins(bottom: Margin(4)),
+                    ),
+                    "ul": Style(
+                      margin: Margins(left: Margin(16), bottom: Margin(16)),
+                    ),
+                    "strong": Style(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  },
+                )
+              : Text(
+                  widget.description,
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade800),
+                ),
         ),
+
         SizedBox(height: 12),
+
+        // Nút mở rộng / thu gọn
         Center(
           child: InkWell(
             onTap: () {
@@ -1784,5 +1930,47 @@ class CartScreenWithSelectedCourse extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+// Thêm class mới để hiển thị chi tiết khóa học từ OverviewCourseModel
+class CourseDetailScreenWithOverview extends StatefulWidget {
+  final OverviewCourseModel overviewCourse;
+
+  const CourseDetailScreenWithOverview({
+    Key? key,
+    required this.overviewCourse,
+  }) : super(key: key);
+
+  @override
+  State<CourseDetailScreenWithOverview> createState() =>
+      _CourseDetailScreenWithOverviewState();
+}
+
+class _CourseDetailScreenWithOverviewState
+    extends State<CourseDetailScreenWithOverview> {
+  @override
+  Widget build(BuildContext context) {
+    // Chuyển đổi từ OverviewCourseModel sang CourseCardModel để sử dụng lại màn hình chi tiết hiện có
+    final courseCard = CourseCardModel(
+      id: widget.overviewCourse.id,
+      title: widget.overviewCourse.title,
+      imageUrl: widget.overviewCourse.imageUrl,
+      price: widget.overviewCourse.price,
+      cost: widget.overviewCourse.cost,
+      numberOfStudents: widget.overviewCourse.studentCount,
+      averageRating: widget.overviewCourse.rating,
+      author: widget.overviewCourse.author,
+      courseOutput: widget.overviewCourse.courseOutput,
+      description: widget.overviewCourse.description ?? "",
+      duration: widget.overviewCourse.duration,
+      language: widget.overviewCourse.language ?? "Tiếng Việt",
+      status: widget.overviewCourse.status ?? true,
+      type: widget.overviewCourse.type,
+      categoryName: widget.overviewCourse.categoryName,
+      discountPercent: 0,
+    );
+
+    return CourseDetailScreen(course: courseCard);
   }
 }

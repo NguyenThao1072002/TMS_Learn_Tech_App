@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'dart:math';
 import 'package:tms_app/core/utils/constants.dart';
 import 'package:tms_app/data/models/course/course_card_model.dart';
 import 'package:tms_app/core/utils/api_response_helper.dart';
@@ -16,7 +17,6 @@ class CourseService {
     try {
       return await getPopularCourses();
     } catch (e) {
-      print('Lỗi khi tải tất cả khóa học: $e');
       return [];
     }
   }
@@ -36,15 +36,12 @@ class CourseService {
           return ApiResponseHelper.processList(
               response.data, CourseCardModel.fromJson);
         } else {
-          print('Lỗi API khóa học phổ biến: ${response.statusCode}');
           return [];
         }
       } on DioException catch (e) {
-        print('Lỗi dio khi tải khóa học phổ biến: $e');
         return [];
       }
     } catch (e) {
-      print('Lỗi chung khi tải khóa học phổ biến: $e');
       return [];
     }
   }
@@ -64,15 +61,12 @@ class CourseService {
           return ApiResponseHelper.processList(
               response.data, CourseCardModel.fromJson);
         } else {
-          print('Lỗi API khóa học giảm giá: ${response.statusCode}');
           return [];
         }
       } on DioException catch (e) {
-        print('Lỗi dio khi tải khóa học giảm giá: $e');
         return [];
       }
     } catch (e) {
-      print('Lỗi chung khi tải khóa học giảm giá: $e');
       return [];
     }
   }
@@ -90,24 +84,28 @@ class CourseService {
 
         if (response.statusCode == 200) {
           final responseData = response.data;
+
+          Map<String, dynamic> courseData;
+
           if (responseData != null && responseData['data'] != null) {
             // Nếu API trả về cấu trúc {status, message, data}
-            return OverviewCourseModel.fromJson(responseData['data']);
-          } else if (responseData != null) {
+            courseData = responseData['data'];
+          } else if (responseData != null &&
+              responseData is Map<String, dynamic>) {
             // Nếu API trả về đối tượng trực tiếp
-            return OverviewCourseModel.fromJson(responseData);
+            courseData = responseData;
+          } else {
+            return null;
           }
-          return null;
+
+          return OverviewCourseModel.fromJson(courseData);
         } else {
-          print('Lỗi API tổng quan chi tiết khoá học: ${response.statusCode}');
           return null;
         }
       } on DioException catch (e) {
-        print('Lỗi dio khi tải tổng quan chi tiết khoá học: $e');
         return null;
       }
     } catch (e) {
-      print('Lỗi chung khi tải tổng quan chi tiết khoá học: $e');
       return null;
     }
   }
@@ -132,15 +130,12 @@ class CourseService {
           }
           return [];
         } else {
-          print('Lỗi API đánh giá khoá học: ${response.statusCode}');
           return [];
         }
       } on DioException catch (e) {
-        print('Lỗi dio khi tải đánh giá khoá học: $e');
         return [];
       }
     } catch (e) {
-      print('Lỗi chung khi tải đánh giá khoá học: $e');
       return [];
     }
   }
@@ -171,29 +166,22 @@ class CourseService {
                 .map((item) => StructureCourseModel.fromJson(item))
                 .toList();
           }
-          // Trả về một danh sách rỗng nếu không có dữ liệu
           return [];
         } else {
-          print('Lỗi API cấu trúc khoá học: ${response.statusCode}');
-          // Trả về một danh sách rỗng nếu có lỗi
           return [];
         }
       } on DioException catch (e) {
-        print('Lỗi dio khi tải cấu trúc khoá học: $e');
-        // Trả về một danh sách rỗng nếu có lỗi
         return [];
       }
     } catch (e) {
-      print('Lỗi chung khi tải cấu trúc khoá học: $e');
-      // Trả về một danh sách rỗng nếu có lỗi
       return [];
     }
   }
 
   Future<List<OverviewCourseModel>> getRelatedCourse(int categoryId) async {
     try {
-      final endpoint =
-          '$apiUrl/api/courses/public/filter?categoryId=$categoryId';
+      final endpoint = '$apiUrl/courses/public/filter?categoryId=$categoryId';
+      print("Gọi API khóa học liên quan: $endpoint");
 
       try {
         final response = await dio.get(endpoint,
@@ -203,18 +191,15 @@ class CourseService {
             ));
 
         if (response.statusCode == 200) {
-          return ApiResponseHelper.processList(
+           return ApiResponseHelper.processList(
               response.data, OverviewCourseModel.fromJson);
         } else {
-          print('Lỗi API khoá học liên quan: ${response.statusCode}');
           return [];
         }
       } on DioException catch (e) {
-        print('Lỗi dio khi tải khoá học liên quan: $e');
         return [];
       }
     } catch (e) {
-      print('Lỗi chung khi tải khoá học liên quan: $e');
       return [];
     }
   }
