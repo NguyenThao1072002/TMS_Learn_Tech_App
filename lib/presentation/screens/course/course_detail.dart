@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 //import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
+import 'package:tms_app/core/theme/app_dimensions.dart';
+import 'package:tms_app/core/theme/app_styles.dart';
 import 'package:tms_app/data/models/course/course_card_model.dart';
 import 'package:tms_app/data/models/course/course_detail/overview_course_model.dart';
 import 'package:tms_app/data/models/course/course_detail/structure_course_model.dart';
@@ -152,20 +154,20 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppStyles.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppStyles.backgroundColor,
         elevation: 0,
         title: Text(
           "Chi tiết khóa học",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
+          style: AppStyles.appBarTitleStyle,
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios, 
+            color: Colors.black, 
+            size: AppDimensions.smallIconSize
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -181,43 +183,32 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
 
           // Tabs
           Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                bottom: BorderSide(
-                  color: Colors.grey.shade300,
-                  width: 1,
-                ),
-              ),
-            ),
+            decoration: AppStyles.tabBarDecoration,
             child: TabBar(
               controller: _tabController,
-              labelColor: Colors.blue,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: Colors.blue,
-              indicatorWeight: 3,
+              labelColor: AppStyles.tabActiveColor,
+              unselectedLabelColor: AppStyles.tabInactiveColor,
+              indicatorColor: AppStyles.tabActiveColor,
+              indicatorWeight: AppDimensions.tabIndicatorWeight,
               indicatorSize: TabBarIndicatorSize.tab,
               isScrollable: false,
-              labelStyle: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
+              labelStyle: AppStyles.tabLabelStyle,
               tabs: const [
                 Tab(
                   text: "Tổng quan",
-                  height: 46,
+                  height: AppDimensions.tabHeight,
                 ),
                 Tab(
                   text: "Nội dung",
-                  height: 46,
+                  height: AppDimensions.tabHeight,
                 ),
                 Tab(
                   text: "Đánh giá",
-                  height: 46,
+                  height: AppDimensions.tabHeight,
                 ),
                 Tab(
                   text: "Liên quan",
-                  height: 46,
+                  height: AppDimensions.tabHeight,
                 ),
               ],
             ),
@@ -294,16 +285,16 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
       content: Row(
         children: [
           Icon(Icons.check_circle, color: Colors.white),
-          SizedBox(width: 16),
+          SizedBox(width: AppDimensions.snackBarIconSpacing),
           Expanded(
             child: Text(
               'Đã thêm khóa học vào giỏ hàng',
-              style: TextStyle(fontSize: 16),
+              style: AppStyles.snackBarTextStyle,
             ),
           ),
         ],
       ),
-      backgroundColor: Colors.green,
+      backgroundColor: AppStyles.successToastBackgroundColor,
       duration: Duration(seconds: 2),
       action: SnackBarAction(
         label: 'XEM GIỎ',

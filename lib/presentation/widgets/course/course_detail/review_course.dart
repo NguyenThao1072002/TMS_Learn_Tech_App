@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:tms_app/core/theme/app_dimensions.dart';
+import 'package:tms_app/core/theme/app_styles.dart';
 import 'package:tms_app/data/models/course/course_card_model.dart';
 import 'package:tms_app/data/models/course/course_detail/review_course_model.dart';
 
@@ -30,50 +32,36 @@ class _ReviewCourseTabState extends State<ReviewCourseTab> {
     }
 
     return SingleChildScrollView(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(AppDimensions.standardPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionTitle("Đánh giá khóa học"),
-          SizedBox(height: 16),
+          SizedBox(height: AppDimensions.standardPadding),
           
           // Rating summary
           Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            padding: EdgeInsets.all(16),
+            decoration: AppStyles.reviewCardDecoration,
+            padding: EdgeInsets.all(AppDimensions.standardPadding),
             child: Column(
               children: [
                 Row(
                   children: [
                     Container(
-                      width: 60,
-                      height: 60,
+                      width: AppDimensions.ratingCircleSize,
+                      height: AppDimensions.ratingCircleSize,
                       decoration: BoxDecoration(
-                        color: Colors.amber.shade100,
+                        color: AppStyles.ratingCircleColor,
                         shape: BoxShape.circle,
                       ),
                       child: Center(
                         child: Text(
                           "${widget.course.averageRating}",
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.amber.shade800,
-                          ),
+                          style: AppStyles.ratingValueStyle,
                         ),
                       ),
                     ),
-                    SizedBox(width: 16),
+                    SizedBox(width: AppDimensions.standardPadding),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,18 +76,15 @@ class _ReviewCourseTabState extends State<ReviewCourseTab> {
                                     : (index < rating)
                                         ? Icons.star_half
                                         : Icons.star_border,
-                                color: Colors.amber,
-                                size: 24,
+                                color: AppStyles.amberColor,
+                                size: AppDimensions.ratingIconSize,
                               );
                             }),
                           ),
                           SizedBox(height: 4),
                           Text(
                             "Dựa trên ${widget.reviews.length} đánh giá",
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 12,
-                            ),
+                            style: AppStyles.ratingCountStyle,
                           ),
                         ],
                       ),
@@ -114,64 +99,43 @@ class _ReviewCourseTabState extends State<ReviewCourseTab> {
                     children: [
                       Text(
                         "Đánh giá của học viên",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade800,
-                        ),
+                        style: AppStyles.reviewTitleStyle,
                       ),
                       Container(
                         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
+                        decoration: AppStyles.filterChipDecoration,
                         child: Text(
                           "Tất cả",
-                          style: TextStyle(
-                            color: Colors.blue.shade700,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
+                          style: AppStyles.filterChipStyle,
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 16),
+                  SizedBox(height: AppDimensions.standardPadding),
                 ],
               ],
             ),
           ),
           
-          SizedBox(height: 16),
+          SizedBox(height: AppDimensions.standardPadding),
           
           // Reviews list
           if (widget.reviews.isEmpty)
             Container(
               padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.grey.shade200,
-                  width: 1,
-                ),
-              ),
+              decoration: AppStyles.emptyReviewDecoration,
               child: Center(
                 child: Column(
                   children: [
                     Icon(
                       Icons.rate_review_outlined,
                       size: 48,
-                      color: Colors.grey.shade400,
+                      color: AppStyles.emptyReviewIconColor,
                     ),
-                    SizedBox(height: 16),
+                    SizedBox(height: AppDimensions.standardPadding),
                     Text(
                       "Chưa có đánh giá nào cho khóa học này",
-                      style: TextStyle(
-                        fontStyle: FontStyle.italic,
-                        color: Colors.grey.shade600,
-                      ),
+                      style: AppStyles.emptyReviewStyle,
                     ),
                   ],
                 ),
@@ -181,115 +145,64 @@ class _ReviewCourseTabState extends State<ReviewCourseTab> {
             ..._buildReviewsList(),
             
           if (widget.reviews.length > 3 && !_showAllReviews) ...[
-            SizedBox(height: 24),
+            SizedBox(height: AppDimensions.headingSpacing),
             // Xem thêm button
             Center(
               child: Container(
-                height: 40,
-                width: 200,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.amber.shade400,
-                      Colors.amber.shade600,
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.amber.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: Offset(0, 3),
-                    ),
-                  ],
-                ),
+                height: AppDimensions.reviewButtonHeight,
+                width: AppDimensions.reviewButtonWidth,
+                decoration: AppStyles.viewMoreButtonDecoration,
                 child: ElevatedButton.icon(
                   onPressed: () {
                     setState(() {
                       _showAllReviews = true;
                     });
                   },
-                  icon: Icon(Icons.comment, size: 16),
+                  icon: Icon(Icons.comment, size: AppDimensions.reviewButtonIconSize),
                   label: Text("Xem thêm đánh giá"),
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    shadowColor: Colors.transparent,
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                  ),
+                  style: AppStyles.viewMoreButtonStyle,
                 ),
               ),
             ),
           ],
           
-          SizedBox(height: 24),
+          SizedBox(height: AppDimensions.headingSpacing),
           
           // Viết đánh giá
           Container(
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            padding: EdgeInsets.all(16),
+            decoration: AppStyles.writeReviewContainerDecoration,
+            padding: EdgeInsets.all(AppDimensions.standardPadding),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   "Chia sẻ trải nghiệm học tập của bạn",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade800,
-                  ),
+                  style: AppStyles.writeReviewTitleStyle,
                 ),
                 SizedBox(height: 12),
                 Text(
                   widget.isPurchased 
                       ? "Đánh giá của bạn sẽ giúp cải thiện chất lượng khóa học và giúp học viên khác có lựa chọn phù hợp"
                       : "Bạn cần mua khóa học này để có thể viết đánh giá",
-                  style: TextStyle(
-                    color: Colors.blue.shade700,
-                  ),
+                  style: AppStyles.writeReviewDescriptionStyle,
                 ),
-                SizedBox(height: 16),
+                SizedBox(height: AppDimensions.standardPadding),
                 Center(
                   child: Container(
-                    width: 200,
+                    width: AppDimensions.reviewButtonWidth,
                     height: 45,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: widget.isPurchased
-                            ? [Colors.blue.shade400, Colors.blue.shade700]
-                            : [Colors.grey.shade400, Colors.grey.shade600],
-                      ),
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: widget.isPurchased
-                          ? [
-                              BoxShadow(
-                                color: Colors.blue.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: Offset(0, 3),
-                              ),
-                            ]
-                          : [],
-                    ),
+                    decoration: widget.isPurchased
+                        ? AppStyles.writeReviewButtonDecoration
+                        : AppStyles.writeReviewButtonDisabledDecoration,
                     child: ElevatedButton.icon(
                       onPressed: widget.isPurchased
                           ? () {
                               // TODO: Implement write review
                             }
                           : null,
-                      icon: Icon(Icons.edit, size: 16),
+                      icon: Icon(Icons.edit, size: AppDimensions.reviewButtonIconSize),
                       label: Text("Viết đánh giá"),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Colors.transparent,
-                        elevation: 0,
-                        shadowColor: Colors.transparent,
-                        disabledForegroundColor: Colors.white.withOpacity(0.6),
-                        disabledBackgroundColor: Colors.transparent,
-                      ),
+                      style: AppStyles.viewMoreButtonStyle,
                     ),
                   ),
                 ),
@@ -332,21 +245,17 @@ class _ReviewCourseTabState extends State<ReviewCourseTab> {
       child: Row(
         children: [
           Container(
-            width: 4,
-            height: 20,
+            width: AppDimensions.sectionTitleIndicatorWidth,
+            height: AppDimensions.sectionTitleIndicatorHeight,
             decoration: BoxDecoration(
-              color: Colors.blue.shade600,
+              color: AppStyles.tabActiveColor,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
           SizedBox(width: 8),
           Text(
             title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue.shade800,
-            ),
+            style: AppStyles.sectionTitleStyle,
           ),
         ],
       ),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:tms_app/core/theme/app_dimensions.dart';
+import 'package:tms_app/core/theme/app_styles.dart';
 import 'package:tms_app/data/models/course/course_card_model.dart';
 
 class NavbarAddToCard extends StatelessWidget {
@@ -20,17 +22,11 @@ class NavbarAddToCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, -5),
-          ),
-        ],
+      padding: EdgeInsets.symmetric(
+        horizontal: AppDimensions.standardPadding, 
+        vertical: 12
       ),
+      decoration: AppStyles.navbarBoxDecoration,
       child: isPurchased ? _buildAlreadyPurchasedBar() : _buildPurchaseBar(),
     );
   }
@@ -41,29 +37,13 @@ class NavbarAddToCard extends StatelessWidget {
       children: [
         Expanded(
           child: Container(
-            height: 45,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.green.shade400, Colors.green.shade700],
-              ),
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.green.withOpacity(0.3),
-                  blurRadius: 4,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
+            height: AppDimensions.standardButtonHeight,
+            decoration: AppStyles.continueStudyButtonDecoration,
             child: ElevatedButton.icon(
               onPressed: onContinueLearning,
               icon: Icon(Icons.play_arrow),
               label: Text("Tiếp tục học"),
-              style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.white,
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-              ),
+              style: AppStyles.continueStudyButtonStyle,
             ),
           ),
         ),
@@ -84,21 +64,13 @@ class NavbarAddToCard extends StatelessWidget {
               // Hiển thị giá với ellipsis để tránh tràn
               Text(
                 "${course.price} đ",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue,
-                ),
+                style: AppStyles.priceTextStyle,
                 overflow: TextOverflow.ellipsis,
               ),
               if (course.cost > 0)
                 Text(
                   "${course.cost} đ",
-                  style: TextStyle(
-                    fontSize: 12,
-                    decoration: TextDecoration.lineThrough,
-                    color: Colors.grey,
-                  ),
+                  style: AppStyles.oldPriceTextStyle,
                   overflow: TextOverflow.ellipsis,
                 ),
             ],
@@ -110,16 +82,15 @@ class NavbarAddToCard extends StatelessWidget {
 
         // Nút thêm vào giỏ hàng
         Container(
-          height: 45,
-          width: 45,
-          decoration: BoxDecoration(
-            color: Colors.blue.shade50,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue.shade300),
-          ),
+          height: AppDimensions.standardButtonHeight,
+          width: AppDimensions.standardButtonHeight,
+          decoration: AppStyles.addToCartButtonDecoration,
           child: IconButton(
             onPressed: onAddToCart,
-            icon: Icon(Icons.shopping_cart_outlined, color: Colors.blue),
+            icon: Icon(
+              Icons.shopping_cart_outlined, 
+              color: AppStyles.addToCartIconColor
+            ),
             tooltip: 'Thêm vào giỏ hàng',
             padding: EdgeInsets.zero,
             constraints: BoxConstraints(),
@@ -133,25 +104,15 @@ class NavbarAddToCard extends StatelessWidget {
         Expanded(
           flex: 2,
           child: SizedBox(
-            height: 45,
+            height: AppDimensions.standardButtonHeight,
             child: ElevatedButton(
               onPressed: onPurchase,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
+              style: AppStyles.registerButtonStyle,
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
                   "Đăng ký",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                  style: AppStyles.registerButtonTextStyle,
                 ),
               ),
             ),

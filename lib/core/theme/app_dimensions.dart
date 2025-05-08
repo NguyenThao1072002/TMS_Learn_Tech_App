@@ -10,4 +10,49 @@ class AppDimensions {
   static const double smallSpacing = 5.0;
   static const double iconSize = 28.0;
   static const double iconPadding = 10.0;
+  
+  // Course detail dimensions
+  static const double tabHeight = 46.0;
+  static const double tabIndicatorWeight = 3.0;
+  static const double standardPadding = 16.0;
+  static const double smallIconSize = 20.0;
+  static const double mediumSpacing = 16.0;
+  static const double snackBarIconSpacing = 16.0;
+  static const double borderWidth = 1.0;
+  static const double appBarTitleSize = 18.0;
+  
+  // Review dimensions
+  static const double cardBorderRadius = 16.0;
+  static const double ratingCircleSize = 60.0;
+  static const double ratingIconSize = 24.0;
+  static const double ratingTitleSize = 16.0;
+  static const double reviewButtonHeight = 40.0;
+  static const double reviewButtonWidth = 200.0;
+  static const double reviewButtonBorderRadius = 20.0;
+  static const double reviewButtonIconSize = 16.0;
+  static const double sectionTitleIndicatorWidth = 4.0;
+  static const double sectionTitleIndicatorHeight = 20.0;
+  static const double reviewAvatarSize = 40.0;
+  static const double smallRatingIconSize = 16.0;
+  
+  // Info general course dimensions
+  static const double headerHeight = 200.0;
+  static const double chipPaddingHorizontal = 6.0;
+  static const double chipPaddingVertical = 3.0;
+  static const double chipBorderRadius = 4.0;
+  static const double chipFontSize = 10.0;
+  static const double courseTitleSize = 20.0;
+  static const double statsIconSize = 12.0;
+  static const double statsTextSize = 10.0;
+  static const double statsPadding = 12.0;
+  
+  // Structured course dimensions
+  static const double chapterItemHeight = 64.0;
+  static const double chapterNumberSize = 24.0;
+  static const double chapterIndicatorSize = 8.0;
+  static const double lessonIconSize = 18.0;
+  
+  // Button dimensions
+  static const double standardButtonHeight = 45.0;
+  static const double roundButtonRadius = 22.0;
 }

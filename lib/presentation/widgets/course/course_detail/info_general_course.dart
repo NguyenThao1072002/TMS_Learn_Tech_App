@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'package:tms_app/core/theme/app_dimensions.dart';
+import 'package:tms_app/core/theme/app_styles.dart';
 import 'package:tms_app/data/models/course/course_card_model.dart';
 import 'package:tms_app/data/models/course/course_detail/overview_course_model.dart';
 
@@ -21,7 +23,7 @@ class InfoGeneralCourse extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: 200,
+      height: AppDimensions.headerHeight,
       child: Stack(
         children: [
           // Background image
@@ -31,14 +33,7 @@ class InfoGeneralCourse extends StatelessWidget {
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => Container(
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.blue.shade800,
-                      Colors.blue.shade600,
-                    ],
-                  ),
+                  gradient: AppStyles.defaultHeaderGradient,
                 ),
                 child: CustomPaint(
                   painter: TechnologyHexagonPainter(),
@@ -51,23 +46,16 @@ class InfoGeneralCourse extends StatelessWidget {
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.5),
-                    Colors.black.withOpacity(0.85),
-                  ],
-                ),
+                gradient: AppStyles.headerGradientOverlay,
               ),
             ),
           ),
 
           // Course details
           Positioned(
-            left: 16,
-            right: 16,
-            bottom: 16,
+            left: AppDimensions.standardPadding,
+            right: AppDimensions.standardPadding,
+            bottom: AppDimensions.standardPadding,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -77,71 +65,54 @@ class InfoGeneralCourse extends StatelessWidget {
                   children: [
                     // Category
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade600,
-                        borderRadius: BorderRadius.circular(4),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppDimensions.chipPaddingHorizontal, 
+                        vertical: AppDimensions.chipPaddingVertical
                       ),
+                      decoration: AppStyles.categoryChipDecoration,
                       child: Text(
                         overviewCourse?.categoryName?.toUpperCase() ??
                             course.categoryName?.toUpperCase() ??
                             "KHÓA HỌC",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: AppStyles.categoryChipStyle,
                       ),
                     ),
 
                     // Level info
                     if (overviewCourse?.level != null)
                       Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.shade100,
-                          borderRadius: BorderRadius.circular(4),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppDimensions.chipPaddingHorizontal, 
+                          vertical: AppDimensions.chipPaddingVertical
                         ),
+                        decoration: AppStyles.levelChipDecoration,
                         child: Text(
                           overviewCourse?.vietnameseLevel ?? "Sơ cấp",
-                          style: TextStyle(
-                            color: Colors.amber.shade800,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AppStyles.levelChipStyle,
                         ),
                       ),
 
                     // Teacher info
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppDimensions.chipPaddingHorizontal, 
+                        vertical: AppDimensions.chipPaddingVertical
                       ),
+                      decoration: AppStyles.teacherChipDecoration,
                       child: Text(
                         "GV: ${overviewCourse?.author ?? course.author ?? 'Đang tải...'}",
-                        style: TextStyle(
-                          color: Colors.blue.shade800,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: AppStyles.teacherChipStyle,
                       ),
                     ),
                   ],
                 ),
 
-                SizedBox(height: 8),
+                SizedBox(height: AppDimensions.smallSpacing + 3),
 
                 // Title
                 Text(
                   overviewCourse?.title ?? course.title,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: AppStyles.courseTitleStyle,
                 ),
 
                 // Stats row (rating, students, duration)
@@ -149,59 +120,60 @@ class InfoGeneralCourse extends StatelessWidget {
                   children: [
                     // Rating
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.amber,
-                        borderRadius: BorderRadius.circular(4),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 4, 
+                        vertical: 2
                       ),
+                      decoration: AppStyles.ratingChipDecoration,
                       child: Row(
                         children: [
                           Text(
                             "${overviewCourse?.rating ?? course.averageRating ?? '0.0'}",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: AppStyles.statsRatingStyle,
                           ),
-                          Icon(Icons.star, color: Colors.white, size: 10),
+                          Icon(
+                            Icons.star, 
+                            color: Colors.white, 
+                            size: 10
+                          ),
                         ],
                       ),
                     ),
 
-                    SizedBox(width: 12),
+                    SizedBox(width: AppDimensions.statsPadding),
 
                     // Students
                     Row(
                       children: [
-                        Icon(Icons.people_outline,
-                            color: Colors.white, size: 12),
+                        Icon(
+                          Icons.people_outline,
+                          color: Colors.white, 
+                          size: AppDimensions.statsIconSize
+                        ),
                         SizedBox(width: 4),
                         Text(
                           "${overviewCourse?.studentCount ?? course.numberOfStudents ?? 0} học viên",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                          ),
+                          style: AppStyles.statsTextStyle,
                         ),
                       ],
                     ),
 
-                    SizedBox(width: 12),
+                    SizedBox(width: AppDimensions.statsPadding),
 
                     // Duration
                     Row(
                       children: [
-                        Icon(Icons.access_time, color: Colors.white, size: 12),
+                        Icon(
+                          Icons.access_time, 
+                          color: Colors.white, 
+                          size: AppDimensions.statsIconSize
+                        ),
                         SizedBox(width: 4),
                         Text(
                           isLoadingOverview
                               ? "Đang tải..."
                               : "$totalDuration giờ học",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                          ),
+                          style: AppStyles.statsTextStyle,
                         ),
                       ],
                     ),

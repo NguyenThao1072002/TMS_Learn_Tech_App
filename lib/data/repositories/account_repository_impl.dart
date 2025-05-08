@@ -1,4 +1,3 @@
-
 import '../../domain/repositories/account_repository.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
@@ -33,24 +32,22 @@ class AccountRepositoryImpl implements AccountRepository {
 
   @override
   Future<bool> sendOtpToEmail(Map<String, dynamic> body) {
-    return authService
-        .sendOtpToEmail(body); 
+    return authService.sendOtpToEmail(body);
   }
 
   // @override
   // Future<bool> sendOtpToPhone(Map<String, dynamic> body) {
   //   return authService
-  //       .sendOtpToPhone(body); 
+  //       .sendOtpToPhone(body);
   // }
 
   @override
   Future<bool> updatePassword(Map<String, dynamic> body) {
-    return authService
-        .updatePassword(body); 
+    return authService.updatePassword(body);
   }
 
   @override
   Future<bool> verifyOtp(Map<String, dynamic> body) {
-    return authService.verifyOtp(body); 
+    return authService.verifyOtp(body);
   }
 }
