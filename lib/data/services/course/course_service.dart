@@ -50,6 +50,7 @@ class CourseService {
   Future<List<CourseCardModel>> getDiscountCourses() async {
     try {
       final endpoint = '$apiUrl/courses/public/filter?type=discount';
+      print('Đang gọi API lấy khóa học giảm giá: $endpoint');
 
       try {
         final response = await dio.get(endpoint,
@@ -59,15 +60,58 @@ class CourseService {
             ));
 
         if (response.statusCode == 200) {
-          return ApiResponseHelper.processList(
+          print('===== RAW API RESPONSE =====');
+          print('Response data type: ${response.data.runtimeType}');
+          print('Response data: ${response.data}');
+
+          final courses = ApiResponseHelper.processList(
               response.data, CourseCardModel.fromJson);
+
+          print('Số lượng khóa học giảm giá trả về từ API: ${courses.length}');
+
+          // Phân loại theo mức giảm giá
+          final below10 = courses
+              .where((c) => (c.discountPercent > 0 && c.discountPercent <= 10))
+              .toList();
+          final from10to30 = courses
+              .where((c) => (c.discountPercent > 10 && c.discountPercent <= 30))
+              .toList();
+          final from30to50 = courses
+              .where((c) => (c.discountPercent > 30 && c.discountPercent <= 50))
+              .toList();
+          final from50to70 = courses
+              .where((c) => (c.discountPercent > 50 && c.discountPercent <= 70))
+              .toList();
+          final above70 =
+              courses.where((c) => (c.discountPercent > 70)).toList();
+          final zero = courses.where((c) => c.discountPercent == 0).toList();
+
+          print('Thống kê mức giảm giá:');
+          print('- Không giảm giá (0%): ${zero.length} khóa học');
+          print('- Giảm giá 0-10%: ${below10.length} khóa học');
+          print('- Giảm giá 10-30%: ${from10to30.length} khóa học');
+          print('- Giảm giá 30-50%: ${from30to50.length} khóa học');
+          print('- Giảm giá 50-70%: ${from50to70.length} khóa học');
+          print('- Giảm giá trên 70%: ${above70.length} khóa học');
+
+          // Kiểm tra % giảm giá của từng khóa học
+          print('===== DANH SÁCH KHÓA HỌC GIẢM GIÁ =====');
+          for (var course in courses) {
+            print(
+                'ID: ${course.id}, Tiêu đề: ${course.title}, Giảm giá: ${course.discountPercent}%, Giá: ${course.price}, Giá gốc: ${course.cost}');
+          }
+
+          return courses;
         } else {
+          print('Lỗi API (${response.statusCode}): ${response.data}');
           return [];
         }
       } on DioException catch (e) {
+        print('Lỗi Dio khi lấy khóa học giảm giá: $e');
         return [];
       }
     } catch (e) {
+      print('Lỗi khi lấy khóa học giảm giá: $e');
       return [];
     }
   }
@@ -199,7 +243,7 @@ class CourseService {
                 .map((item) => CourseCardModel.fromJson(item))
                 .toList();
           }
-          
+
           return ApiResponseHelper.processList(
               response.data, CourseCardModel.fromJson);
         } else {
@@ -213,8 +257,8 @@ class CourseService {
     }
   }
 
-  Future<String> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('jwt') ?? '';
-  }
+  // Future<String> _getToken() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   return prefs.getString('jwt') ?? '';
+  // }
 }

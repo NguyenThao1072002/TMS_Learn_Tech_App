@@ -27,9 +27,6 @@ class CategoryService {
         ),
       );
 
-      print('API response status: ${response.statusCode}');
-      print('API response data: ${response.data}');
-
       if (response.statusCode == 200) {
         final categories = ApiResponseHelper.processList(
             response.data, CourseCategory.fromJson);

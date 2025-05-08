@@ -24,6 +24,11 @@ class CourseCardModel {
   final String? createdAt;
   final String? updatedAt;
   final String? deletedDate;
+  final bool? isCombo;
+
+  int get categoryId =>
+      idDanhmuc ??
+      (courseCategoryId != null ? int.tryParse(courseCategoryId!) ?? 0 : 0);
 
   CourseCardModel({
     required this.id,
@@ -51,6 +56,7 @@ class CourseCardModel {
     this.createdAt,
     this.updatedAt,
     this.deletedDate,
+    this.isCombo,
   });
 
   double? get oldPriceAsDouble {
@@ -101,6 +107,9 @@ class CourseCardModel {
           json['discount'] ??
           0;
 
+      // Kiểm tra xem khóa học có phải combo không
+      final isCombo = json['isCombo'] ?? json['is_combo'] ?? false;
+
       return CourseCardModel(
         id: id,
         title: title,
@@ -129,6 +138,7 @@ class CourseCardModel {
         createdAt: json['createdAt'],
         updatedAt: json['updatedAt'],
         deletedDate: json['deletedDate'],
+        isCombo: isCombo,
       );
     } catch (e) {
       // Tạo một đối tượng với giá trị mặc định an toàn
@@ -187,6 +197,21 @@ class CourseCardModel {
       'oldPrice': oldPrice,
       'categoryName': categoryName,
       'discountPercent': discountPercent,
+      'isCombo': isCombo,
+      'categoryId': categoryId,
     };
+  }
+
+  // Calculate the real discount percentage based on original price and current price
+  int getRealDiscountPercent() {
+    if (cost <= 0 || price >= cost) return discountPercent;
+
+    // Calculate based on price difference
+    final calculatedDiscount = ((cost - price) / cost * 100).round();
+
+    // Return the larger of the two: explicit discount or calculated discount
+    return calculatedDiscount > discountPercent
+        ? calculatedDiscount
+        : discountPercent;
   }
 }

@@ -108,7 +108,7 @@ class AppStyles {
   static const Color borderColorLight = Color(0xFFDDDDDD);
   static const Color tabActiveColor = Colors.blue;
   static const Color tabInactiveColor = Colors.grey;
-  
+
   static const TextStyle appBarTitleStyle = TextStyle(
     fontSize: AppDimensions.appBarTitleSize,
     fontWeight: FontWeight.bold,
@@ -123,7 +123,7 @@ class AppStyles {
   static const TextStyle snackBarTextStyle = TextStyle(
     fontSize: 16,
   );
-  
+
   static BoxDecoration tabBarDecoration = BoxDecoration(
     color: backgroundColor,
     border: Border(
@@ -133,68 +133,77 @@ class AppStyles {
       ),
     ),
   );
-  
+
   // Review styles
   static const Color amberColor = Colors.amber;
-  static const Color ratingCircleColor = Color(0xFFFFECB3); // Colors.amber.shade100
-  static const Color ratingTextColor = Color(0xFFFF8F00); // Colors.amber.shade800
-  static const Color reviewCardShadowColor = Color(0x0D000000); // Colors.black.withOpacity(0.05)
-  static const Color reviewFilterBgColor = Color(0xFFE3F2FD); // Colors.blue.shade50
-  static const Color reviewFilterTextColor = Color(0xFF1976D2); // Colors.blue.shade700
-  static const Color emptyReviewBgColor = Color(0xFFFAFAFA); // Colors.grey.shade50
-  static const Color emptyReviewBorderColor = Color(0xFFEEEEEE); // Colors.grey.shade200
-  static const Color emptyReviewIconColor = Color(0xFFBDBDBD); // Colors.grey.shade400
-  static const Color emptyReviewTextColor = Color(0xFF757575); // Colors.grey.shade600
-  
+  static const Color ratingCircleColor =
+      Color(0xFFFFECB3); // Colors.amber.shade100
+  static const Color ratingTextColor =
+      Color(0xFFFF8F00); // Colors.amber.shade800
+  static const Color reviewCardShadowColor =
+      Color(0x0D000000); // Colors.black.withOpacity(0.05)
+  static const Color reviewFilterBgColor =
+      Color(0xFFE3F2FD); // Colors.blue.shade50
+  static const Color reviewFilterTextColor =
+      Color(0xFF1976D2); // Colors.blue.shade700
+  static const Color emptyReviewBgColor =
+      Color(0xFFFAFAFA); // Colors.grey.shade50
+  static const Color emptyReviewBorderColor =
+      Color(0xFFEEEEEE); // Colors.grey.shade200
+  static const Color emptyReviewIconColor =
+      Color(0xFFBDBDBD); // Colors.grey.shade400
+  static const Color emptyReviewTextColor =
+      Color(0xFF757575); // Colors.grey.shade600
+
   static const TextStyle ratingValueStyle = TextStyle(
     fontSize: 24,
     fontWeight: FontWeight.bold,
     color: ratingTextColor,
   );
-  
+
   static const TextStyle ratingCountStyle = TextStyle(
     color: Color(0xFF757575), // Colors.grey.shade600
     fontSize: 12,
   );
-  
+
   static const TextStyle reviewTitleStyle = TextStyle(
     fontSize: AppDimensions.ratingTitleSize,
     fontWeight: FontWeight.bold,
     color: Color(0xFF424242), // Colors.grey.shade800
   );
-  
+
   static const TextStyle filterChipStyle = TextStyle(
     color: reviewFilterTextColor,
     fontWeight: FontWeight.bold,
     fontSize: 12,
   );
-  
+
   static const TextStyle emptyReviewStyle = TextStyle(
     fontStyle: FontStyle.italic,
     color: emptyReviewTextColor,
   );
-  
+
   static const TextStyle reviewButtonTextStyle = TextStyle(
     color: Colors.white,
     fontWeight: FontWeight.bold,
   );
-  
+
   static const TextStyle sectionTitleStyle = TextStyle(
     fontSize: 18,
     fontWeight: FontWeight.bold,
     color: Color(0xFF1565C0), // Colors.blue.shade800
   );
-  
+
   static const TextStyle writeReviewTitleStyle = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.bold,
     color: Color(0xFF1565C0), // Colors.blue.shade800
   );
-  
+
   static const TextStyle writeReviewDescriptionStyle = TextStyle(
     color: Color(0xFF1976D2), // Colors.blue.shade700
   );
-  
+
   static BoxDecoration reviewCardDecoration = BoxDecoration(
     color: Colors.white,
     borderRadius: BorderRadius.circular(AppDimensions.cardBorderRadius),
@@ -206,12 +215,12 @@ class AppStyles {
       ),
     ],
   );
-  
+
   static BoxDecoration filterChipDecoration = BoxDecoration(
     color: reviewFilterBgColor,
     borderRadius: BorderRadius.circular(20),
   );
-  
+
   static BoxDecoration emptyReviewDecoration = BoxDecoration(
     color: emptyReviewBgColor,
     borderRadius: BorderRadius.circular(AppDimensions.cardBorderRadius),
@@ -220,7 +229,7 @@ class AppStyles {
       width: AppDimensions.borderWidth,
     ),
   );
-  
+
   static BoxDecoration viewMoreButtonDecoration = BoxDecoration(
     gradient: LinearGradient(
       colors: [
@@ -237,7 +246,7 @@ class AppStyles {
       ),
     ],
   );
-  
+
   static ButtonStyle viewMoreButtonStyle = ElevatedButton.styleFrom(
     foregroundColor: Colors.white,
     backgroundColor: Colors.transparent,
@@ -245,12 +254,12 @@ class AppStyles {
     shadowColor: Colors.transparent,
     padding: EdgeInsets.symmetric(horizontal: AppDimensions.standardPadding),
   );
-  
+
   static BoxDecoration writeReviewContainerDecoration = BoxDecoration(
     color: Color(0xFFE3F2FD), // Colors.blue.shade50
     borderRadius: BorderRadius.circular(AppDimensions.cardBorderRadius),
   );
-  
+
   static BoxDecoration writeReviewButtonDecoration = BoxDecoration(
     gradient: LinearGradient(
       colors: [
@@ -267,7 +276,7 @@ class AppStyles {
       ),
     ],
   );
-  
+
   static BoxDecoration writeReviewButtonDisabledDecoration = BoxDecoration(
     gradient: LinearGradient(
       colors: [
@@ -279,71 +288,77 @@ class AppStyles {
   );
 
   // Info general course styles
-  static const Color categoryChipColor = Color(0xFF1976D2); // Colors.blue.shade600
-  static const Color levelChipBgColor = Color(0xFFFFECB3); // Colors.amber.shade100 
-  static const Color levelChipTextColor = Color(0xFFFF8F00); // Colors.amber.shade800
+  static const Color categoryChipColor =
+      Color(0xFF1976D2); // Colors.blue.shade600
+  static const Color levelChipBgColor =
+      Color(0xFFFFECB3); // Colors.amber.shade100
+  static const Color levelChipTextColor =
+      Color(0xFFFF8F00); // Colors.amber.shade800
   static const Color teacherChipBgColor = Colors.white;
-  static const Color teacherChipTextColor = Color(0xFF1565C0); // Colors.blue.shade800
-  static const Color gradientOverlayStartColor = Color(0x80000000); // Colors.black.withOpacity(0.5)
-  static const Color gradientOverlayEndColor = Color(0xD9000000); // Colors.black.withOpacity(0.85)
+  static const Color teacherChipTextColor =
+      Color(0xFF1565C0); // Colors.blue.shade800
+  static const Color gradientOverlayStartColor =
+      Color(0x80000000); // Colors.black.withOpacity(0.5)
+  static const Color gradientOverlayEndColor =
+      Color(0xD9000000); // Colors.black.withOpacity(0.85)
   static const Color ratingChipBgColor = Colors.amber;
   static const Color ratingChipTextColor = Colors.white;
-  
+
   static const TextStyle categoryChipStyle = TextStyle(
     color: Colors.white,
     fontSize: AppDimensions.chipFontSize,
     fontWeight: FontWeight.bold,
   );
-  
+
   static const TextStyle levelChipStyle = TextStyle(
     color: levelChipTextColor,
     fontSize: AppDimensions.chipFontSize,
     fontWeight: FontWeight.bold,
   );
-  
+
   static const TextStyle teacherChipStyle = TextStyle(
     color: teacherChipTextColor,
     fontSize: AppDimensions.chipFontSize,
     fontWeight: FontWeight.bold,
   );
-  
+
   static const TextStyle courseTitleStyle = TextStyle(
     color: Colors.white,
     fontSize: AppDimensions.courseTitleSize,
     fontWeight: FontWeight.bold,
   );
-  
+
   static const TextStyle statsTextStyle = TextStyle(
     color: Colors.white,
     fontSize: AppDimensions.statsTextSize,
   );
-  
+
   static const TextStyle statsRatingStyle = TextStyle(
     color: Colors.white,
     fontSize: AppDimensions.statsTextSize,
     fontWeight: FontWeight.bold,
   );
-  
+
   static BoxDecoration categoryChipDecoration = BoxDecoration(
     color: categoryChipColor,
     borderRadius: BorderRadius.circular(AppDimensions.chipBorderRadius),
   );
-  
+
   static BoxDecoration levelChipDecoration = BoxDecoration(
     color: levelChipBgColor,
     borderRadius: BorderRadius.circular(AppDimensions.chipBorderRadius),
   );
-  
+
   static BoxDecoration teacherChipDecoration = BoxDecoration(
     color: teacherChipBgColor,
     borderRadius: BorderRadius.circular(AppDimensions.chipBorderRadius),
   );
-  
+
   static BoxDecoration ratingChipDecoration = BoxDecoration(
     color: ratingChipBgColor,
     borderRadius: BorderRadius.circular(AppDimensions.chipBorderRadius),
   );
-  
+
   static Gradient headerGradientOverlay = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
@@ -352,7 +367,7 @@ class AppStyles {
       gradientOverlayEndColor,
     ],
   );
-  
+
   static Gradient defaultHeaderGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -361,7 +376,7 @@ class AppStyles {
       Color(0xFF1976D2), // Colors.blue.shade600
     ],
   );
-  
+
   // Structured course styles
   static const Color chapterCompletedColor = Colors.green;
   static const Color chapterInProgressColor = Colors.amber;
@@ -370,28 +385,28 @@ class AppStyles {
   static const Color lessonInProgressColor = Colors.amber;
   static const Color lessonNotStartedColor = Colors.grey;
   static const Color lessonLockedColor = Colors.grey;
-  
+
   static const TextStyle chapterTitleStyle = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.bold,
     color: Colors.black87,
   );
-  
+
   static const TextStyle chapterDetailStyle = TextStyle(
     fontSize: 12,
     color: Colors.grey,
   );
-  
+
   static const TextStyle lessonTitleStyle = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w500,
   );
-  
+
   static const TextStyle lessonDurationStyle = TextStyle(
     fontSize: 12,
     color: Colors.grey,
   );
-  
+
   static BoxDecoration chapterItemDecoration = BoxDecoration(
     color: Colors.white,
     borderRadius: BorderRadius.circular(AppDimensions.cardBorderRadius),
@@ -403,35 +418,38 @@ class AppStyles {
       ),
     ],
   );
-  
+
   // Navbar Add to Card styles
   static const Color navbarBgColor = Colors.white;
-  static const Color navbarShadowColor = Color(0x0D000000); // Colors.black.withOpacity(0.05)
+  static const Color navbarShadowColor =
+      Color(0x0D000000); // Colors.black.withOpacity(0.05)
   static const Color priceColor = Colors.blue;
   static const Color oldPriceColor = Colors.grey;
-  static const Color addToCartBgColor = Color(0xFFE3F2FD); // Colors.blue.shade50
-  static const Color addToCartBorderColor = Color(0xFF90CAF9); // Colors.blue.shade300
+  static const Color addToCartBgColor =
+      Color(0xFFE3F2FD); // Colors.blue.shade50
+  static const Color addToCartBorderColor =
+      Color(0xFF90CAF9); // Colors.blue.shade300
   static const Color addToCartIconColor = Colors.blue;
   static const Color registerButtonBgColor = Colors.blue;
   static const Color registerButtonTextColor = Colors.white;
-  
+
   static const TextStyle priceTextStyle = TextStyle(
     fontSize: 18,
     fontWeight: FontWeight.bold,
     color: priceColor,
   );
-  
+
   static const TextStyle oldPriceTextStyle = TextStyle(
     fontSize: 12,
     decoration: TextDecoration.lineThrough,
     color: oldPriceColor,
   );
-  
+
   static const TextStyle registerButtonTextStyle = TextStyle(
     fontWeight: FontWeight.bold,
     fontSize: 16,
   );
-  
+
   static BoxDecoration navbarBoxDecoration = BoxDecoration(
     color: navbarBgColor,
     boxShadow: [
@@ -442,10 +460,13 @@ class AppStyles {
       ),
     ],
   );
-  
+
   static BoxDecoration continueStudyButtonDecoration = BoxDecoration(
     gradient: LinearGradient(
-      colors: [Color(0xFF66BB6A), Color(0xFF388E3C)], // Colors.green.shade400, Colors.green.shade700
+      colors: [
+        Color(0xFF66BB6A),
+        Color(0xFF388E3C)
+      ], // Colors.green.shade400, Colors.green.shade700
     ),
     borderRadius: BorderRadius.circular(8),
     boxShadow: [
@@ -456,19 +477,19 @@ class AppStyles {
       ),
     ],
   );
-  
+
   static BoxDecoration addToCartButtonDecoration = BoxDecoration(
     color: addToCartBgColor,
     borderRadius: BorderRadius.circular(8),
     border: Border.all(color: addToCartBorderColor),
   );
-  
+
   static ButtonStyle continueStudyButtonStyle = ElevatedButton.styleFrom(
     foregroundColor: Colors.white,
     backgroundColor: Colors.transparent,
     elevation: 0,
   );
-  
+
   static ButtonStyle registerButtonStyle = ElevatedButton.styleFrom(
     backgroundColor: registerButtonBgColor,
     foregroundColor: registerButtonTextColor,
@@ -477,4 +498,99 @@ class AppStyles {
       borderRadius: BorderRadius.circular(8),
     ),
   );
+
+  // Course screen styles
+  static const Color courseScreenBgColor = Colors.white;
+  static const Color appBarColor = Colors.blue;
+  static const Color filterButtonBgColor = Colors.blue;
+  static const Color filterButtonSelectedColor =
+      Color(0xFF0D47A1); // Colors.blue[900]
+  static const Color filterButtonTextColor = Colors.white;
+
+  // Category Filter Dialog styles
+  static const Color dialogBgColor = Colors.white;
+  static const Color dialogHeaderColor = Color(0xFF1976D2); // Colors.blue[700]
+  static const Color dialogHeaderTextColor = Colors.white;
+  static const Color categoryChipBgColor =
+      Color(0xFFE3F2FD); // Colors.blue.shade50
+  static const Color categoryChipSelectedBgColor =
+      Color(0xFF2196F3); // Colors.blue
+  static const Color categoryChipBorderColor =
+      Color(0xFF90CAF9); // Colors.blue.shade200
+  static const Color categoryChipSelectedBorderColor =
+      Color(0xFF1976D2); // Colors.blue.shade700
+  static const Color categoryChipTextColor =
+      Color(0xFF1976D2); // Colors.blue.shade700
+  static const Color categoryChipSelectedTextColor = Colors.white;
+  static const Color dialogActionButtonBgColor =
+      Color(0xFF1976D2); // Colors.blue[700]
+  static const Color dialogActionButtonTextColor = Colors.white;
+  static const Color dialogClearButtonBgColor = Colors.white;
+  static const Color dialogClearButtonTextColor = Colors.red;
+  static const Color dialogClearButtonBorderColor = Colors.red;
+
+  static const TextStyle dialogTitleStyle = TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.bold,
+    color: dialogHeaderTextColor,
+  );
+
+  static const TextStyle categoryChipTextStyle = TextStyle(
+    fontSize: 14,
+    color: categoryChipTextColor,
+    fontWeight: FontWeight.w500,
+  );
+
+  static const TextStyle categoryChipSelectedTextStyle = TextStyle(
+    fontSize: 14,
+    color: categoryChipSelectedTextColor,
+    fontWeight: FontWeight.w600,
+  );
+
+  static ButtonStyle filterActionButtonStyle = ElevatedButton.styleFrom(
+    backgroundColor: dialogActionButtonBgColor,
+    foregroundColor: dialogActionButtonTextColor,
+    elevation: 2,
+    padding: EdgeInsets.symmetric(
+      horizontal: AppDimensions.standardPadding,
+      vertical: AppDimensions.buttonHeight,
+    ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+  );
+
+  static ButtonStyle clearFilterButtonStyle = OutlinedButton.styleFrom(
+    foregroundColor: dialogClearButtonTextColor,
+    side: BorderSide(color: dialogClearButtonBorderColor),
+    padding: EdgeInsets.symmetric(
+      horizontal: AppDimensions.standardPadding,
+      vertical: AppDimensions.buttonHeight,
+    ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+  );
+
+  static BoxDecoration categoryFilterChipDecoration = BoxDecoration(
+    color: categoryChipBgColor,
+    borderRadius: BorderRadius.circular(20),
+    border: Border.all(color: categoryChipBorderColor),
+  );
+
+  static BoxDecoration categoryChipSelectedDecoration = BoxDecoration(
+    color: categoryChipSelectedBgColor,
+    borderRadius: BorderRadius.circular(20),
+    border: Border.all(color: categoryChipSelectedBorderColor),
+  );
+
+  static ButtonStyle courseScreenFilterButtonStyle(bool isSelected) =>
+      ElevatedButton.styleFrom(
+        backgroundColor:
+            isSelected ? filterButtonSelectedColor : filterButtonBgColor,
+        padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      );
 }

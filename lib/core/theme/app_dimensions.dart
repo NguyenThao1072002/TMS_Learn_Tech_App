@@ -55,4 +55,16 @@ class AppDimensions {
   // Button dimensions
   static const double standardButtonHeight = 45.0;
   static const double roundButtonRadius = 22.0;
+  
+  // Category Filter Dialog dimensions
+  static const double dialogMaxWidth = 650.0;
+  static const double dialogMaxHeight = 500.0;
+  static const double dialogHeaderHeight = 60.0;
+  static const double dialogContentPadding = 16.0;
+  static const double dialogFooterHeight = 60.0;
+  static const double categoryChipHeight = 40.0;
+  static const double categoryChipHorizontalPadding = 16.0;
+  static const double categoryChipVerticalPadding = 8.0;
+  static const double categoryGridSpacing = 8.0;
+  static const double categoryActionButtonWidth = 120.0;
 }

@@ -12,4 +12,5 @@ abstract class CourseRepository {
   Future<List<ReviewCourseModel>> getReviewCourse(int id);
   Future<List<StructureCourseModel>> getStructureCourse(int id);
   Future<List<CourseCardModel>> getRelatedCourse(int categoryId);
+  
 }
