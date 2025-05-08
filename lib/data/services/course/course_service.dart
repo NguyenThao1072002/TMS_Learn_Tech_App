@@ -6,6 +6,7 @@ import 'package:tms_app/core/utils/api_response_helper.dart';
 import 'package:tms_app/data/models/course/course_detail/overview_course_model.dart';
 import 'package:tms_app/data/models/course/course_detail/structure_course_model.dart';
 import 'package:tms_app/data/models/course/course_detail/review_course_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CourseService {
   final String apiUrl = "${Constants.BASE_URL}/api";
@@ -73,7 +74,7 @@ class CourseService {
 
   Future<OverviewCourseModel?> getOverviewCourseDetail(int id) async {
     try {
-      final endpoint = '$apiUrl/api/courses/$id';
+      final endpoint = '$apiUrl/courses/$id';
 
       try {
         final response = await dio.get(endpoint,
@@ -112,7 +113,7 @@ class CourseService {
 
   Future<List<ReviewCourseModel>> getReviewCourse(int id) async {
     try {
-      final endpoint = '$apiUrl/api/reviews/course/$id';
+      final endpoint = '$apiUrl/reviews/course/$id';
 
       try {
         final response = await dio.get(endpoint,
@@ -178,21 +179,29 @@ class CourseService {
     }
   }
 
-  Future<List<OverviewCourseModel>> getRelatedCourse(int categoryId) async {
+  Future<List<CourseCardModel>> getRelatedCourse(int categoryId) async {
     try {
       final endpoint = '$apiUrl/courses/public/filter?categoryId=$categoryId';
-      print("Gọi API khóa học liên quan: $endpoint");
 
       try {
         final response = await dio.get(endpoint,
             options: Options(
               validateStatus: (status) => true,
-              headers: {'Accept': 'application/json'},
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              },
             ));
 
         if (response.statusCode == 200) {
-           return ApiResponseHelper.processList(
-              response.data, OverviewCourseModel.fromJson);
+          if (response.data is List) {
+            return (response.data as List)
+                .map((item) => CourseCardModel.fromJson(item))
+                .toList();
+          }
+          
+          return ApiResponseHelper.processList(
+              response.data, CourseCardModel.fromJson);
         } else {
           return [];
         }
@@ -202,5 +211,10 @@ class CourseService {
     } catch (e) {
       return [];
     }
+  }
+
+  Future<String> _getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('jwt') ?? '';
   }
 }

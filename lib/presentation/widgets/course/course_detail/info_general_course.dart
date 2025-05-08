@@ -144,20 +144,6 @@ class InfoGeneralCourse extends StatelessWidget {
                   ),
                 ),
 
-                // Subtitle
-                if (overviewCourse?.description != null)
-                  Text(
-                    overviewCourse!.description ?? '',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-
-                SizedBox(height: 8),
-
                 // Stats row (rating, students, duration)
                 Row(
                   children: [

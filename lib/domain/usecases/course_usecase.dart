@@ -33,7 +33,7 @@ class CourseUseCase {
     return await courseRepository.getReviewCourse(id);
   }
 
-  Future<List<OverviewCourseModel>> getRelatedCourse(int categoryId) async {
+  Future<List<CourseCardModel>> getRelatedCourse(int categoryId) async {
     return await courseRepository.getRelatedCourse(categoryId);
   }
 }
