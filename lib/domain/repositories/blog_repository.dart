@@ -4,6 +4,10 @@ abstract class BlogRepository {
   Future<List<BlogCardModel>> getAllBlogs();
   Future<List<BlogCardModel>> getPopularBlogs();
   Future<List<BlogCardModel>> getBlogsByCategory(String categoryId);
+  Future<BlogCardModel?> getBlogById(String id);
+  Future<bool> incrementBlogView(String id);
+  Future<List<BlogCardModel>> getRelatedBlogs(String categoryId,
+      {String? currentBlogId, int page = 0, int size = 10});
   // Future<Blog> getBlogById(String id);
   // Future<void> createBlog(Blog blog);
   // Future<void> updateBlog(Blog blog);

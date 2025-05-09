@@ -248,11 +248,13 @@ class _BlogListScreenState extends State<BlogListScreen> {
                 // Hiển thị các bài viết còn lại
                 return BlogCard(
                   blog: blog,
-                  onTap: (blogModel) {
+                  onTapById: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => DetailBlogScreen(blog: blogModel),
+                        builder: (context) => DetailBlogScreen(
+                          blogId: blog.id,
+                        ),
                       ),
                     );
                   },
@@ -271,7 +273,7 @@ class _BlogListScreenState extends State<BlogListScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DetailBlogScreen(blog: blog),
+            builder: (context) => DetailBlogScreen(blogId: blog.id),
           ),
         );
       },

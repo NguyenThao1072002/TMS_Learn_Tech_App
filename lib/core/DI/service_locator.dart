@@ -26,6 +26,11 @@ import 'package:tms_app/data/services/category_service.dart'; // Import Category
 import 'package:tms_app/data/repositories/category_repository_impl.dart'; // Import CategoryRepositoryImpl
 import 'package:tms_app/domain/repositories/category_repository.dart'; // Import CategoryRepository
 import 'package:tms_app/domain/usecases/category_usecase.dart'; // Import CategoryUseCase
+// Practice Test imports
+import 'package:tms_app/data/services/practice_test/practice_test_service.dart';
+import 'package:tms_app/data/repositories/practice_test_repository_impl.dart';
+import 'package:tms_app/domain/repositories/practice_test_repository.dart';
+import 'package:tms_app/domain/usecases/practice_test_usecase.dart';
 
 // Đảm bảo các import không bị xóa bởi công cụ IDE
 // ignore: unused_element
@@ -35,10 +40,18 @@ void _keepImports() {
   CategoryRepositoryImpl? b;
   CategoryRepository? c;
   CategoryUseCase? d;
+  PracticeTestService? e;
+  PracticeTestRepositoryImpl? f;
+  PracticeTestRepository? g;
+  PracticeTestUseCase? h;
   a;
   b;
   c;
   d;
+  e;
+  f;
+  g;
+  h;
 }
 
 // Khởi tạo GetIt cho Dependency Injection
@@ -93,14 +106,15 @@ void setupLocator() {
 
 // Đăng ký tất cả các Service
 void _registerServices() {
-  sl.registerLazySingleton(() => AuthService(sl())); 
-  sl.registerLazySingleton(() => UserService(sl())); 
+  sl.registerLazySingleton(() => AuthService(sl()));
+  sl.registerLazySingleton(() => UserService(sl()));
 
   // Sử dụng lớp CourseService gốc
   sl.registerLazySingleton(() => CourseService(sl()));
   sl.registerLazySingleton(() => BlogService(sl()));
-  sl.registerLazySingleton(() => BannerService()); 
-  sl.registerLazySingleton(() => CategoryService()); 
+  sl.registerLazySingleton(() => BannerService());
+  sl.registerLazySingleton(() => CategoryService());
+  sl.registerLazySingleton(() => PracticeTestService(sl()));
 }
 
 // Đăng ký tất cả các Repository
@@ -115,15 +129,19 @@ void _registerRepositories() {
   sl.registerLazySingleton<CourseRepository>(
       () => CourseRepositoryImpl(courseService: sl<CourseService>()));
 
-  sl.registerLazySingleton<BannerRepository>(() =>
-      BannerRepositoryImpl(bannerService: sl())); 
+  sl.registerLazySingleton<BannerRepository>(
+      () => BannerRepositoryImpl(bannerService: sl()));
 
-  sl.registerLazySingleton<CategoryRepository>(() => CategoryRepositoryImpl(
-      categoryService: sl()));
+  sl.registerLazySingleton<CategoryRepository>(
+      () => CategoryRepositoryImpl(categoryService: sl()));
 
   sl.registerLazySingleton<BlogRepository>(() => BlogRepositoryImpl(
         blogService: sl(),
-      )); 
+      ));
+
+  sl.registerLazySingleton<PracticeTestRepository>(() =>
+      PracticeTestRepositoryImpl(
+          practiceTestService: sl<PracticeTestService>()));
 }
 
 // Đăng ký tất cả các UseCase
@@ -144,4 +162,6 @@ void _registerUseCases() {
     final repo = sl<CategoryRepository>();
     return CategoryUseCase(repo);
   });
+
+  sl.registerFactory(() => PracticeTestUseCase(sl()));
 }

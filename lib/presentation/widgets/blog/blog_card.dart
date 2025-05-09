@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:tms_app/data/models/blog/blog_card_model.dart';
+
 class BlogCard extends StatelessWidget {
   final BlogCardModel blog;
   final int? selectedIndex;
   final void Function(BlogCardModel)? onTap;
+  final void Function()? onTapById;
   final bool isHorizontal;
 
   const BlogCard({
@@ -12,6 +14,7 @@ class BlogCard extends StatelessWidget {
     required this.blog,
     this.selectedIndex,
     this.onTap,
+    this.onTapById,
     this.isHorizontal = false,
   }) : super(key: key);
 
@@ -25,7 +28,13 @@ class BlogCard extends StatelessWidget {
 
   Widget _buildVerticalCard(BuildContext context) {
     return GestureDetector(
-      onTap: () => onTap?.call(blog),
+      onTap: () {
+        if (onTapById != null) {
+          onTapById?.call();
+        } else {
+          onTap?.call(blog);
+        }
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
@@ -104,7 +113,13 @@ class BlogCard extends StatelessWidget {
 
   Widget _buildHorizontalCard(BuildContext context) {
     return GestureDetector(
-      onTap: () => onTap?.call(blog),
+      onTap: () {
+        if (onTapById != null) {
+          onTapById?.call();
+        } else {
+          onTap?.call(blog);
+        }
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
@@ -245,9 +260,7 @@ class BlogCard extends StatelessWidget {
               radius: 15,
               backgroundColor: Colors.grey.shade200,
               child: Text(
-                blog.authorName.isNotEmpty
-                    ? blog.authorName[0]
-                    : '?',
+                blog.authorName.isNotEmpty ? blog.authorName[0] : '?',
                 style: TextStyle(
                   color: Colors.grey.shade700,
                   fontWeight: FontWeight.bold,
