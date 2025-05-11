@@ -1,51 +1,67 @@
 class DocumentModel {
-  final String id;
+  final int id;
   final String title;
-  final String type;
-  final int pageCount;
-  int views;
-  int downloads;
-  final String? category;
-  final String thumbnailUrl;
+  final int categoryId;
+  final String categoryName;
+  final String updatedAt;
+  final String createdAt;
+  final String format;
+  final String size;
+  final int view;
+  final int downloads;
+  final String status;
+  final String fileUrl;
+  final String description;
 
   DocumentModel({
     required this.id,
     required this.title,
-    required this.type,
-    required this.pageCount,
-    required this.views,
+    required this.categoryId,
+    required this.categoryName,
+    required this.updatedAt,
+    required this.createdAt,
+    required this.format,
+    required this.size,
+    required this.view,
     required this.downloads,
-    this.category,
-    required this.thumbnailUrl,
+    required this.status,
+    required this.fileUrl,
+    required this.description,
   });
 
-  void increaseViews() {
-    views++;
-  }
-
-  void incrementDownloads() {
-    downloads++;
-  }
-
-  DocumentModel copyWith({
-    String? id,
-    String? title,
-    String? type,
-    int? pageCount,
-    int? views,
-    int? downloads,
-    String? category,
-    String? thumbnailUrl,
-  }) {
+  factory DocumentModel.fromJson(Map<String, dynamic> json) {
     return DocumentModel(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      type: type ?? this.type,
-      pageCount: pageCount ?? this.pageCount,
-      views: views ?? this.views,
-      downloads: downloads ?? this.downloads,
-      category: category ?? this.category,
-      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      id: json['id'] ?? 0,
+      title: json['title'] ?? '',
+      categoryId: json['categoryId'] ?? 0,
+      categoryName: json['categoryName'] ?? '',
+      updatedAt: json['updatedAt'] ?? '',
+      createdAt: json['createdAt'] ?? '',
+      format: json['format'] ?? '',
+      size: json['size'] ?? '',
+      view: json['view'] ?? 0,
+      downloads: json['downloads'] ?? 0,
+      status: json['status'] ?? '',
+      fileUrl: json['fileUrl'] ?? '',
+      description: json['description'] ?? '',
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'categoryId': categoryId,
+      'categoryName': categoryName,
+      'updatedAt': updatedAt,
+      'createdAt': createdAt,
+      'format': format,
+      'size': size,
+      'view': view,
+      'downloads': downloads,
+      'status': status,
+      'fileUrl': fileUrl,
+      'description': description,
+    };
   }
 }

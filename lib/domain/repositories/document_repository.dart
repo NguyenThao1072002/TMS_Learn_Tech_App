@@ -1,6 +1,19 @@
-import 'package:tms_app/data/models/document/document_model.dart';
+import '../../data/models/document/document_model.dart';
 
 abstract class DocumentRepository {
-  Future<List<DocumentModel>> getDocuments();
-  Future<void> incrementViews(DocumentModel document);
+  Future<List<DocumentModel>> getAllDocuments();
+
+  Future<List<DocumentModel>> getPopularDocuments();
+
+  Future<List<DocumentModel>> getDocumentsByCategory(int categoryId);
+
+  Future<List<DocumentModel>> searchDocuments(String keyword);
+
+  Future<DocumentModel?> getDocumentDetail(int id);
+
+  Future<List<DocumentModel>> getNewDocuments();
+
+  Future<bool> incrementDownload(int documentId);
+
+  Future<bool> incrementView(int documentId);
 }

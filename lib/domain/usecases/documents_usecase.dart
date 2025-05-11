@@ -1,22 +1,40 @@
 import 'package:tms_app/data/models/document/document_model.dart';
 import 'package:tms_app/domain/repositories/document_repository.dart';
 
-class FetchDocumentsUseCase {
+class DocumentUseCase {
   final DocumentRepository repository;
 
-  FetchDocumentsUseCase(this.repository);
+  DocumentUseCase(this.repository);
 
-  Future<List<DocumentModel>> call() async {
-    return await repository.getDocuments();
+  Future<List<DocumentModel>> getAllDocuments() async {
+    return await repository.getAllDocuments();
   }
-}
 
-class IncrementDocumentViewsUseCase {
-  final DocumentRepository repository;
+  Future<List<DocumentModel>> getPopularDocuments() async {
+    return await repository.getPopularDocuments();
+  }
 
-  IncrementDocumentViewsUseCase(this.repository);
+  Future<List<DocumentModel>> getDocumentsByCategory(int categoryId) async {
+    return await repository.getDocumentsByCategory(categoryId);
+  }
 
-  Future<void> call(DocumentModel document) async {
-    await repository.incrementViews(document);
+  Future<List<DocumentModel>> searchDocuments(String keyword) async {
+    return await repository.searchDocuments(keyword);
+  }
+
+  Future<DocumentModel?> getDocumentDetail(int id) async {
+    return await repository.getDocumentDetail(id);
+  }
+
+  Future<List<DocumentModel>> getNewDocuments() async {
+    return await repository.getNewDocuments();
+  }
+
+  Future<bool> incrementDownload(int documentId) async {
+    return await repository.incrementDownload(documentId);
+  }
+
+  Future<bool> incrementView(int documentId) async {
+    return await repository.incrementView(documentId);
   }
 }

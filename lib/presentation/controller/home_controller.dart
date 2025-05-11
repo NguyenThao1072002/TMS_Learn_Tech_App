@@ -24,11 +24,12 @@ class HomeController {
 // Phương thức lấy danh sách banner
   Future<void> getHomePageBannerForMobile() async {
     try {
-      List<BannerModel> banners = await bannerUseCase.getBannersByPositionAndPlatform('home', 'mobile');
-      bannerList.value = banners; 
+      List<BannerModel> banners =
+          await bannerUseCase.getBannersByPositionAndPlatform('home', 'mobile');
+      bannerList.value = banners;
     } catch (e) {
       print("Lỗi khi tải banner trang chủ cho phiên bản di động: $e");
-      bannerList.value = []; 
+      bannerList.value = [];
     }
   }
 

@@ -3,16 +3,20 @@ import 'package:get_it/get_it.dart';
 import 'package:tms_app/data/repositories/blog_repository_impl.dart';
 
 import 'package:tms_app/data/repositories/course_repository_impl.dart';
+import 'package:tms_app/data/repositories/document_repository_impl.dart';
 import 'package:tms_app/data/services/auth_service.dart'; // Import AuthService
 import 'package:tms_app/data/services/blog_service.dart';
 import 'package:tms_app/data/services/course/course_service.dart';
+import 'package:tms_app/data/services/document/document_service.dart';
 import 'package:tms_app/data/services/user_service.dart'; // Import UserService
 import 'package:tms_app/data/repositories/account_repository_impl.dart';
 import 'package:tms_app/domain/repositories/account_repository.dart';
 import 'package:tms_app/domain/repositories/blog_repository.dart';
 import 'package:tms_app/domain/repositories/course_repository.dart';
+import 'package:tms_app/domain/repositories/document_repository.dart';
 import 'package:tms_app/domain/usecases/blog_usercase.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
+import 'package:tms_app/domain/usecases/documents_usecase.dart';
 import 'package:tms_app/domain/usecases/forgot_password_usecase.dart';
 import 'package:tms_app/domain/usecases/login_usecase.dart';
 import 'package:tms_app/domain/usecases/register_usecase.dart';
@@ -115,6 +119,7 @@ void _registerServices() {
   sl.registerLazySingleton(() => BannerService());
   sl.registerLazySingleton(() => CategoryService());
   sl.registerLazySingleton(() => PracticeTestService(sl()));
+  sl.registerLazySingleton(() => DocumentService(sl()));
 }
 
 // Đăng ký tất cả các Repository
@@ -142,6 +147,9 @@ void _registerRepositories() {
   sl.registerLazySingleton<PracticeTestRepository>(() =>
       PracticeTestRepositoryImpl(
           practiceTestService: sl<PracticeTestService>()));
+
+  sl.registerLazySingleton<DocumentRepository>(
+      () => DocumentRepositoryImpl(documentService: sl<DocumentService>()));
 }
 
 // Đăng ký tất cả các UseCase
@@ -157,6 +165,8 @@ void _registerUseCases() {
   sl.registerFactory(() => BannerUseCase(sl()));
 
   sl.registerFactory(() => BlogUsercase(sl()));
+
+  sl.registerLazySingleton(() => DocumentUseCase(sl()));
 
   sl.registerLazySingleton(() {
     final repo = sl<CategoryRepository>();

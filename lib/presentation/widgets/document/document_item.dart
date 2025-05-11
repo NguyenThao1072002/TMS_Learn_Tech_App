@@ -66,7 +66,7 @@ class _DocumentItemState extends State<DocumentItem>
                     right: 10,
                     child: _buildViewsWidget(),
                   ),
-                  if (widget.document.category != null)
+                  if (widget.document.categoryName != null)
                     Positioned(
                       bottom: 10,
                       left: 10,
@@ -124,7 +124,7 @@ class _DocumentItemState extends State<DocumentItem>
   }
 
   Widget _getDocumentIcon() {
-    String type = widget.document.type.toLowerCase();
+    String type = widget.document.format.toLowerCase();
     IconData iconData;
     Color iconColor;
 
@@ -180,7 +180,7 @@ class _DocumentItemState extends State<DocumentItem>
         ],
       ),
       child: Text(
-        widget.document.type.toUpperCase(),
+        widget.document.format.toUpperCase(),
         style: const TextStyle(
           color: Colors.white,
           fontSize: 12,
@@ -213,7 +213,7 @@ class _DocumentItemState extends State<DocumentItem>
           ),
           const SizedBox(width: 4),
           Text(
-            widget.document.category!,
+            widget.document.categoryName!,
             style: TextStyle(
               color: Colors.grey[800],
               fontSize: 12,
@@ -226,9 +226,9 @@ class _DocumentItemState extends State<DocumentItem>
   }
 
   IconData _getCategoryIcon() {
-    if (widget.document.category == null) return Icons.folder;
+    if (widget.document.categoryName == null) return Icons.folder;
 
-    switch (widget.document.category!.toLowerCase()) {
+    switch (widget.document.categoryName!.toLowerCase()) {
       case 'giáo dục':
         return Icons.school;
       case 'công nghệ':
@@ -247,7 +247,7 @@ class _DocumentItemState extends State<DocumentItem>
   }
 
   Color _getTypeColor() {
-    String type = widget.document.type.toLowerCase();
+    String type = widget.document.format.toLowerCase();
     if (type == 'pdf') {
       return Colors.red;
     } else if (type == 'excel' || type == 'xls' || type == 'xlsx') {
@@ -281,7 +281,7 @@ class _DocumentItemState extends State<DocumentItem>
           const Icon(Icons.remove_red_eye, color: Colors.white, size: 14),
           const SizedBox(width: 4),
           Text(
-            '${widget.document.views}',
+            '${widget.document.view}',
             style: const TextStyle(color: Colors.white, fontSize: 12),
           ),
         ],
@@ -298,7 +298,7 @@ class _DocumentItemState extends State<DocumentItem>
             Icon(Icons.description, size: 14, color: Colors.grey[500]),
             const SizedBox(width: 4),
             Text(
-              '${widget.document.pageCount} trang',
+              '${widget.document.size} ',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey[500],
