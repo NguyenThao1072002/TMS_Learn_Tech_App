@@ -49,17 +49,20 @@ class AuthService {
   Future<Map<String, dynamic>?> register(Map<String, dynamic> body) async {
     try {
       final response = await dio.post(
-        '$baseUrl/dang-ky', // URL cho đăng ký
+        '$baseUrl/register-generate', // URL cho đăng ký
         data: jsonEncode(body), // Gửi thông tin đăng ký dưới dạng JSON
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
       if (response.statusCode == 200) {
         final data = response.data;
+        // Trả về đúng định dạng response từ API
         return {
-          'jwt': data['jwt'],
-          'refreshToken': data['refreshToken'],
-          'userInfo': data['responsiveDTOJWT'],
+          'status': data['status'],
+          'message': data['message'],
+          'data': data['data'],
+          'email':
+              body['email'], // Trả về email để sử dụng cho OTP verification
         };
       } else {
         print('Registration failed with status code: ${response.statusCode}');

@@ -191,11 +191,31 @@ class BlogCard extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          timeago.format(blog.createdAt, locale: 'vi'),
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade500,
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Text(
+                                timeago.format(blog.createdAt, locale: 'vi'),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.visibility,
+                                size: 14,
+                                color: Colors.grey.shade500,
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                '${blog.views}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         Icon(
@@ -279,6 +299,20 @@ class BlogCard extends StatelessWidget {
         ),
         Row(
           children: [
+            Icon(
+              Icons.visibility,
+              size: 16,
+              color: Colors.grey.shade500,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '${blog.views}',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade500,
+              ),
+            ),
+            const SizedBox(width: 8),
             Text(
               timeago.format(blog.createdAt, locale: 'vi'),
               style: TextStyle(

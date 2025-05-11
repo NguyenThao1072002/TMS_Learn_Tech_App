@@ -7,7 +7,7 @@ import 'package:tms_app/core/theme/app_styles.dart';
 class ForgotPasswordController {
   final AccountRepository accountRepository;
   final RxString errorMessage = ''.obs;
-  
+
   ForgotPasswordController({
     required this.accountRepository,
   });
@@ -28,7 +28,6 @@ class ForgotPasswordController {
     }
   }
 
-
   // Future<bool> sendOtpToPhone(String phone) async {
   //   try {
   //     final result = await accountRepository.sendOtpToPhone({'phone': phone});
@@ -40,11 +39,11 @@ class ForgotPasswordController {
   //   }
   // }
 
-  Future<bool> verifyOtp(String otp, String method) async {
+  Future<bool> verifyOtp(String otp, String email) async {
     try {
       return await accountRepository.verifyOtp({
         'otp': otp,
-        'method': method,
+        'email': email,
       });
     } catch (e) {
       throw Exception('Không thể xác thực mã OTP: ${e.toString()}');

@@ -75,7 +75,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
     if (pickedDate != null) {
       setState(() {
-        _birthdayController.text = DateFormat('dd/MM/yyyy').format(pickedDate);
+        _birthdayController.text = DateFormat('yyyy-MM-dd HH:mm:ss').format(
+            DateTime(
+                pickedDate.year, pickedDate.month, pickedDate.day, 0, 0, 0));
       });
     }
   }

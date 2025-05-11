@@ -6,14 +6,14 @@ class RegisterUseCase {
   RegisterUseCase({required this.accountRepository});
 
   Future<Map<String, dynamic>?> call(
-    String name,
+    String fullname,
     String email,
     String birthday,
     String phone,
     String password,
   ) async {
     final body = {
-      'name': name,
+      'fullname': fullname,
       'email': email,
       'birthday': birthday,
       'phone': phone,

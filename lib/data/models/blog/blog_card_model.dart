@@ -83,4 +83,45 @@ class BlogCardModel {
       'deleted': deleted,
     };
   }
+
+  // Tạo bản sao với một số thuộc tính được thay đổi
+  BlogCardModel copyWith({
+    String? id,
+    String? title,
+    String? content,
+    String? sumary,
+    String? authorId,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool? status,
+    bool? featured,
+    String? cat_blog_id,
+    String? image,
+    int? views,
+    int? commentCount,
+    DateTime? deletedDate,
+    String? catergoryName,
+    String? authorName,
+    bool? deleted,
+  }) {
+    return BlogCardModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      sumary: sumary ?? this.sumary,
+      authorId: authorId ?? this.authorId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      status: status ?? this.status,
+      featured: featured ?? this.featured,
+      cat_blog_id: cat_blog_id ?? this.cat_blog_id,
+      image: image ?? this.image,
+      views: views ?? this.views,
+      commentCount: commentCount ?? this.commentCount,
+      deletedDate: deletedDate ?? this.deletedDate,
+      catergoryName: catergoryName ?? this.catergoryName,
+      authorName: authorName ?? this.authorName,
+      deleted: deleted ?? this.deleted,
+    );
+  }
 }
