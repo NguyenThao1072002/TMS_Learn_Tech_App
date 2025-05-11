@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:tms_app/data/models/blog/blog_card_model.dart';
 import 'package:tms_app/domain/usecases/blog_usercase.dart';
 import 'package:tms_app/presentation/widgets/blog/blog_card.dart';
+import 'package:tms_app/presentation/widgets/blog/related_blog.dart';
 
 class DetailBlogScreen extends StatefulWidget {
   final String blogId;
@@ -358,7 +359,20 @@ class _DetailBlogScreenState extends State<DetailBlogScreen> {
                       // Bài viết liên quan
                       const SizedBox(height: 32),
 
-                      _buildRelatedBlogsSection(),
+                      FutureBuilder<BlogCardModel?>(
+                        future: _blogFuture,
+                        builder: (context, blogSnapshot) {
+                          if (blogSnapshot.hasData &&
+                              blogSnapshot.data != null) {
+                            final future = _blogUsecase.getRelatedBlogs(
+                                blogSnapshot.data!.cat_blog_id,
+                                currentBlogId: widget.blogId,
+                                size: 5);
+                            return RelatedBlog(relatedBlogsFuture: future);
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -367,81 +381,6 @@ class _DetailBlogScreenState extends State<DetailBlogScreen> {
           );
         },
       ),
-    );
-  }
-
-  Widget _buildRelatedBlogsSection() {
-    return FutureBuilder<List<BlogCardModel>>(
-      future: _blogFuture.then((blog) async {
-        if (blog != null) {
-          return await _blogUsecase.getRelatedBlogs(blog.cat_blog_id,
-              currentBlogId: widget.blogId, size: 5);
-        }
-        return [];
-      }),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 20),
-              child: SizedBox(
-                height: 30,
-                width: 30,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          );
-        }
-
-        final relatedBlogs = snapshot.data ?? [];
-
-        if (relatedBlogs.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Bài viết liên quan',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 240, // Chiều cao cố định cho danh sách cuộn ngang
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: relatedBlogs.length,
-                itemBuilder: (context, index) {
-                  final blog = relatedBlogs[index];
-                  return Container(
-                    width: 200, // Chiều rộng cố định cho mỗi mục
-                    margin: const EdgeInsets.only(right: 12),
-                    child: BlogCard(
-                      blog: blog,
-                      isHorizontal: false,
-                      onTapById: () {
-                        // Điều hướng đến chi tiết bài viết khi nhấp vào
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DetailBlogScreen(
-                              blogId: blog.id,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 }

@@ -46,6 +46,24 @@ class PracticeTestUseCase {
     );
   }
 
+  Future<bool> submitPracticeTestReview(
+    int testId,
+    int accountId,
+    int rating, {
+    String? review,
+  }) async {
+    return await practiceTestRepository.submitPracticeTestReview(
+      testId,
+      accountId,
+      rating,
+      review: review,
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getPracticeTestCategories() async {
+    return await practiceTestRepository.getPracticeTestCategories();
+  }
+
   Future<List<PracticeTestCardModel>> getFilteredPracticeTests({
     String? title,
     int? courseId,
@@ -56,13 +74,18 @@ class PracticeTestUseCase {
     double? maxPrice,
     int? minDiscount,
     int? maxDiscount,
+    String? author,
+    int? categoryId,
     int page = 0,
     int size = 10,
   }) async {
     // First get all practice tests with basic filters
+    // If categoryId is provided, use it as courseId parameter
+    final effectiveCourseId = categoryId ?? courseId;
+
     final tests = await practiceTestRepository.getPracticeTests(
       title: title,
-      courseId: courseId,
+      courseId: effectiveCourseId,
       accountId: accountId,
       page: page,
       size: size,
@@ -100,6 +123,11 @@ class PracticeTestUseCase {
         if (maxDiscount != null && discount > maxDiscount) {
           return false;
         }
+      }
+
+      // Filter by author if specified
+      if (author != null && author.isNotEmpty && test.author != author) {
+        return false;
       }
 
       return true;

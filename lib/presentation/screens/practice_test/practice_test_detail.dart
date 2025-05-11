@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:tms_app/presentation/screens/practice_test/practice_test_list.dart';
+import 'package:get_it/get_it.dart';
+import 'package:tms_app/data/models/practice_test/practice_test_detail_model.dart';
+import 'package:tms_app/data/models/practice_test/practice_test_review_model.dart';
+import 'package:tms_app/domain/usecases/practice_test_usecase.dart';
+import 'package:tms_app/presentation/widgets/practice_test/related_practice_test.dart';
+import 'package:tms_app/presentation/widgets/practice_test/test_review_section.dart';
 
 class PracticeTestDetailScreen extends StatefulWidget {
-  final PracticeTest test;
+  final int testId;
 
-  const PracticeTestDetailScreen({Key? key, required this.test})
+  const PracticeTestDetailScreen({Key? key, required this.testId})
       : super(key: key);
 
   @override
@@ -13,266 +18,630 @@ class PracticeTestDetailScreen extends StatefulWidget {
 }
 
 class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
-  bool _showPaymentOptions = false;
+  final PracticeTestUseCase _practiceTestUseCase =
+      GetIt.instance<PracticeTestUseCase>();
+  late Future<PracticeTestDetailModel?> _testDetailFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTestDetail();
+  }
+
+  void _loadTestDetail() {
+    // Get current user ID if available
+    int? accountId;
+    // User account ID can be obtained from authentication provider when implemented
+
+    _testDetailFuture = _practiceTestUseCase
+        .getPracticeTestDetail(
+      widget.testId,
+      accountId: accountId,
+    )
+        .then((test) {
+      if (test != null) {
+        // Add default values if the API doesn't provide the new fields
+        final updatedTest = _addDefaultValuesIfNeeded(test);
+        return updatedTest;
+      }
+      return test;
+    });
+  }
+
+  PracticeTestDetailModel _addDefaultValuesIfNeeded(
+      PracticeTestDetailModel test) {
+    // If the API doesn't return any values for our new fields, provide some default ones
+    List<String> testContents = test.testContents;
+    List<String> knowledgeRequirements = test.knowledgeRequirements;
+
+    // Add default values for testContents if empty
+    if (testContents.isEmpty) {
+      testContents = [
+        'Kiến thức core và chuyên sâu về ${test.courseTitle}',
+        'Kỹ năng xử lý vấn đề và debug code',
+        'Hiểu biết về các best practices và design patterns',
+        'Khả năng tối ưu hiệu suất ứng dụng',
+      ];
+    }
+
+    // Add default values for knowledgeRequirements if empty
+    if (knowledgeRequirements.isEmpty) {
+      knowledgeRequirements = [
+        'Kiến thức cơ bản về lập trình ${test.courseTitle}',
+        'Đã từng phát triển ít nhất 1 ứng dụng di động',
+        'Hiểu biết về UI/UX và component-based architecture',
+      ];
+    }
+
+    // Only create a new instance if we've modified any of the fields
+    if (testContents != test.testContents ||
+        knowledgeRequirements != test.knowledgeRequirements) {
+      return PracticeTestDetailModel(
+        testId: test.testId,
+        title: test.title,
+        description: test.description,
+        totalQuestion: test.totalQuestion,
+        courseId: test.courseId,
+        courseTitle: test.courseTitle,
+        itemCountPrice: test.itemCountPrice,
+        itemCountReview: test.itemCountReview,
+        rating: test.rating,
+        imageUrl: test.imageUrl,
+        level: test.level,
+        examType: test.examType,
+        status: test.status,
+        price: test.price,
+        cost: test.cost,
+        percentDiscount: test.percentDiscount,
+        purchased: test.purchased,
+        createdAt: test.createdAt,
+        updatedAt: test.updatedAt,
+        intro: test.intro,
+        author: test.author,
+        testContents: testContents,
+        knowledgeRequirements: knowledgeRequirements,
+      );
+    }
+
+    return test;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: CustomScrollView(
-        slivers: [
-          // App Bar with test image as background
-          SliverAppBar(
-            expandedHeight: 200,
-            pinned: true,
-            backgroundColor: const Color(0xFF3498DB),
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
+      body: FutureBuilder<PracticeTestDetailModel?>(
+        future: _testDetailFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.network(
-                    widget.test.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: const Color(0xFF3498DB),
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Colors.red.shade300,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Không thể tải thông tin đề thi',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey.shade700,
                     ),
                   ),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withOpacity(0.3),
-                          Colors.black.withOpacity(0.6),
-                        ],
-                      ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Lỗi: ${snapshot.error}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade500,
                     ),
                   ),
-                  Positioned(
-                    bottom: 16,
-                    left: 16,
-                    right: 16,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.test.title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                widget.test.category,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Icon(
-                              Icons.star,
-                              color: Color(0xFFFFC107),
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${widget.test.rating}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '(${widget.test.ratingCount} đánh giá)',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _loadTestDetail();
+                      });
+                    },
+                    child: const Text('Thử lại'),
                   ),
                 ],
               ),
-            ),
-          ),
+            );
+          }
 
-          // Content
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+          if (!snapshot.hasData || snapshot.data == null) {
+            return Center(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Test info cards
-                  Row(
+                  Icon(
+                    Icons.search_off,
+                    size: 64,
+                    color: Colors.grey.shade400,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Không tìm thấy đề thi',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Mã đề thi: ${widget.testId}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Quay lại'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final test = snapshot.data!;
+
+          return CustomScrollView(
+            slivers: [
+              // App Bar with test image as background
+              SliverAppBar(
+                expandedHeight: 200,
+                pinned: true,
+                backgroundColor: const Color(0xFF3498DB),
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      _buildInfoCard(
-                        icon: Icons.help_outline,
-                        title: '${widget.test.questionCount} câu hỏi',
-                        subtitle: 'Đa dạng độ khó',
+                      Image.network(
+                        test.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: const Color(0xFF3498DB),
+                        ),
                       ),
-                      const SizedBox(width: 12),
-                      _buildInfoCard(
-                        icon: Icons.access_time,
-                        title: '${widget.test.questionCount ~/ 2} phút',
-                        subtitle: 'Thời gian làm bài',
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withOpacity(0.3),
+                              Colors.black.withOpacity(0.6),
+                            ],
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 12),
-                      _buildInfoCard(
-                        icon: Icons.bar_chart,
-                        title: 'Trung bình',
-                        subtitle: 'Độ khó',
-                        iconColor: Colors.orange,
+                      Positioned(
+                        bottom: 16,
+                        left: 16,
+                        right: 16,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              test.title,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    test.courseTitle,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                const Icon(
+                                  Icons.star,
+                                  color: Color(0xFFFFC107),
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${test.rating}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '(${test.itemCountReview} đánh giá)',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
+                ),
+              ),
 
-                  const SizedBox(height: 24),
-
-                  // About this test
-                  const Text(
-                    'Giới thiệu đề thi',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    widget.test.description,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: Colors.grey.shade700,
-                      height: 1.5,
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // What you'll learn
-                  const Text(
-                    'Bạn sẽ được kiểm tra',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildBulletPoint(
-                      'Kiến thức core và chuyên sâu về ${widget.test.category}'),
-                  _buildBulletPoint('Kỹ năng xử lý vấn đề và debug code'),
-                  _buildBulletPoint(
-                      'Hiểu biết về các best practices và design patterns'),
-                  _buildBulletPoint('Khả năng tối ưu hiệu suất ứng dụng'),
-
-                  const SizedBox(height: 24),
-
-                  // Requirements
-                  const Text(
-                    'Yêu cầu kiến thức',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildBulletPoint(
-                      'Kiến thức cơ bản về lập trình ${widget.test.category}'),
-                  _buildBulletPoint(
-                      'Đã từng phát triển ít nhất 1 ứng dụng di động'),
-                  _buildBulletPoint(
-                      'Hiểu biết về UI/UX và component-based architecture'),
-
-                  const SizedBox(height: 32),
-
-                  // Reviews section
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // Content
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Test info cards
+                      Row(
+                        children: [
+                          _buildInfoCard(
+                            icon: Icons.help_outline,
+                            title: '${test.totalQuestion} câu hỏi',
+                            subtitle: 'Đa dạng độ khó',
+                          ),
+                          const SizedBox(width: 12),
+                          _buildInfoCard(
+                            icon: Icons.access_time,
+                            title: '${test.totalQuestion ~/ 2} phút',
+                            subtitle: 'Thời gian làm bài',
+                          ),
+                          const SizedBox(width: 12),
+                          _buildInfoCard(
+                            icon: Icons.bar_chart,
+                            title: _getVietnameseLevel(test.level),
+                            subtitle: 'Độ khó',
+                            iconColor: _getLevelColor(test.level),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // About this test
                       const Text(
-                        'Đánh giá từ học viên',
+                        'Giới thiệu đề thi',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF333333),
                         ),
                       ),
-                      TextButton(
-                        onPressed: () {},
-                        child: const Text('Xem tất cả'),
+                      const SizedBox(height: 12),
+                      Text(
+                        test.description,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.grey.shade700,
+                          height: 1.5,
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // What you'll learn
+                      const Text(
+                        'Bạn sẽ được kiểm tra',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF333333),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...test.testContents
+                          .map((item) => _buildBulletPoint(item)),
+
+                      const SizedBox(height: 24),
+
+                      // Requirements
+                      const Text(
+                        'Yêu cầu kiến thức',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF333333),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...test.knowledgeRequirements
+                          .map((item) => _buildBulletPoint(item)),
+
+                      const SizedBox(height: 32),
+
+                      // Price and purchase section
+                      _buildPriceSection(test),
+
+                      const SizedBox(height: 32),
+
+                      // Reviews section using the widget
+                      TestReviewSection(
+                        testId: test.testId,
+                        testTitle: test.title,
+                        canReview: test.purchased,
+                        practiceTestUseCase: _practiceTestUseCase,
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Related tests section
+                      RelatedPracticeTest(
+                        practiceTestUseCase: _practiceTestUseCase,
+                        currentTestId: test.testId,
+                        courseId: test.courseId,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+      bottomNavigationBar: FutureBuilder<PracticeTestDetailModel?>(
+        future: _testDetailFuture,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData || snapshot.data == null) {
+            return const SizedBox.shrink();
+          }
 
-                  // Sample reviews
-                  _buildReviewCard(
-                    name: 'Nguyễn Văn A',
-                    avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-                    rating: 5,
-                    comment:
-                        'Đề thi rất hay và sát với thực tế, giúp tôi nắm vững kiến thức và ôn tập hiệu quả.',
-                    date: '12/05/2023',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildReviewCard(
-                    name: 'Trần Thị B',
-                    avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-                    rating: 4,
-                    comment:
-                        'Bộ đề khá toàn diện, có một số câu hỏi khó nhưng rất bổ ích. Đáng để mua và thử sức.',
-                    date: '28/04/2023',
-                  ),
+          final test = snapshot.data!;
 
-                  const SizedBox(height: 100), // Space for bottom button
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (test.percentDiscount > 0)
+                        Text(
+                          '${_formatPrice(test.cost)}đ',
+                          style: TextStyle(
+                            fontSize: 14,
+                            decoration: TextDecoration.lineThrough,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      Text(
+                        test.purchased
+                            ? 'Đã mua'
+                            : test.price > 0
+                                ? '${_formatPrice(test.price)}đ'
+                                : 'Miễn phí',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: test.purchased
+                              ? Colors.green
+                              : const Color(0xFF333333),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    // Start the test or purchase flow
+                    if (test.purchased) {
+                      // Navigate to test taking screen
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Bắt đầu làm bài thi...'),
+                        ),
+                      );
+                    } else if (test.price > 0) {
+                      // Show payment options
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Đang mở trang thanh toán...'),
+                        ),
+                      );
+                      // TODO: Implement payment flow
+                    } else {
+                      // Free test - navigate to test taking screen
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Bắt đầu làm bài thi miễn phí...'),
+                        ),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        test.purchased ? Colors.green : const Color(0xFF3498DB),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    test.purchased
+                        ? 'Làm bài ngay'
+                        : test.price > 0
+                            ? 'Mua ngay'
+                            : 'Làm bài miễn phí',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPriceSection(PracticeTestDetailModel test) {
+    if (test.purchased) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.green.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.green.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.check_circle,
+              color: Colors.green,
+              size: 28,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Bạn đã mua đề thi này',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.green,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Bạn có thể làm bài thi ngay bây giờ',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
+      );
+    }
+
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
       ),
-      bottomSheet: Container(
+      elevation: 2,
+      child: Padding(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.shade300,
-              blurRadius: 10,
-              offset: const Offset(0, -2),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Giá',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                if (test.percentDiscount > 0)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Giảm ${test.percentDiscount}%',
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  test.price > 0 ? '${_formatPrice(test.price)}đ' : 'Miễn phí',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: test.price > 0 ? Colors.black : Colors.green,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (test.percentDiscount > 0)
+                  Text(
+                    '${_formatPrice(test.cost)}đ',
+                    style: TextStyle(
+                      fontSize: 16,
+                      decoration: TextDecoration.lineThrough,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              test.price > 0
+                  ? 'Truy cập vĩnh viễn sau khi mua'
+                  : 'Bài thi miễn phí - có thể truy cập ngay',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade700,
+              ),
             ),
           ],
         ),
-        child: _showPaymentOptions
-            ? _buildPaymentOptions()
-            : _buildPurchaseButton(),
       ),
     );
   }
@@ -285,19 +654,21 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
   }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              color: iconColor,
-              size: 24,
-            ),
+            Icon(icon, color: iconColor),
             const SizedBox(height: 8),
             Text(
               title,
@@ -311,8 +682,8 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
             Text(
               subtitle,
               style: TextStyle(
-                color: Colors.grey.shade600,
                 fontSize: 12,
+                color: Colors.grey.shade600,
               ),
               textAlign: TextAlign.center,
             ),
@@ -328,12 +699,14 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.check_circle,
-            color: const Color(0xFF3498DB),
-            size: 18,
+          const Text(
+            '• ',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF3498DB),
+            ),
           ),
-          const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
@@ -349,300 +722,36 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
     );
   }
 
-  Widget _buildReviewCard({
-    required String name,
-    required String avatar,
-    required int rating,
-    required String comment,
-    required String date,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                backgroundImage: NetworkImage(avatar),
-                radius: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        ...List.generate(
-                          5,
-                          (index) => Icon(
-                            index < rating ? Icons.star : Icons.star_border,
-                            color: const Color(0xFFFFC107),
-                            size: 16,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          date,
-                          style: TextStyle(
-                            color: Colors.grey.shade500,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            comment,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade700,
-              height: 1.4,
-            ),
-          ),
-        ],
-      ),
-    );
+  String _formatPrice(double price) {
+    return price.toStringAsFixed(0).replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]}.',
+        );
   }
 
-  Widget _buildPurchaseButton() {
-    if (widget.test.isPurchased) {
-      return ElevatedButton(
-        onPressed: () {
-          // Navigate to test
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF3498DB),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.play_arrow),
-            SizedBox(width: 8),
-            Text(
-              'Bắt đầu làm bài',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      );
-    } else {
-      return Row(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '${(widget.test.price / 1000).toStringAsFixed(0)}K VND',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  color: Color(0xFF333333),
-                ),
-              ),
-              Text(
-                'Truy cập trọn đời',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _showPaymentOptions = true;
-                });
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF3498DB),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Mua ngay',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
+  String _getVietnameseLevel(String level) {
+    switch (level.toUpperCase()) {
+      case 'EASY':
+        return 'Dễ';
+      case 'MEDIUM':
+        return 'Trung bình';
+      case 'HARD':
+        return 'Khó';
+      default:
+        return level;
     }
   }
 
-  Widget _buildPaymentOptions() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Chọn phương thức thanh toán',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () {
-                setState(() {
-                  _showPaymentOptions = false;
-                });
-              },
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // Payment methods
-        _buildPaymentMethod(
-          icon: Icons.credit_card,
-          title: 'Thẻ tín dụng / Ghi nợ',
-          isSelected: true,
-        ),
-        const SizedBox(height: 8),
-        _buildPaymentMethod(
-          icon: Icons.account_balance_wallet,
-          title: 'Ví điện tử MoMo',
-          iconColor: Colors.pink,
-        ),
-        const SizedBox(height: 8),
-        _buildPaymentMethod(
-          icon: Icons.account_balance,
-          title: 'Chuyển khoản ngân hàng',
-          iconColor: Colors.green,
-        ),
-
-        const SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: () {
-            // Process payment
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Thanh toán thành công'),
-                content: const Text('Bạn đã mua thành công bộ đề thi này!'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      setState(() {
-                        _showPaymentOptions = false;
-                      });
-                    },
-                    child: const Text('OK'),
-                  ),
-                ],
-              ),
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF3498DB),
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                'Thanh toán',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '${(widget.test.price / 1000).toStringAsFixed(0)}K VND',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPaymentMethod({
-    required IconData icon,
-    required String title,
-    bool isSelected = false,
-    Color iconColor = const Color(0xFF3498DB),
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFFE1F5FE) : Colors.white,
-        border: Border.all(
-          color: isSelected ? const Color(0xFF3498DB) : Colors.grey.shade300,
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            color: iconColor,
-          ),
-          const SizedBox(width: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 15,
-            ),
-          ),
-          const Spacer(),
-          if (isSelected)
-            const Icon(
-              Icons.check_circle,
-              color: Color(0xFF3498DB),
-            ),
-        ],
-      ),
-    );
+  Color _getLevelColor(String level) {
+    switch (level.toUpperCase()) {
+      case 'EASY':
+        return Colors.green;
+      case 'MEDIUM':
+        return Colors.orange;
+      case 'HARD':
+        return Colors.red;
+      default:
+        return Colors.blue;
+    }
   }
 }

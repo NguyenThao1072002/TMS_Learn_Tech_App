@@ -123,7 +123,7 @@ class BlogService {
       final endpoint = '$baseUrl/blogs/$blogId/view';
 
       try {
-        final response = await dio.post(endpoint,
+        final response = await dio.put(endpoint,
             options: Options(
               validateStatus: (status) => true,
               headers: {'Accept': 'application/json'},

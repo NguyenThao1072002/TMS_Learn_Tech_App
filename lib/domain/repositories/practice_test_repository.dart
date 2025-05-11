@@ -21,4 +21,13 @@ abstract class PracticeTestRepository {
     int page,
     int size,
   });
+
+  Future<bool> submitPracticeTestReview(
+    int testId,
+    int accountId,
+    int rating, {
+    String? review,
+  });
+
+  Future<List<Map<String, dynamic>>> getPracticeTestCategories();
 }

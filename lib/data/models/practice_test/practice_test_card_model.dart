@@ -18,6 +18,7 @@ class PracticeTestCardModel {
   final bool purchased;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final String author;
 
   String get vietnameseLevel {
     switch (level.toUpperCase()) {
@@ -52,6 +53,7 @@ class PracticeTestCardModel {
     required this.purchased,
     required this.createdAt,
     required this.updatedAt,
+    required this.author,
   });
 
   factory PracticeTestCardModel.fromJson(Map<String, dynamic> json) {
@@ -78,6 +80,7 @@ class PracticeTestCardModel {
           : DateTime.now(),
       updatedAt:
           json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+      author: json['author'] as String? ?? 'Unknown',
     );
   }
 
@@ -102,6 +105,7 @@ class PracticeTestCardModel {
       'purchased': purchased,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'author': author,
     };
   }
 }

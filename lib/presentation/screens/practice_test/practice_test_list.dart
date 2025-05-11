@@ -1,31 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:tms_app/data/models/practice_test/practice_test_card_model.dart';
+import 'package:tms_app/domain/usecases/practice_test_usecase.dart';
 import 'package:tms_app/presentation/screens/practice_test/practice_test_detail.dart';
-
-class PracticeTest {
-  final String id;
-  final String title;
-  final String description;
-  final String imageUrl;
-  final int questionCount;
-  final int price;
-  final bool isPurchased;
-  final String category;
-  final double rating;
-  final int ratingCount;
-
-  PracticeTest({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.imageUrl,
-    required this.questionCount,
-    required this.price,
-    required this.isPurchased,
-    required this.category,
-    required this.rating,
-    required this.ratingCount,
-  });
-}
+import 'package:tms_app/presentation/widgets/practice_test/practice_test_card.dart';
 
 class PracticeTestListScreen extends StatefulWidget {
   const PracticeTestListScreen({Key? key}) : super(key: key);
@@ -34,119 +12,555 @@ class PracticeTestListScreen extends StatefulWidget {
   State<PracticeTestListScreen> createState() => _PracticeTestListScreenState();
 }
 
-class _PracticeTestListScreenState extends State<PracticeTestListScreen> {
+class _PracticeTestListScreenState extends State<PracticeTestListScreen>
+    with SingleTickerProviderStateMixin {
   String _selectedCategory = 'Tất cả';
-  final List<String> _categories = [
-    'Tất cả',
-    'Flutter',
-    'React Native',
-    'Mobile Dev',
-    'Frontend',
-    'Backend',
-  ];
+  List<Map<String, dynamic>> _categories = [];
+  final List<String> _levelOptions = ['Tất cả', 'EASY', 'MEDIUM', 'HARD'];
+  final List<String> _authorOptions = [];
+  bool _isTopSectionExpanded = true; // Track if top section is expanded
+  late AnimationController _animationController;
+  late Animation<double> _iconTurns;
 
-  // Mock data
-  final List<PracticeTest> _tests = [
-    PracticeTest(
-      id: '1',
-      title: 'Flutter UI Components Professional Test',
-      description: 'Kiểm tra kiến thức sâu về Widget và UI trong Flutter',
-      imageUrl:
-          'https://ik.imagekit.io/kbxte3uo1/Screenshot_2025-03-24_154756.png',
-      questionCount: 50,
-      price: 199000,
-      isPurchased: false,
-      category: 'Flutter',
-      rating: 4.8,
-      ratingCount: 124,
-    ),
-    PracticeTest(
-      id: '2',
-      title: 'State Management Expert',
-      description: 'Làm chủ các kỹ thuật quản lý state trong Flutter',
-      imageUrl:
-          'https://appinventiv.com/wp-content/uploads/sites/1/2019/09/Flutter-1.14-Whats-New-and-Changed.png',
-      questionCount: 45,
-      price: 249000,
-      isPurchased: true,
-      category: 'Flutter',
-      rating: 4.9,
-      ratingCount: 98,
-    ),
-    PracticeTest(
-      id: '3',
-      title: 'React Native Components',
-      description:
-          'Đề thi về các component cơ bản và nâng cao trong React Native',
-      imageUrl:
-          'https://www.datocms-assets.com/45470/1631110818-logo-react-native.png',
-      questionCount: 40,
-      price: 179000,
-      isPurchased: false,
-      category: 'React Native',
-      rating: 4.7,
-      ratingCount: 87,
-    ),
-    PracticeTest(
-      id: '4',
-      title: 'Mobile Architecture Patterns',
-      description:
-          'Kiểm tra kiến thức về các mẫu kiến trúc trong phát triển ứng dụng di động',
-      imageUrl:
-          'https://ik.imagekit.io/kbxte3uo1/Screenshot_2025-03-24_154756.png',
-      questionCount: 35,
-      price: 299000,
-      isPurchased: false,
-      category: 'Mobile Dev',
-      rating: 4.6,
-      ratingCount: 56,
-    ),
-    PracticeTest(
-      id: '5',
-      title: 'Frontend Developer Skills Test',
-      description: 'Đánh giá kỹ năng phát triển frontend toàn diện',
-      imageUrl:
-          'https://cdn.sanity.io/images/tlr8oxjg/production/92f95a63f248182a4b659860da75a2dd05375d31-1456x816.png',
-      questionCount: 60,
-      price: 349000,
-      isPurchased: false,
-      category: 'Frontend',
-      rating: 4.9,
-      ratingCount: 142,
-    ),
-    PracticeTest(
-      id: '6',
-      title: 'MySQL Practice Test',
-      description: 'Test your knowledge of MySQL database management system',
-      imageUrl:
-          'https://ik.imagekit.io/kbxte3uo1/Screenshot_2025-03-24_200740.png',
-      questionCount: 50,
-      price: 199000,
-      isPurchased: false,
-      category: 'Backend',
-      rating: 4.8,
-      ratingCount: 124,
-    ),
-    PracticeTest(
-      id: '7',
-      title: 'MongoDB Practice Test',
-      description: 'Test your knowledge of MongoDB NoSQL database',
-      imageUrl:
-          'https://ik.imagekit.io/kbxte3uo1/Screenshot_2025-03-24_205026.png',
-      questionCount: 50,
-      price: 199000,
-      isPurchased: false,
-      category: 'Backend',
-      rating: 4.8,
-      ratingCount: 124,
-    ),
-  ];
+  // Use the PracticeTestUseCase from GetIt
+  final PracticeTestUseCase _practiceTestUseCase =
+      GetIt.instance<PracticeTestUseCase>();
 
-  List<PracticeTest> get filteredTests {
-    if (_selectedCategory == 'Tất cả') {
-      return _tests;
+  // State variables
+  late Future<List<PracticeTestCardModel>> _practiceTestsFuture;
+  bool _isLoading = false;
+  String? _searchQuery;
+  int _currentPage = 0;
+  final int _pageSize = 10;
+  bool _hasMore = true;
+  final List<PracticeTestCardModel> _tests = [];
+
+  // Filtering variables
+  String? _levelFilter;
+  String? _examTypeFilter;
+  double? _minPriceFilter;
+  double? _maxPriceFilter;
+  int? _minDiscountFilter;
+  int? _maxDiscountFilter;
+  int? _courseIdFilter;
+  int? _categoryIdFilter;
+  String? _authorFilter;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+    _loadTests();
+
+    // Initialize animation controller
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _iconTurns =
+        Tween<double>(begin: 0.0, end: 0.5).animate(_animationController);
+
+    // Set initial state of animation
+    if (_isTopSectionExpanded) {
+      _animationController.value = 0.0;
+    } else {
+      _animationController.value = 1.0;
     }
-    return _tests.where((test) => test.category == _selectedCategory).toList();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _toggleTopSection() {
+    setState(() {
+      _isTopSectionExpanded = !_isTopSectionExpanded;
+      if (_isTopSectionExpanded) {
+        _animationController.reverse();
+      } else {
+        _animationController.forward();
+      }
+    });
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final categories = await _practiceTestUseCase.getPracticeTestCategories();
+      print('Loaded categories: ${categories.length}');
+
+      if (categories.isNotEmpty) {
+        print('First category: ${categories[0]}');
+      }
+
+      setState(() {
+        _categories = categories;
+      });
+
+      // Extract unique authors from tests for author filter
+      _extractAuthors();
+    } catch (e, stackTrace) {
+      print('Error loading categories: $e');
+      print('StackTrace: $stackTrace');
+
+      // Set an empty list rather than leaving it null/uninitialized
+      setState(() {
+        _categories = [];
+      });
+    }
+  }
+
+  void _extractAuthors() {
+    final authorSet = <String>{};
+
+    // Add default "All" option
+    authorSet.add('Tất cả');
+
+    // Extract unique authors from tests
+    for (var test in _tests) {
+      if (test.author.isNotEmpty) {
+        authorSet.add(test.author);
+      }
+    }
+
+    setState(() {
+      _authorOptions.clear();
+      _authorOptions.addAll(authorSet.toList()..sort());
+    });
+  }
+
+  Future<void> _loadTests({bool refresh = false}) async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+      if (refresh) {
+        _currentPage = 0;
+        _tests.clear();
+        _hasMore = true;
+      }
+    });
+
+    try {
+      final tests = await _practiceTestUseCase.getFilteredPracticeTests(
+        title: _searchQuery,
+        courseId: _courseIdFilter,
+        categoryId: _categoryIdFilter,
+        level: _levelFilter,
+        examType: _examTypeFilter,
+        minPrice: _minPriceFilter,
+        maxPrice: _maxPriceFilter,
+        minDiscount: _minDiscountFilter,
+        maxDiscount: _maxDiscountFilter,
+        author: _authorFilter,
+        page: _currentPage,
+        size: _pageSize,
+      );
+
+      setState(() {
+        if (tests.isEmpty) {
+          _hasMore = false;
+        } else {
+          _tests.addAll(tests);
+          _currentPage++;
+
+          // Update author list when new tests are loaded
+          _extractAuthors();
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không thể tải đề thi: ${e.toString()}')),
+      );
+    }
+  }
+
+  void _applyFilters() {
+    setState(() {
+      _currentPage = 0;
+      _tests.clear();
+      _hasMore = true;
+    });
+
+    _loadTests();
+  }
+
+  void _showFilterDialog() {
+    String? tempLevelFilter = _levelFilter;
+    String? tempAuthorFilter = _authorFilter;
+    double? tempMinPrice = _minPriceFilter;
+    double? tempMaxPrice = _maxPriceFilter;
+    int? tempCategoryId = _categoryIdFilter;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              top: 20,
+              left: 20,
+              right: 20,
+            ),
+            height: MediaQuery.of(context).size.height * 0.7,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Lọc đề thi',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: ListView(
+                    children: [
+                      // Filter by category
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Danh mục',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              FilterChip(
+                                label: const Text('Tất cả'),
+                                selected: tempCategoryId == null,
+                                onSelected: (selected) {
+                                  if (selected) {
+                                    setModalState(() {
+                                      tempCategoryId = null;
+                                    });
+                                  }
+                                },
+                                backgroundColor: Colors.grey.shade200,
+                                selectedColor: const Color(0xFF3498DB),
+                                labelStyle: TextStyle(
+                                  color: tempCategoryId == null
+                                      ? Colors.white
+                                      : Colors.black,
+                                  fontWeight: tempCategoryId == null
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                              ..._categories.map((category) {
+                                String categoryName = 'Unknown';
+                                int categoryId = -1;
+
+                                try {
+                                  categoryName =
+                                      category['name'] as String? ?? 'Unknown';
+                                  categoryId = category['id'] as int? ?? -1;
+
+                                  if (categoryName == 'Unknown') {
+                                    print(
+                                        'Warning: Category has no name: $category');
+                                  }
+
+                                  if (categoryId == -1) {
+                                    print(
+                                        'Warning: Category has invalid ID: $category');
+                                  }
+                                } catch (e) {
+                                  print(
+                                      'Error parsing category: $e, category data: $category');
+                                }
+
+                                final isSelected = tempCategoryId == categoryId;
+
+                                return FilterChip(
+                                  label: Text(categoryName),
+                                  selected: isSelected,
+                                  onSelected: (selected) {
+                                    setModalState(() {
+                                      tempCategoryId =
+                                          selected ? categoryId : null;
+                                    });
+                                  },
+                                  backgroundColor: Colors.grey.shade200,
+                                  selectedColor: const Color(0xFF3498DB),
+                                  labelStyle: TextStyle(
+                                    color: isSelected
+                                        ? Colors.white
+                                        : Colors.black,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                );
+                              }).toList(),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Filter by level
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Độ khó',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _levelOptions.map((level) {
+                              final isSelected = tempLevelFilter == level ||
+                                  (level == 'Tất cả' &&
+                                      tempLevelFilter == null);
+
+                              return FilterChip(
+                                label: Text(level == 'Tất cả'
+                                    ? level
+                                    : _translateLevel(level)),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  setModalState(() {
+                                    if (level == 'Tất cả') {
+                                      tempLevelFilter = null;
+                                    } else {
+                                      tempLevelFilter = selected ? level : null;
+                                    }
+                                  });
+                                },
+                                backgroundColor: Colors.grey.shade200,
+                                selectedColor: const Color(0xFF3498DB),
+                                labelStyle: TextStyle(
+                                  color:
+                                      isSelected ? Colors.white : Colors.black,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Filter by author
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Tác giả',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _authorOptions.isEmpty
+                              ? const Text('Không có tác giả nào để hiển thị')
+                              : Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: _authorOptions.map((author) {
+                                    final isSelected =
+                                        tempAuthorFilter == author ||
+                                            (author == 'Tất cả' &&
+                                                tempAuthorFilter == null);
+
+                                    return FilterChip(
+                                      label: Text(author),
+                                      selected: isSelected,
+                                      onSelected: (selected) {
+                                        setModalState(() {
+                                          if (author == 'Tất cả') {
+                                            tempAuthorFilter = null;
+                                          } else {
+                                            tempAuthorFilter =
+                                                selected ? author : null;
+                                          }
+                                        });
+                                      },
+                                      backgroundColor: Colors.grey.shade200,
+                                      selectedColor: const Color(0xFF3498DB),
+                                      labelStyle: TextStyle(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : Colors.black,
+                                        fontWeight: isSelected
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Price range
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Khoảng giá',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  decoration: const InputDecoration(
+                                    labelText: 'Giá tối thiểu',
+                                    border: OutlineInputBorder(),
+                                    prefix: Text('₫'),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  onChanged: (value) {
+                                    if (value.isNotEmpty) {
+                                      setModalState(() {
+                                        tempMinPrice = double.tryParse(value);
+                                      });
+                                    } else {
+                                      setModalState(() {
+                                        tempMinPrice = null;
+                                      });
+                                    }
+                                  },
+                                  controller: TextEditingController(
+                                    text: tempMinPrice?.toString() ?? '',
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: TextField(
+                                  decoration: const InputDecoration(
+                                    labelText: 'Giá tối đa',
+                                    border: OutlineInputBorder(),
+                                    prefix: Text('₫'),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  onChanged: (value) {
+                                    if (value.isNotEmpty) {
+                                      setModalState(() {
+                                        tempMaxPrice = double.tryParse(value);
+                                      });
+                                    } else {
+                                      setModalState(() {
+                                        tempMaxPrice = null;
+                                      });
+                                    }
+                                  },
+                                  controller: TextEditingController(
+                                    text: tempMaxPrice?.toString() ?? '',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Hủy'),
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _levelFilter = tempLevelFilter;
+                          _authorFilter = tempAuthorFilter;
+                          _minPriceFilter = tempMinPrice;
+                          _maxPriceFilter = tempMaxPrice;
+                          _categoryIdFilter = tempCategoryId;
+                        });
+                        _applyFilters();
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Áp dụng'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  String _translateLevel(String level) {
+    switch (level.toUpperCase()) {
+      case 'EASY':
+        return 'Dễ';
+      case 'MEDIUM':
+        return 'Trung bình';
+      case 'HARD':
+        return 'Khó';
+      default:
+        return level;
+    }
+  }
+
+  String _getCategoryName(int categoryId) {
+    try {
+      final category = _categories.firstWhere(
+        (category) => category['id'] == categoryId,
+        orElse: () => {'name': 'Unknown'},
+      );
+
+      final name = category['name'];
+      if (name == null) {
+        print('Warning: Category $categoryId has null name: $category');
+        return 'Unknown';
+      }
+
+      return name.toString();
+    } catch (e) {
+      print('Error getting category name for ID $categoryId: $e');
+      return 'Unknown';
+    }
   }
 
   @override
@@ -172,413 +586,474 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen> {
             icon: const Icon(Icons.search, color: Color(0xFF333333)),
             onPressed: () {
               // Implement search functionality
+              showSearch(
+                context: context,
+                delegate: PracticeTestSearchDelegate(
+                  onSearch: (query) {
+                    setState(() {
+                      _searchQuery = query;
+                      _currentPage = 0;
+                      _tests.clear();
+                      _hasMore = true;
+                    });
+                    _loadTests();
+                  },
+                ),
+              );
             },
           ),
           IconButton(
             icon: const Icon(Icons.filter_list, color: Color(0xFF333333)),
-            onPressed: () {
-              // Show filter options
-            },
+            onPressed: _showFilterDialog,
+          ),
+          // Add expand/collapse button in the app bar
+          IconButton(
+            icon: RotationTransition(
+              turns: _iconTurns,
+              child: const Icon(Icons.expand_more, color: Color(0xFF333333)),
+            ),
+            onPressed: _toggleTopSection,
           ),
         ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Premium banner
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF3498DB), Color(0xFF2980B9)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF3498DB).withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
+          // Collapsible top section
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 300),
+            crossFadeState: _isTopSectionExpanded
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
+            firstChild: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                // Premium banner
+                Container(
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF3498DB), Color(0xFF2980B9)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF3498DB).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
                     children: [
-                      const Text(
-                        'Premium Tests',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Premium Tests',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Mở khóa tất cả các đề thi để nâng cao kỹ năng',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: () {},
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: const Color(0xFF3498DB),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 10),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                              ),
+                              child: const Text(
+                                'Đăng ký ngay',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Mở khóa tất cả các đề thi để nâng cao kỹ năng',
-                        style: TextStyle(
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white30,
+                        ),
+                        child: const Icon(
+                          Icons.star,
+                          size: 30,
                           color: Colors.white,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF3498DB),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: const Text(
-                          'Đăng ký ngay',
-                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
                   ),
                 ),
-                Image.asset(
-                  'assets/images/premium_badge.png',
-                  height: 80,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 80,
-                    width: 80,
-                    decoration: const BoxDecoration(
-                      color: Colors.white24,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.workspace_premium,
-                      color: Colors.white,
-                      size: 40,
-                    ),
+
+                // Category section header
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 8.0),
+                  child: Row(
+                    children: [
+                      const Text(
+                        'Danh mục',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
 
-          // Category filter
-          Container(
-            height: 50,
-            margin: const EdgeInsets.only(top: 8),
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _categories.length,
-              itemBuilder: (context, index) {
-                final category = _categories[index];
-                final isSelected = category == _selectedCategory;
+                // Category filter
+                SizedBox(
+                  height: 50,
+                  child: _categories.isEmpty
+                      ? ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: 1,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: ChoiceChip(
+                                label: const Text('Tất cả'),
+                                selected: true,
+                                onSelected: (selected) {},
+                                backgroundColor: Colors.grey.shade200,
+                                selectedColor: const Color(0xFF3498DB),
+                                labelStyle: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                      : ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount:
+                              _categories.length + 1, // +1 for "All" option
+                          itemBuilder: (context, index) {
+                            if (index == 0) {
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: ChoiceChip(
+                                  label: const Text('Tất cả'),
+                                  selected: _selectedCategory == 'Tất cả',
+                                  onSelected: (selected) {
+                                    if (selected) {
+                                      setState(() {
+                                        _selectedCategory = 'Tất cả';
+                                        _categoryIdFilter = null;
+                                        _currentPage = 0;
+                                        _tests.clear();
+                                        _hasMore = true;
+                                      });
+                                      _loadTests();
+                                    }
+                                  },
+                                  backgroundColor: Colors.grey.shade200,
+                                  selectedColor: const Color(0xFF3498DB),
+                                  labelStyle: TextStyle(
+                                    color: _selectedCategory == 'Tất cả'
+                                        ? Colors.white
+                                        : Colors.black,
+                                    fontWeight: _selectedCategory == 'Tất cả'
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              );
+                            }
 
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedCategory = category;
-                    });
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 12),
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? const Color(0xFF3498DB)
-                          : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(25),
-                      border: Border.all(
-                        color: isSelected
-                            ? const Color(0xFF3498DB)
-                            : Colors.grey.shade300,
-                        width: 1,
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      category,
-                      style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.grey.shade800,
-                        fontWeight: FontWeight.w500,
-                      ),
+                            final category = _categories[index - 1];
+                            final categoryName =
+                                category['name'] as String? ?? 'Unknown';
+                            final categoryId = category['id'] as int? ?? -1;
+                            final isSelected =
+                                categoryName == _selectedCategory;
+
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: ChoiceChip(
+                                label: Text(categoryName),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  if (selected) {
+                                    setState(() {
+                                      _selectedCategory = categoryName;
+                                      _categoryIdFilter = categoryId;
+                                      _currentPage = 0;
+                                      _tests.clear();
+                                      _hasMore = true;
+                                    });
+                                    _loadTests();
+                                  }
+                                },
+                                backgroundColor: Colors.grey.shade200,
+                                selectedColor: const Color(0xFF3498DB),
+                                labelStyle: TextStyle(
+                                  color:
+                                      isSelected ? Colors.white : Colors.black,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+
+                // Applied filters chips
+                if (_levelFilter != null ||
+                    _authorFilter != null ||
+                    _categoryIdFilter != null)
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (_categoryIdFilter != null)
+                          Chip(
+                            label: Text(
+                                'Danh mục: ${_getCategoryName(_categoryIdFilter!)}'),
+                            onDeleted: () {
+                              setState(() {
+                                _categoryIdFilter = null;
+                              });
+                              _applyFilters();
+                            },
+                            backgroundColor: Colors.grey.shade200,
+                            deleteIconColor: Colors.black54,
+                          ),
+                        if (_levelFilter != null)
+                          Chip(
+                            label: Text(
+                                'Độ khó: ${_translateLevel(_levelFilter!)}'),
+                            onDeleted: () {
+                              setState(() {
+                                _levelFilter = null;
+                              });
+                              _applyFilters();
+                            },
+                            backgroundColor: Colors.grey.shade200,
+                            deleteIconColor: Colors.black54,
+                          ),
+                        if (_authorFilter != null)
+                          Chip(
+                            label: Text('Tác giả: $_authorFilter'),
+                            onDeleted: () {
+                              setState(() {
+                                _authorFilter = null;
+                              });
+                              _applyFilters();
+                            },
+                            backgroundColor: Colors.grey.shade200,
+                            deleteIconColor: Colors.black54,
+                          ),
+                      ],
                     ),
                   ),
-                );
-              },
+              ],
+            ),
+            secondChild: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Center(
+                child: Text(
+                  'Đề thi và bộ lọc',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
             ),
           ),
-
-          const SizedBox(height: 8),
 
           // Test list
           Expanded(
-            child: filteredTests.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Không có đề thi nào trong danh mục này',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 16,
+            child: _isLoading && _tests.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : _tests.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.search_off,
+                              size: 64,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Không tìm thấy đề thi',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            ElevatedButton(
+                              onPressed: () => _loadTests(refresh: true),
+                              child: const Text('Tải lại'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : NotificationListener<ScrollNotification>(
+                        onNotification: (ScrollNotification scrollInfo) {
+                          if (scrollInfo.metrics.pixels ==
+                                  scrollInfo.metrics.maxScrollExtent &&
+                              !_isLoading &&
+                              _hasMore) {
+                            _loadTests();
+                          }
+                          return false;
+                        },
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _tests.length + (_hasMore ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            if (index == _tests.length) {
+                              return _isLoading
+                                  ? const Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(16.0),
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    )
+                                  : const SizedBox();
+                            }
+
+                            final test = _tests[index];
+                            return PracticeTestCard(
+                              test: test,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        PracticeTestDetailScreen(
+                                            testId: test.testId),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                  )
-                : ListView.builder(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: filteredTests.length,
-                    itemBuilder: (context, index) {
-                      final test = filteredTests[index];
-                      return _buildTestCard(test);
-                    },
-                  ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTestCard(PracticeTest test) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PracticeTestDetailScreen(test: test),
-          ),
+  String _formatPrice(double price) {
+    return price.toStringAsFixed(0).replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]}.',
         );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.shade200,
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Test image
-            ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
-              child: Image.network(
-                test.imageUrl,
-                height: 150,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 150,
-                  color: Colors.grey.shade300,
-                  alignment: Alignment.center,
-                  child: const Icon(
-                    Icons.image_not_supported,
-                    color: Colors.grey,
-                    size: 40,
-                  ),
-                ),
-              ),
-            ),
+  }
+}
 
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Category and rating
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          test.category,
-                          style: const TextStyle(
-                            color: Color(0xFF3498DB),
-                            fontWeight: FontWeight.w500,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            color: Color(0xFFFFC107),
-                            size: 18,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${test.rating} (${test.ratingCount})',
-                            style: TextStyle(
-                              color: Colors.grey.shade700,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+class PracticeTestSearchDelegate extends SearchDelegate<String> {
+  final Function(String) onSearch;
 
-                  const SizedBox(height: 12),
+  PracticeTestSearchDelegate({required this.onSearch});
 
-                  // Title
-                  Text(
-                    test.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Color(0xFF333333),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Description
-                  Text(
-                    test.description,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade700,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Info row
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.help_outline,
-                        size: 16,
-                        color: Colors.grey.shade600,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${test.questionCount} câu hỏi',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Icon(
-                        Icons.access_time,
-                        size: 16,
-                        color: Colors.grey.shade600,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${test.questionCount ~/ 2} phút',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Price and button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      test.isPurchased
-                          ? Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.shade50,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.check_circle,
-                                        size: 14,
-                                        color: Colors.green.shade700,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'Đã mua',
-                                        style: TextStyle(
-                                          color: Colors.green.shade700,
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Text(
-                              '${(test.price / 1000).toStringAsFixed(0)}K VND',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 17,
-                                color: Color(0xFF333333),
-                              ),
-                            ),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  PracticeTestDetailScreen(test: test),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: test.isPurchased
-                              ? const Color(0xFF3498DB)
-                              : const Color(0xFF333333),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          test.isPurchased ? 'Làm bài' : 'Xem chi tiết',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: const Icon(Icons.clear),
+        onPressed: () {
+          query = '';
+        },
       ),
+    ];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.arrow_back),
+      onPressed: () {
+        close(context, '');
+      },
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    onSearch(query);
+    return Container(); // Results will be shown in the main screen
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            'Gợi ý tìm kiếm',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade700,
+            ),
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.search),
+          title: const Text('Flutter'),
+          onTap: () {
+            query = 'Flutter';
+            showResults(context);
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.search),
+          title: const Text('React Native'),
+          onTap: () {
+            query = 'React Native';
+            showResults(context);
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.search),
+          title: const Text('Frontend'),
+          onTap: () {
+            query = 'Frontend';
+            showResults(context);
+          },
+        ),
+      ],
     );
   }
 }

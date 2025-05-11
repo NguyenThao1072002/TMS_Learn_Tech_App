@@ -49,4 +49,24 @@ class PracticeTestRepositoryImpl implements PracticeTestRepository {
       size: size,
     );
   }
+
+  @override
+  Future<bool> submitPracticeTestReview(
+    int testId,
+    int accountId,
+    int rating, {
+    String? review,
+  }) async {
+    return await practiceTestService.submitPracticeTestReview(
+      testId,
+      accountId,
+      rating,
+      review: review,
+    );
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getPracticeTestCategories() async {
+    return await practiceTestService.getPracticeTestCategories();
+  }
 }
