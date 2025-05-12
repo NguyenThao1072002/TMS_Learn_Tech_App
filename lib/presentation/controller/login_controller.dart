@@ -9,6 +9,8 @@ import '../../core/di/service_locator.dart';
 import '../../domain/usecases/login_usecase.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tms_app/presentation/controller/forgot_password_controller.dart';
+import 'package:tms_app/core/utils/toast_helper.dart';
+import 'package:tms_app/presentation/screens/homePage/home.dart';
 
 class LoginController {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
@@ -23,6 +25,71 @@ class LoginController {
   static const String KEY_LAST_LOGIN = 'last_login';
 
   LoginController({required this.loginUseCase});
+
+  // Phương thức đăng nhập
+  Future<Map<String, dynamic>> login(String identifier, String password) async {
+    try {
+      final response = await loginUseCase.call(identifier, password);
+
+      if (response != null) {
+        // Đăng nhập thành công
+        return {
+          'success': true,
+          'message': 'Đăng nhập thành công!',
+          'data': response
+        };
+      } else {
+        // Đăng nhập thất bại, ánh xạ lỗi cụ thể từ server (mô phỏng)
+        // Trong thực tế, các lỗi này nên được trả về từ server API
+
+        // Giả định phân tích lỗi
+        Map<String, String> fieldErrors = {};
+
+        // Kiểm tra định dạng email/số điện thoại
+        if (identifier.contains('@')) {
+          if (!RegExp(r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$')
+              .hasMatch(identifier)) {
+            fieldErrors['email'] = 'Định dạng email không hợp lệ';
+          } else if (RegExp(r'^[0-9]').hasMatch(identifier.split('@')[0])) {
+            fieldErrors['email'] = 'Email không được bắt đầu bằng số';
+          } else {
+            fieldErrors['email'] = 'Email chưa được đăng ký';
+          }
+        } else if (RegExp(r'^(?:\+84|84|0)[0-9]{9,10}$').hasMatch(identifier)) {
+          fieldErrors['email'] = 'Số điện thoại chưa được đăng ký';
+        } else {
+          fieldErrors['email'] =
+              'Email hoặc số điện thoại không đúng định dạng';
+        }
+
+        // Kiểm tra mật khẩu
+        if (password.length < 6) {
+          fieldErrors['password'] = 'Mật khẩu phải có ít nhất 6 ký tự';
+        } else if (!RegExp(r'[a-zA-Z]').hasMatch(password) ||
+            !RegExp(r'[0-9]').hasMatch(password)) {
+          fieldErrors['password'] = 'Mật khẩu phải chứa cả chữ và số';
+        } else {
+          fieldErrors['password'] = 'Mật khẩu không chính xác';
+        }
+
+        return {
+          'success': false,
+          'message': 'Thông tin đăng nhập không chính xác',
+          'errors': fieldErrors
+        };
+      }
+    } catch (error) {
+      // Lỗi kết nối hoặc lỗi server
+      return {
+        'success': false,
+        'message': 'Đăng nhập thất bại: $error',
+        'errors': {
+          'email':
+              'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.'
+        }
+      };
+    }
+  }
 
   // Lưu thông tin đăng nhập vào SharedPreferences
   Future<void> saveLoginInfo(
@@ -96,15 +163,12 @@ class LoginController {
     }
   }
 
-  // Hiển thị thông báo toast
-  void showToast(String message, Color backgroundColor) {
-    Fluttertoast.showToast(
-      msg: message,
-      toastLength: Toast.LENGTH_LONG,
-      gravity: ToastGravity.TOP,
-      backgroundColor: backgroundColor,
-      textColor: Colors.white,
-      fontSize: 14.0,
+  // Chuyển hướng đến màn hình chính sau khi đăng nhập thành công
+  void navigateToHome(BuildContext context) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      (route) => false,
     );
   }
 
@@ -113,7 +177,7 @@ class LoginController {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        showToast(AppMessages.googleLoginCancelled, Colors.red);
+        ToastHelper.showErrorToast(AppMessages.googleLoginCancelled);
         return;
       }
 
@@ -122,7 +186,7 @@ class LoginController {
       // TODO: Gửi googleAuth.idToken lên server để xác thực
       // Xử lý như login thường nếu có
     } catch (error) {
-      showToast("${AppMessages.googleLoginError}$error", Colors.red);
+      ToastHelper.showErrorToast("${AppMessages.googleLoginError}$error");
     }
   }
 
@@ -152,7 +216,7 @@ class LoginController {
       }
 
       // 5. Hiển thị thông báo thành công
-      showToast("Đăng xuất thành công", Colors.green);
+      ToastHelper.showSuccessToast("Đăng xuất thành công");
 
       // 6. Điều hướng đến màn hình đăng nhập và xóa tất cả màn hình trước đó
       // ignore: use_build_context_synchronously
@@ -161,7 +225,7 @@ class LoginController {
         (route) => false, // Xóa tất cả các route trước đó
       );
     } catch (error) {
-      showToast("Đã xảy ra lỗi khi đăng xuất: $error", Colors.red);
+      ToastHelper.showErrorToast("Đã xảy ra lỗi khi đăng xuất: $error");
     }
   }
 

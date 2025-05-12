@@ -9,6 +9,7 @@ import 'package:tms_app/domain/usecases/login_usecase.dart';
 import 'package:tms_app/presentation/screens/homePage/home.dart';
 import 'package:tms_app/presentation/screens/login/register_screen.dart';
 import '../../controller/login_controller.dart';
+import 'package:tms_app/core/utils/toast_helper.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -29,6 +30,10 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   bool _obscurePassword = true;
   bool _rememberMe = false;
+
+  // Field error messages
+  String? _emailError;
+  String? _passwordError;
 
   @override
   void initState() {
@@ -51,6 +56,67 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  void _resetErrors() {
+    setState(() {
+      _emailError = null;
+      _passwordError = null;
+    });
+  }
+
+  // Xử lý đăng nhập
+  Future<void> _handleLogin() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      _resetErrors();
+      setState(() {
+        _loading = true;
+      });
+
+      try {
+        final response = await _controller.login(
+          _emailController.text,
+          _passwordController.text,
+        );
+
+        if (response['success']) {
+          // Đăng nhập thành công
+          ToastHelper.showSuccessToast(response['message']);
+
+          // Lưu thông tin đăng nhập nếu "Nhớ mật khẩu" được chọn
+          await _controller.saveLoginInfo(
+            _emailController.text,
+            _passwordController.text,
+            _rememberMe,
+          );
+
+          // Chuyển tới màn hình chính
+          if (mounted) {
+            _controller.navigateToHome(context);
+          }
+        } else {
+          // Đăng nhập thất bại, hiển thị thông báo lỗi
+          ToastHelper.showErrorToast(response['message']);
+
+          // Hiển thị lỗi cho từng trường
+          if (response.containsKey('errors') && response['errors'] != null) {
+            final Map<String, dynamic> errors = response['errors'];
+            setState(() {
+              _emailError = errors['email'] as String?;
+              _passwordError = errors['password'] as String?;
+            });
+          }
+        }
+      } catch (error) {
+        ToastHelper.showErrorToast('Đăng nhập thất bại: $error');
+      } finally {
+        if (mounted) {
+          setState(() {
+            _loading = false;
+          });
+        }
+      }
+    }
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -62,7 +128,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final loginUseCase = GetIt.instance<LoginUseCase>();
     return Scaffold(
       body: SingleChildScrollView(
         child: Stack(
@@ -123,30 +188,81 @@ class _LoginScreenState extends State<LoginScreen> {
                                 height: AppDimensions.headingSpacing),
                             TextFormField(
                               controller: _emailController,
+                              focusNode: _emailFocus,
                               keyboardType: TextInputType.emailAddress,
                               decoration: InputDecoration(
                                 hintText: 'Nhập email hoặc số điện thoại',
                                 filled: true,
                                 fillColor: Colors.white,
                                 border: AppStyles.inputBorder,
-                                errorStyle: const TextStyle(height: 0.8),
+                                errorText: _emailError,
+                                errorStyle: const TextStyle(
+                                    height: 0.8, color: Colors.red),
                               ),
+                              onChanged: (_) {
+                                if (_emailError != null) {
+                                  setState(() {
+                                    _emailError = null;
+                                  });
+                                }
+                              },
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
                                   return AppMessages.emptyEmailOrPhone;
                                 }
+
                                 final trimmed = value.trim();
-                                final isEmail = RegExp(
-                                  r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$',
-                                ).hasMatch(trimmed);
-                                final isPhone = RegExp(
-                                  r'^(?:\+84|84|0)[3|5|7|8|9][0-9]{8}$',
-                                ).hasMatch(trimmed);
-                                if (!isEmail && !isPhone) {
-                                  return trimmed.contains('@')
-                                      ? AppMessages.invalidEmail
-                                      : AppMessages.invalidPhone;
+
+                                // Kiểm tra độ dài tối thiểu
+                                if (trimmed.length < 2) {
+                                  return 'Email hoặc số điện thoại phải có ít nhất 2 ký tự';
                                 }
+
+                                // Kiểm tra nếu là email
+                                if (trimmed.contains('@')) {
+                                  // Kiểm tra định dạng email
+                                  if (!RegExp(
+                                          r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$')
+                                      .hasMatch(trimmed)) {
+                                    return 'Định dạng email không hợp lệ';
+                                  }
+
+                                  // Kiểm tra email không bắt đầu bằng số
+                                  if (RegExp(r'^[0-9]').hasMatch(trimmed)) {
+                                    return 'Email không được bắt đầu bằng số';
+                                  }
+
+                                  // Kiểm tra phần tên miền
+                                  final parts = trimmed.split('@');
+                                  if (parts.length == 2) {
+                                    if (parts[0].isEmpty) {
+                                      return 'Tên người dùng trong email không được để trống';
+                                    }
+                                    if (parts[1].isEmpty ||
+                                        !parts[1].contains('.')) {
+                                      return 'Tên miền email không hợp lệ';
+                                    }
+                                  }
+                                }
+                                // Kiểm tra nếu là số điện thoại
+                                else {
+                                  // Kiểm tra định dạng số điện thoại Việt Nam
+                                  if (!RegExp(
+                                          r'^(?:\+84|84|0)[3|5|7|8|9][0-9]{8}$')
+                                      .hasMatch(trimmed)) {
+                                    if (trimmed.length != 10 &&
+                                        trimmed.length != 11) {
+                                      return 'Số điện thoại phải có 10 hoặc 11 số';
+                                    }
+                                    if (!trimmed.startsWith('0') &&
+                                        !trimmed.startsWith('+84') &&
+                                        !trimmed.startsWith('84')) {
+                                      return 'Số điện thoại phải bắt đầu bằng 0, +84 hoặc 84';
+                                    }
+                                    return 'Số điện thoại không hợp lệ';
+                                  }
+                                }
+
                                 return null;
                               },
                             ),
@@ -162,7 +278,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 filled: true,
                                 fillColor: Colors.white,
                                 border: AppStyles.inputBorder,
-                                errorStyle: const TextStyle(height: 0.8),
+                                errorText: _passwordError,
+                                errorStyle: const TextStyle(
+                                    height: 0.8, color: Colors.red),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscurePassword
@@ -175,26 +293,46 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                               ),
+                              onChanged: (_) {
+                                if (_passwordError != null) {
+                                  setState(() {
+                                    _passwordError = null;
+                                  });
+                                }
+                              },
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
                                   return AppMessages.emptyPassword;
                                 }
-                                if (value.trim().length < 6) {
-                                  return AppMessages.passwordTooShort;
+
+                                final trimmed = value.trim();
+
+                                // Kiểm tra độ dài tối thiểu
+                                if (trimmed.length < 8) {
+                                  return 'Mật khẩu phải có ít nhất 8 ký tự';
                                 }
+
+                                // Kiểm tra độ dài tối đa
+                                if (trimmed.length > 20) {
+                                  return 'Mật khẩu không được quá 20 ký tự';
+                                }
+
+                                // Kiểm tra có ít nhất 1 chữ cái
+                                if (!RegExp(r'[a-zA-Z]').hasMatch(trimmed)) {
+                                  return 'Mật khẩu phải chứa ít nhất 1 chữ cái';
+                                }
+
+                                // Kiểm tra có ít nhất 1 số
+                                if (!RegExp(r'[0-9]').hasMatch(trimmed)) {
+                                  return 'Mật khẩu phải chứa ít nhất 1 chữ số';
+                                }
+
+                                // Kiểm tra khoảng trắng
+                                if (trimmed.contains(' ')) {
+                                  return 'Mật khẩu không được chứa khoảng trắng';
+                                }
+
                                 return null;
-                              },
-                              onChanged: (value) {
-                                if (_formKey.currentState?.validate() ??
-                                    false) {
-                                  setState(() {});
-                                }
-                              },
-                              onEditingComplete: () {
-                                if (_formKey.currentState?.validate() ??
-                                    false) {
-                                  setState(() {});
-                                }
                               },
                             ),
                             const SizedBox(height: AppDimensions.formSpacing),
@@ -231,48 +369,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               width: double.infinity,
                               child: ElevatedButton(
                                 style: AppStyles.elevatedButtonStyle,
-                                onPressed: () async {
-                                  if (_formKey.currentState?.validate() ??
-                                      false) {
-                                    setState(() {
-                                      _loading = true;
-                                    });
-
-                                    final response = await loginUseCase.call(
-                                      _emailController.text,
-                                      _passwordController.text,
-                                    );
-
-                                    if (!mounted) return;
-
-                                    setState(() {
-                                      _loading = false;
-                                    });
-
-                                    if (response != null) {
-                                      await _controller.saveLoginInfo(
-                                        _emailController.text,
-                                        _passwordController.text,
-                                        _rememberMe,
-                                      );
-
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (_) => HomeScreen()),
-                                      );
-                                    } else {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                              'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.'),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                    }
-                                  }
-                                },
+                                onPressed: _loading ? null : _handleLogin,
                                 child: _loading
                                     ? const CircularProgressIndicator(
                                         color: Colors.white,

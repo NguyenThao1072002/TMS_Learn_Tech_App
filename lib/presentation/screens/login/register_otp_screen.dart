@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:tms_app/presentation/controller/register_controller.dart';
 import 'package:tms_app/presentation/widgets/component/bottom_wave_clipper.dart';
+import 'package:tms_app/core/utils/toast_helper.dart';
+import 'dart:async';
 
 class RegisterOtpScreen extends StatefulWidget {
   final String email;
@@ -21,14 +23,56 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
   final TextEditingController _otpController = TextEditingController();
   bool _isLoading = false;
 
+  // Timer variables
+  Timer? _timer;
+  int _remainingSeconds = 300; // 5 minutes = 300 seconds
+  bool _isOtpExpired = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _remainingSeconds = 300;
+    _isOtpExpired = false;
+    _timer?.cancel();
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        if (_remainingSeconds > 0) {
+          _remainingSeconds--;
+        } else {
+          _isOtpExpired = true;
+          _timer?.cancel();
+          ToastHelper.showInfoToast(
+              'Mã OTP đã hết hạn. Vui lòng gửi lại mã mới.');
+        }
+      });
+    });
+  }
+
+  String get _timerText {
+    final minutes = (_remainingSeconds / 60).floor();
+    final seconds = _remainingSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
   @override
   void dispose() {
     _otpController.dispose();
+    _timer?.cancel();
     super.dispose();
   }
 
   Future<void> _verifyOtp() async {
     if (_otpController.text.length != 4) return;
+
+    if (_isOtpExpired) {
+      ToastHelper.showErrorToast('Mã OTP đã hết hạn. Vui lòng gửi lại mã mới.');
+      return;
+    }
 
     setState(() => _isLoading = true);
     try {
@@ -37,38 +81,17 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
         widget.email,
       );
 
-      if (result) {
-        // Hiển thị thông báo thành công
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Xác thực thành công! Chuyển đến trang chủ...'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        // Delay ngắn để người dùng thấy thông báo
-        await Future.delayed(const Duration(seconds: 1));
-
-        // Navigate to home page on success
-        if (mounted) {
-          widget.controller.navigateToHome(context);
-        }
+      if (result['success']) {
+        // Show success toast
+        ToastHelper.showSuccessToast(result['message']);
+        // Navigate to login page on success
+        widget.controller.navigateToLogin(context);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Mã OTP không hợp lệ! Vui lòng thử lại.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        // Show error toast
+        ToastHelper.showErrorToast(result['message']);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Lỗi xác thực: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      print('Chi tiết lỗi xác thực OTP: $e');
+      ToastHelper.showErrorToast(e.toString());
     } finally {
       setState(() => _isLoading = false);
     }
@@ -131,6 +154,28 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
                       'Mã OTP đã được gửi đến ${widget.email}',
                       textAlign: TextAlign.center,
                       style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.timer,
+                          size: 18,
+                          color: Colors.blue,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Mã có hiệu lực trong: $_timerText',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: _remainingSeconds < 60
+                                ? Colors.red
+                                : Colors.blue,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 40),
                     Container(
@@ -198,32 +243,39 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
                           ),
                           const SizedBox(height: 16),
                           TextButton(
-                            onPressed: _isLoading
+                            onPressed: (_isLoading ||
+                                    !_isOtpExpired &&
+                                        _remainingSeconds >
+                                            240) // Disable for first 60 seconds
                                 ? null
                                 : () async {
                                     setState(() => _isLoading = true);
                                     try {
-                                      await widget.controller
+                                      final success = await widget.controller
                                           .sendOtpToEmail(widget.email);
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                            content:
-                                                Text('Đã gửi lại mã OTP!')),
-                                      );
+                                      if (success) {
+                                        ToastHelper.showSuccessToast(
+                                            'Đã gửi lại mã OTP!');
+                                        _startTimer(); // Restart timer on successful resend
+                                      } else {
+                                        ToastHelper.showErrorToast(
+                                            'Không thể gửi lại mã OTP. Vui lòng thử lại sau.');
+                                      }
                                     } catch (e) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(content: Text(e.toString())),
-                                      );
+                                      ToastHelper.showErrorToast(
+                                          'Lỗi: ${e.toString()}');
                                     } finally {
                                       setState(() => _isLoading = false);
                                     }
                                   },
-                            child: const Text(
-                              'Gửi lại mã',
+                            child: Text(
+                              'Gửi lại mã${!_isOtpExpired && _remainingSeconds > 240 ? ' (${((_remainingSeconds - 240) / 60).ceil()} phút)' : ''}',
                               style: TextStyle(
-                                color: Colors.blue,
+                                color: (_isLoading ||
+                                        !_isOtpExpired &&
+                                            _remainingSeconds > 240)
+                                    ? Colors.grey
+                                    : Colors.blue,
                                 fontSize: 16,
                               ),
                             ),

@@ -8,6 +8,8 @@ import 'package:tms_app/presentation/screens/login/register_otp_screen.dart';
 import 'package:tms_app/presentation/screens/homePage/home.dart';
 import 'package:tms_app/core/theme/app_styles.dart';
 import 'package:tms_app/presentation/controller/forgot_password_controller.dart';
+import 'package:tms_app/core/utils/toast_helper.dart';
+import 'package:tms_app/presentation/screens/login/login.dart';
 
 class RegisterController {
   final RegisterUseCase registerUseCase;
@@ -49,15 +51,9 @@ class RegisterController {
         // Store email for OTP verification
         _registeredEmail = email;
 
-        // Hiển thị thông báo toast thành công
-        Fluttertoast.showToast(
-          msg: response['message'] ?? "Mã OTP đã được gửi!",
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.TOP,
-          backgroundColor: AppStyles.successToastBackgroundColor,
-          textColor: AppStyles.toastTextColor,
-          fontSize: AppStyles.toastFontSize,
-        );
+        // Use ToastHelper instead of direct Fluttertoast
+        ToastHelper.showSuccessToast(
+            response['message'] ?? "Mã OTP đã được gửi!");
 
         // Chuyển hướng tới màn hình xác thực OTP
         Navigator.push(
@@ -70,35 +66,33 @@ class RegisterController {
           ),
         );
       } else {
-        // Hiển thị thông báo toast thất bại
-        Fluttertoast.showToast(
-          msg: response != null
-              ? (response['message'] ?? "Đăng ký thất bại!")
-              : "Đăng ký thất bại! Vui lòng thử lại.",
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.TOP,
-          backgroundColor: AppStyles.errorToastBackgroundColor,
-          textColor: AppStyles.toastTextColor,
-          fontSize: AppStyles.toastFontSize,
-        );
+        // Use ToastHelper instead of direct Fluttertoast
+        ToastHelper.showErrorToast(response != null
+            ? (response['message'] ?? "Đăng ký thất bại!")
+            : "Đăng ký thất bại! Vui lòng thử lại.");
       }
     } catch (error) {
-      // Hiển thị thông báo lỗi nếu có exception xảy ra
-      Fluttertoast.showToast(
-        msg: "Đăng ký thất bại! $error",
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.TOP,
-        backgroundColor: AppStyles.errorToastBackgroundColor,
-        textColor: AppStyles.toastTextColor,
-        fontSize: AppStyles.toastFontSize,
-      );
+      // Use ToastHelper instead of direct Fluttertoast
+      ToastHelper.showErrorToast("Đăng ký thất bại! $error");
     }
   }
 
   // Phương thức xác thực OTP cho đăng ký
-  Future<bool> verifyOtp(String otp, String email) async {
-    // Sử dụng UseCase thay vì gọi trực tiếp repository
-    return await verifyRegisterOtpUseCase.call(otp, email);
+  Future<Map<String, dynamic>> verifyOtp(String otp, String email) async {
+    try {
+      // Sử dụng UseCase thay vì gọi trực tiếp repository
+      bool success = await verifyRegisterOtpUseCase.call(otp, email);
+      if (success) {
+        return {'success': true, 'message': 'Xác thực OTP thành công!'};
+      } else {
+        return {
+          'success': false,
+          'message': 'Mã OTP không chính xác hoặc đã hết hạn.'
+        };
+      }
+    } catch (error) {
+      return {'success': false, 'message': 'Xác thực thất bại: $error'};
+    }
   }
 
   // Phương thức gửi lại mã OTP
@@ -112,6 +106,15 @@ class RegisterController {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const HomeScreen()),
+      (route) => false,
+    );
+  }
+
+  // Chuyển đến màn hình đăng nhập sau khi xác thực OTP thành công
+  void navigateToLogin(BuildContext context) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
       (route) => false,
     );
   }
