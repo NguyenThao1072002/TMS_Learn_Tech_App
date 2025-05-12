@@ -1,5 +1,6 @@
 import 'package:tms_app/data/models/blog/blog_card_model.dart';
 import 'package:tms_app/domain/repositories/blog_repository.dart';
+import 'dart:async';
 
 class BlogUsercase {
   final BlogRepository blogRepository;
@@ -23,7 +24,42 @@ class BlogUsercase {
   }
 
   Future<bool> incrementBlogView(String id) async {
-    return await blogRepository.incrementBlogView(id);
+    // Thực hiện việc tăng lượt xem trong một Zone riêng
+    // để không ảnh hưởng đến UI thread
+    try {
+      // Tăng lượt xem không đồng bộ và không chờ kết quả để UI không bị chặn
+      unawaited(_incrementViewCount(id));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Phương thức riêng để thực hiện việc tăng lượt xem trong background
+  Future<bool> _incrementViewCount(String id) async {
+    const maxAttempts = 3;
+    const initialDelayMs = 300;
+
+    for (int attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        final success = await blogRepository.incrementBlogView(id);
+        if (success) {
+          return true;
+        }
+
+        if (attempt < maxAttempts - 1) {
+          final delayMs = initialDelayMs * (1 << attempt);
+          await Future.delayed(Duration(milliseconds: delayMs));
+        }
+      } catch (e) {
+        if (attempt < maxAttempts - 1) {
+          final delayMs = initialDelayMs * (1 << attempt);
+          await Future.delayed(Duration(milliseconds: delayMs));
+        }
+      }
+    }
+
+    return false;
   }
 
   Future<List<BlogCardModel>> getRelatedBlogs(String categoryId,
@@ -42,12 +78,12 @@ class BlogUsercase {
     int page = 0,
     int size = 10,
   }) async {
-    // First get all blogs with basic filters
+    // Lấy tất cả blogs với bộ lọc cơ bản
     final blogs = await blogRepository.getAllBlogs();
 
-    // Apply filters in memory
-    return blogs.where((blog) {
-      // Filter by search query if provided (search in title and content)
+    // Áp dụng bộ lọc trong bộ nhớ
+    final filtered = blogs.where((blog) {
+      // Lọc theo từ khóa tìm kiếm nếu có (tìm trong tiêu đề và nội dung)
       if (searchQuery != null && searchQuery.isNotEmpty) {
         final query = searchQuery.toLowerCase();
         if (!blog.title.toLowerCase().contains(query) &&
@@ -56,8 +92,7 @@ class BlogUsercase {
           return false;
         }
       }
-
-      // Filter by category if specified
+      // Lọc theo danh mục nếu chỉ định
       if (categoryId != null &&
           categoryId.isNotEmpty &&
           categoryId != "Tất cả" &&
@@ -65,14 +100,14 @@ class BlogUsercase {
         return false;
       }
 
-      // Filter by author ID if specified
+      // Lọc theo ID tác giả nếu chỉ định
       if (authorId != null &&
           authorId.isNotEmpty &&
           blog.authorId != authorId) {
         return false;
       }
 
-      // Filter by author name if specified
+      // Lọc theo tên tác giả nếu chỉ định
       if (authorName != null &&
           authorName.isNotEmpty &&
           authorName != "Tất cả" &&
@@ -80,13 +115,15 @@ class BlogUsercase {
         return false;
       }
 
-      // Filter by featured status if specified
+      // Lọc theo trạng thái nổi bật nếu chỉ định
       if (featured != null && blog.featured != featured) {
         return false;
       }
 
       return true;
     }).toList();
+
+    return filtered;
   }
 
   // Get list of unique author names from available blogs

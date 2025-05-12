@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
-import 'package:tms_app/presentation/controller/forgot_password_controller.dart';
+import 'package:tms_app/presentation/controller/register_controller.dart';
 import 'package:tms_app/presentation/widgets/component/bottom_wave_clipper.dart';
 
-class VerifyOtpScreen extends StatefulWidget {
+class RegisterOtpScreen extends StatefulWidget {
   final String email;
-  final ForgotPasswordController controller;
+  final RegisterController controller;
 
-  const VerifyOtpScreen({
+  const RegisterOtpScreen({
     Key? key,
     required this.email,
     required this.controller,
   }) : super(key: key);
 
   @override
-  _VerifyOtpScreenState createState() => _VerifyOtpScreenState();
+  _RegisterOtpScreenState createState() => _RegisterOtpScreenState();
 }
 
-class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
+class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
   final TextEditingController _otpController = TextEditingController();
   bool _isLoading = false;
 
@@ -38,16 +38,37 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
       );
 
       if (result) {
-        Navigator.pushNamed(context, '/reset-password');
+        // Hiển thị thông báo thành công
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Xác thực thành công! Chuyển đến trang chủ...'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Delay ngắn để người dùng thấy thông báo
+        await Future.delayed(const Duration(seconds: 1));
+
+        // Navigate to home page on success
+        if (mounted) {
+          widget.controller.navigateToHome(context);
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Mã OTP không hợp lệ!')),
+          const SnackBar(
+            content: Text('Mã OTP không hợp lệ! Vui lòng thử lại.'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+        SnackBar(
+          content: Text('Lỗi xác thực: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
       );
+      print('Chi tiết lỗi xác thực OTP: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -98,7 +119,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const Text(
-                      'Nhập mã OTP',
+                      'Xác thực tài khoản',
                       style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.bold,
@@ -184,6 +205,12 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                                     try {
                                       await widget.controller
                                           .sendOtpToEmail(widget.email);
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                            content:
+                                                Text('Đã gửi lại mã OTP!')),
+                                      );
                                     } catch (e) {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(

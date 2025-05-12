@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:tms_app/core/utils/api_response_helper.dart';
 import 'package:tms_app/core/utils/constants.dart';
 import 'package:tms_app/data/models/blog/blog_card_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BlogService {
   final String baseUrl = "${Constants.BASE_URL}/api";
@@ -11,28 +12,34 @@ class BlogService {
 
   Future<List<BlogCardModel>> getAllBlogs() async {
     try {
-      final endpoint = '$baseUrl/blogs/public?page=0&size=10';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final endpoint = '$baseUrl/blogs/public?page=0&size=50&_t=$timestamp';
 
-      try {
-        final response = await dio.get(endpoint,
-            options: Options(
-              validateStatus: (status) => true,
-              headers: {'Accept': 'application/json'},
-            ));
+      final response = await dio.get(endpoint,
+          options: Options(
+            validateStatus: (status) => true,
+            headers: {
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0',
+            },
+          ));
 
-        if (response.statusCode == 200) {
-          final blogs = ApiResponseHelper.processList(
-              response.data, BlogCardModel.fromJson);
-
-          return blogs;
-        } else {
-          return [];
-        }
-      } on DioException catch (e) {
-        return [];
+      if (response.statusCode == 200) {
+        return ApiResponseHelper.processList(
+            response.data, BlogCardModel.fromJson);
+      } else {
+        throw DioException(
+          requestOptions: RequestOptions(path: endpoint),
+          response: response,
+          error: 'Lỗi API: ${response.statusCode}',
+        );
       }
+    } on DioException catch (e) {
+      throw Exception('Lỗi mạng: ${e.message}');
     } catch (e) {
-      return [];
+      throw Exception('Lỗi khi tải danh sách blog: $e');
     }
   }
 
@@ -40,24 +47,26 @@ class BlogService {
     try {
       final endpoint = '$baseUrl/blogs/public?page=0&size=10';
 
-      try {
-        final response = await dio.get(endpoint,
-            options: Options(
-              validateStatus: (status) => true,
-              headers: {'Accept': 'application/json'},
-            ));
+      final response = await dio.get(endpoint,
+          options: Options(
+            validateStatus: (status) => true,
+            headers: {'Accept': 'application/json'},
+          ));
 
-        if (response.statusCode == 200) {
-          return ApiResponseHelper.processList(
-              response.data, BlogCardModel.fromJson);
-        } else {
-          return [];
-        }
-      } on DioException catch (e) {
-        return [];
+      if (response.statusCode == 200) {
+        return ApiResponseHelper.processList(
+            response.data, BlogCardModel.fromJson);
+      } else {
+        throw DioException(
+          requestOptions: RequestOptions(path: endpoint),
+          response: response,
+          error: 'Lỗi API: ${response.statusCode}',
+        );
       }
+    } on DioException catch (e) {
+      throw Exception('Lỗi mạng: ${e.message}');
     } catch (e) {
-      return [];
+      throw Exception('Lỗi khi tải blog phổ biến: $e');
     }
   }
 
@@ -65,75 +74,88 @@ class BlogService {
     try {
       final endpoint = '$baseUrl/categories/level3/blog';
 
-      try {
-        final response = await dio.get(endpoint,
-            options: Options(
-              validateStatus: (status) => true,
-              headers: {'Accept': 'application/json'},
-            ));
+      final response = await dio.get(endpoint,
+          options: Options(
+            validateStatus: (status) => true,
+            headers: {'Accept': 'application/json'},
+          ));
 
-        if (response.statusCode == 200) {
-          return ApiResponseHelper.processList(
-              response.data, BlogCardModel.fromJson);
-        } else {
-          return [];
-        }
-      } on DioException catch (e) {
-        return [];
+      if (response.statusCode == 200) {
+        return ApiResponseHelper.processList(
+            response.data, BlogCardModel.fromJson);
+      } else {
+        throw DioException(
+          requestOptions: RequestOptions(path: endpoint),
+          response: response,
+          error: 'Lỗi API: ${response.statusCode}',
+        );
       }
+    } on DioException catch (e) {
+      throw Exception('Lỗi mạng: ${e.message}');
     } catch (e) {
-      return [];
+      throw Exception('Lỗi khi tải blog theo danh mục: $e');
     }
   }
 
   Future<BlogCardModel?> getBlogById(String id) async {
     try {
-      final endpoint = '$baseUrl/blogs/$id';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final endpoint = '$baseUrl/blogs/$id?_t=$timestamp';
 
-      try {
-        final response = await dio.get(endpoint,
-            options: Options(
-              validateStatus: (status) => true,
-              headers: {'Accept': 'application/json'},
-            ));
+      final response = await dio.get(
+        endpoint,
+        options: Options(
+          validateStatus: (status) => true,
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          },
+        ),
+      );
 
-        if (response.statusCode == 200) {
-          if (response.data is Map &&
-              response.data.containsKey('status') &&
-              response.data.containsKey('data')) {
-            final blogData = response.data['data'];
-            return BlogCardModel.fromJson(blogData);
-          } else {
-            return null;
-          }
+      if (response.statusCode == 200) {
+        if (response.data is Map &&
+            response.data.containsKey('status') &&
+            response.data.containsKey('data')) {
+          final blogData = response.data['data'];
+          return BlogCardModel.fromJson(blogData);
         } else {
-          return null;
+          throw Exception('Dữ liệu API không đúng định dạng');
         }
-      } on DioException catch (e) {
-        return null;
+      } else {
+        throw DioException(
+          requestOptions: RequestOptions(path: endpoint),
+          response: response,
+          error: 'Lỗi API: ${response.statusCode}',
+        );
       }
+    } on DioException catch (e) {
+      throw Exception('Lỗi mạng: ${e.message}');
     } catch (e) {
-      return null;
+      throw Exception('Lỗi khi tải chi tiết blog: $e');
     }
   }
 
   // Tăng số lượt xem cho bài viết
   Future<bool> incrementBlogView(String blogId) async {
     try {
-      final endpoint = '$baseUrl/blogs/$blogId/view';
+      final endpoint = '$baseUrl/blogs/$blogId/views';
 
-      try {
-        final response = await dio.put(endpoint,
-            options: Options(
-              validateStatus: (status) => true,
-              headers: {'Accept': 'application/json'},
-            ));
+      final response = await dio.put(
+        endpoint,
+        options: Options(
+          validateStatus: (status) => true,
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
+      );
 
-        return response.statusCode == 200;
-      } on DioException catch (e) {
-        return false;
-      }
+      return response.statusCode == 200;
     } catch (e) {
+      // Không ném lỗi với tăng lượt xem, chỉ trả về false
       return false;
     }
   }
@@ -144,31 +166,33 @@ class BlogService {
       final endpoint =
           '$baseUrl/blogs/public?categoryId=$categoryId&page=$page&size=$size';
 
-      try {
-        final response = await dio.get(endpoint,
-            options: Options(
-              validateStatus: (status) => true,
-              headers: {'Accept': 'application/json'},
-            ));
+      final response = await dio.get(endpoint,
+          options: Options(
+            validateStatus: (status) => true,
+            headers: {'Accept': 'application/json'},
+          ));
 
-        if (response.statusCode == 200) {
-          final blogs = ApiResponseHelper.processList(
-              response.data, BlogCardModel.fromJson);
+      if (response.statusCode == 200) {
+        final blogs = ApiResponseHelper.processList(
+            response.data, BlogCardModel.fromJson);
 
-          // Loại bỏ bài viết hiện tại khỏi danh sách bài viết liên quan
-          if (currentBlogId != null) {
-            return blogs.where((blog) => blog.id != currentBlogId).toList();
-          }
-
-          return blogs;
-        } else {
-          return [];
+        // Loại bỏ bài viết hiện tại khỏi danh sách bài viết liên quan
+        if (currentBlogId != null) {
+          return blogs.where((blog) => blog.id != currentBlogId).toList();
         }
-      } on DioException catch (e) {
-        return [];
+
+        return blogs;
+      } else {
+        throw DioException(
+          requestOptions: RequestOptions(path: endpoint),
+          response: response,
+          error: 'Lỗi API: ${response.statusCode}',
+        );
       }
+    } on DioException catch (e) {
+      throw Exception('Lỗi mạng: ${e.message}');
     } catch (e) {
-      return [];
+      throw Exception('Lỗi khi tải blog liên quan: $e');
     }
   }
 }

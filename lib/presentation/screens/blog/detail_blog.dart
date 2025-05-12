@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:flutter_html/flutter_html.dart';
 import 'package:share_plus/share_plus.dart';
@@ -34,16 +35,19 @@ class _DetailBlogScreenState extends State<DetailBlogScreen> {
   }
 
   void _loadBlogDetails() {
-    print('Đang tải chi tiết blog với ID: ${widget.blogId}');
     _blogFuture = _blogUsecase.getBlogById(widget.blogId);
 
-    // Đăng ký xem bài viết sau khi tải chi tiết
-    _incrementBlogView();
+    // Tăng lượt xem trong background mà không cần hiển thị trạng thái loading
+    _blogUsecase.incrementBlogView(widget.blogId).then((success) {
+      _viewIncremented = success;
 
-    // Cập nhật danh sách bài viết liên quan khi có dữ liệu blog
-    _blogFuture.then((blog) {
-      if (blog != null) {
-        _loadRelatedBlogs(blog.cat_blog_id);
+      // Nếu thành công, chỉ cập nhật số lượt xem trong UI mà không tải lại dữ liệu
+      if (success && mounted) {
+        _blogFuture.then((blog) {
+          if (blog != null) {
+            _loadRelatedBlogs(blog.cat_blog_id);
+          }
+        });
       }
     });
   }
@@ -51,22 +55,6 @@ class _DetailBlogScreenState extends State<DetailBlogScreen> {
   void _loadRelatedBlogs(String categoryId) {
     _relatedBlogsFuture = _blogUsecase.getRelatedBlogs(categoryId,
         currentBlogId: widget.blogId, size: 5);
-  }
-
-  Future<void> _incrementBlogView() async {
-    if (!_viewIncremented) {
-      // Chờ một chút để người dùng thực sự xem bài viết
-      await Future.delayed(const Duration(seconds: 2));
-      final result = await _blogUsecase.incrementBlogView(widget.blogId);
-      _viewIncremented = result;
-
-      // Nếu đã đếm lượt xem thành công và có dữ liệu blog, cập nhật UI nếu cần
-      if (result && mounted) {
-        setState(() {
-          // Có thể làm mới dữ liệu blog ở đây nếu cần
-        });
-      }
-    }
   }
 
   @override
@@ -131,7 +119,14 @@ class _DetailBlogScreenState extends State<DetailBlogScreen> {
             ),
             child: const Icon(Icons.arrow_back, color: Colors.black, size: 20),
           ),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            // Truyền lại thông tin blog ID và số lượt xem đã cập nhật
+            if (_viewIncremented) {
+              Navigator.pop(context, {'blogId': widget.blogId, 'viewed': true});
+            } else {
+              Navigator.pop(context);
+            }
+          },
         ),
         actions: [
           IconButton(
@@ -158,31 +153,31 @@ class _DetailBlogScreenState extends State<DetailBlogScreen> {
         future: _blogFuture,
         builder: (context, snapshot) {
           // Debug hiển thị trạng thái của Future
-          print('Blog Future state: ${snapshot.connectionState}');
-          if (snapshot.hasError) {
-            print('Blog Future error: ${snapshot.error}');
-          }
-          if (snapshot.hasData) {
-            print('Blog data received: ${snapshot.data?.title}');
-          } else {
-            print('Không có dữ liệu blog: ${snapshot.data}');
-          }
-
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return _buildLoadingSkeleton();
           } else if (snapshot.hasError) {
             return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'Lỗi khi tải bài viết',
-                    style: TextStyle(color: Colors.red, fontSize: 16),
+                  Icon(Icons.error_outline, color: Colors.red, size: 48),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      'Lỗi khi tải bài viết: ${snapshot.error}',
+                      style: TextStyle(color: Colors.red[700]),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${snapshot.error}',
-                    style: TextStyle(color: Colors.red[700], fontSize: 14),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _loadBlogDetails();
+                      });
+                    },
+                    child: const Text('Thử lại'),
                   ),
                 ],
               ),
@@ -192,6 +187,12 @@ class _DetailBlogScreenState extends State<DetailBlogScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  const Icon(
+                    Icons.article_outlined,
+                    size: 48,
+                    color: Colors.grey,
+                  ),
+                  const SizedBox(height: 16),
                   Text(
                     'Không tìm thấy bài viết',
                     style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
@@ -331,7 +332,8 @@ class _DetailBlogScreenState extends State<DetailBlogScreen> {
                                     size: 14, color: Colors.grey.shade700),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '${blog.views}',
+                                  // Hiển thị số lượt xem đã tăng nếu thành công
+                                  '${_viewIncremented ? blog.views + 1 : blog.views}',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey.shade700,
@@ -380,6 +382,118 @@ class _DetailBlogScreenState extends State<DetailBlogScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildLoadingSkeleton() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Shimmer effect for header image
+          Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Container(
+              width: double.infinity,
+              height: 250,
+              color: Colors.white,
+            ),
+          ),
+
+          // Shimmer effect for content
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Category shimmer
+                Shimmer.fromColors(
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: Container(
+                    width: 100,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Title shimmer
+                Shimmer.fromColors(
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        height: 28,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.7,
+                        height: 28,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Metadata shimmer
+                Shimmer.fromColors(
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 16,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 16),
+                      Container(
+                        width: 80,
+                        height: 16,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Content shimmer
+                Shimmer.fromColors(
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: List.generate(
+                      10,
+                      (index) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Container(
+                          width: double.infinity,
+                          height: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
