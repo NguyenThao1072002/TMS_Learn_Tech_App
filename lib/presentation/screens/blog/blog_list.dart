@@ -61,6 +61,11 @@ class _BlogListScreenState extends State<BlogListScreen>
     await _blogController.loadBlogs(refresh: true);
   }
 
+  // Hàm refresh danh sách blog
+  Future<void> _handleRefresh() async {
+    return await _blogController.refresh();
+  }
+
   void _showCategoryFilterDialog() {
     showDialog(
       context: context,
@@ -112,6 +117,30 @@ class _BlogListScreenState extends State<BlogListScreen>
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         actions: [
+          // Add refresh button
+          ValueListenableBuilder<bool>(
+            valueListenable: _blogController.isRefreshing,
+            builder: (context, isRefreshing, child) {
+              return isRefreshing
+                  ? Container(
+                      width: 48,
+                      alignment: Alignment.center,
+                      child: const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.black54),
+                        ),
+                      ),
+                    )
+                  : IconButton(
+                      icon: const Icon(Icons.refresh, color: Colors.black),
+                      onPressed: _handleRefresh,
+                    );
+            },
+          ),
           // Add search icon
           IconButton(
             icon: const Icon(Icons.search, color: Colors.black),
@@ -171,29 +200,36 @@ class _BlogListScreenState extends State<BlogListScreen>
                 builder: (context, errorMessage, _) {
                   if (errorMessage != null) {
                     return Expanded(
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.error_outline,
-                                color: Colors.red, size: 48),
-                            const SizedBox(height: 16),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 24),
-                              child: Text(
-                                errorMessage,
-                                style: TextStyle(color: Colors.red[700]),
-                                textAlign: TextAlign.center,
+                      child: ListView(
+                        children: [
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height / 3,
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.error_outline,
+                                      color: Colors.red, size: 48),
+                                  const SizedBox(height: 16),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 24),
+                                    child: Text(
+                                      errorMessage,
+                                      style: TextStyle(color: Colors.red[700]),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  ElevatedButton(
+                                    onPressed: () => _handleRefresh(),
+                                    child: const Text('Thử lại'),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 24),
-                            ElevatedButton(
-                              onPressed: () => _loadData(),
-                              child: const Text('Thử lại'),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     );
                   }
@@ -219,37 +255,43 @@ class _BlogListScreenState extends State<BlogListScreen>
                     builder: (context, blogs, _) {
                       if (blogs.isEmpty) {
                         return Expanded(
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.article_outlined,
-                                    size: 80, color: Colors.grey),
-                                const SizedBox(height: 16),
-                                Text(
-                                  _blogController.searchQuery.value != null &&
-                                          _blogController
-                                              .searchQuery.value!.isNotEmpty
-                                      ? 'Không tìm thấy kết quả cho "${_blogController.searchQuery.value}"'
-                                      : 'Không có bài viết nào',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 16,
+                          child: ListView(
+                            children: [
+                              SizedBox(
+                                height: MediaQuery.of(context).size.height / 3,
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.article_outlined,
+                                          size: 80, color: Colors.grey),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        _blogController.searchQuery.value !=
+                                                    null &&
+                                                _blogController.searchQuery
+                                                    .value!.isNotEmpty
+                                            ? 'Không tìm thấy kết quả cho "${_blogController.searchQuery.value}"'
+                                            : 'Không có bài viết nào',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         );
                       }
 
                       return Expanded(
-                        child: NotificationListener<ScrollNotification>(
-                          onNotification: (ScrollNotification scrollInfo) {
-                            // TODO: implement pagination
-                            return false;
-                          },
+                        child: RefreshIndicator(
+                          onRefresh: _handleRefresh,
                           child: ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
                             padding: const EdgeInsets.all(16),
                             itemCount: blogs.length,
                             itemBuilder: (context, index) {

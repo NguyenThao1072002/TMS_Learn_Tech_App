@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:provider/provider.dart';
 import 'package:tms_app/data/models/practice_test/practice_test_card_model.dart';
 import 'package:tms_app/domain/usecases/practice_test_usecase.dart';
+import 'package:tms_app/presentation/controller/practice_test_controller.dart';
 import 'package:tms_app/presentation/screens/practice_test/practice_test_detail.dart';
 import 'package:tms_app/presentation/widgets/practice_test/practice_test_card.dart';
 
@@ -14,43 +16,15 @@ class PracticeTestListScreen extends StatefulWidget {
 
 class _PracticeTestListScreenState extends State<PracticeTestListScreen>
     with SingleTickerProviderStateMixin {
-  String _selectedCategory = 'Tất cả';
-  List<Map<String, dynamic>> _categories = [];
-  final List<String> _levelOptions = ['Tất cả', 'EASY', 'MEDIUM', 'HARD'];
-  final List<String> _authorOptions = [];
-  bool _isTopSectionExpanded = true; // Track if top section is expanded
   late AnimationController _animationController;
   late Animation<double> _iconTurns;
-
-  // Use the PracticeTestUseCase from GetIt
-  final PracticeTestUseCase _practiceTestUseCase =
-      GetIt.instance<PracticeTestUseCase>();
-
-  // State variables
-  late Future<List<PracticeTestCardModel>> _practiceTestsFuture;
-  bool _isLoading = false;
-  String? _searchQuery;
-  int _currentPage = 0;
-  final int _pageSize = 10;
-  bool _hasMore = true;
-  final List<PracticeTestCardModel> _tests = [];
-
-  // Filtering variables
-  String? _levelFilter;
-  String? _examTypeFilter;
-  double? _minPriceFilter;
-  double? _maxPriceFilter;
-  int? _minDiscountFilter;
-  int? _maxDiscountFilter;
-  int? _courseIdFilter;
-  int? _categoryIdFilter;
-  String? _authorFilter;
+  late PracticeTestController _controller;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
     super.initState();
-    _loadCategories();
-    _loadTests();
+    _controller = PracticeTestController();
 
     // Initialize animation controller
     _animationController = AnimationController(
@@ -61,142 +35,64 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
         Tween<double>(begin: 0.0, end: 0.5).animate(_animationController);
 
     // Set initial state of animation
-    if (_isTopSectionExpanded) {
+    if (_controller.isTopSectionExpanded) {
       _animationController.value = 0.0;
     } else {
       _animationController.value = 1.0;
+    }
+
+    // Listen to changes in expanded state
+    _controller.addListener(_handleControllerChanges);
+  }
+
+  void _handleControllerChanges() {
+    if (_controller.isTopSectionExpanded !=
+        (_animationController.value == 0.0)) {
+      if (_controller.isTopSectionExpanded) {
+        _animationController.reverse();
+      } else {
+        _animationController.forward();
+      }
+    }
+    setState(() {});
+  }
+
+  // Hàm refresh danh sách đề thi
+  Future<void> _handleRefresh() async {
+    if (_isRefreshing) return;
+
+    setState(() {
+      _isRefreshing = true;
+    });
+
+    try {
+      await _controller.refresh();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
     }
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _controller.removeListener(_handleControllerChanges);
     super.dispose();
   }
 
   void _toggleTopSection() {
-    setState(() {
-      _isTopSectionExpanded = !_isTopSectionExpanded;
-      if (_isTopSectionExpanded) {
-        _animationController.reverse();
-      } else {
-        _animationController.forward();
-      }
-    });
-  }
-
-  Future<void> _loadCategories() async {
-    try {
-      final categories = await _practiceTestUseCase.getPracticeTestCategories();
-      print('Loaded categories: ${categories.length}');
-
-      if (categories.isNotEmpty) {
-        print('First category: ${categories[0]}');
-      }
-
-      setState(() {
-        _categories = categories;
-      });
-
-      // Extract unique authors from tests for author filter
-      _extractAuthors();
-    } catch (e, stackTrace) {
-      print('Error loading categories: $e');
-      print('StackTrace: $stackTrace');
-
-      // Set an empty list rather than leaving it null/uninitialized
-      setState(() {
-        _categories = [];
-      });
-    }
-  }
-
-  void _extractAuthors() {
-    final authorSet = <String>{};
-
-    // Add default "All" option
-    authorSet.add('Tất cả');
-
-    // Extract unique authors from tests
-    for (var test in _tests) {
-      if (test.author.isNotEmpty) {
-        authorSet.add(test.author);
-      }
-    }
-
-    setState(() {
-      _authorOptions.clear();
-      _authorOptions.addAll(authorSet.toList()..sort());
-    });
-  }
-
-  Future<void> _loadTests({bool refresh = false}) async {
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-      if (refresh) {
-        _currentPage = 0;
-        _tests.clear();
-        _hasMore = true;
-      }
-    });
-
-    try {
-      final tests = await _practiceTestUseCase.getFilteredPracticeTests(
-        title: _searchQuery,
-        courseId: _courseIdFilter,
-        categoryId: _categoryIdFilter,
-        level: _levelFilter,
-        examType: _examTypeFilter,
-        minPrice: _minPriceFilter,
-        maxPrice: _maxPriceFilter,
-        minDiscount: _minDiscountFilter,
-        maxDiscount: _maxDiscountFilter,
-        author: _authorFilter,
-        page: _currentPage,
-        size: _pageSize,
-      );
-
-      setState(() {
-        if (tests.isEmpty) {
-          _hasMore = false;
-        } else {
-          _tests.addAll(tests);
-          _currentPage++;
-
-          // Update author list when new tests are loaded
-          _extractAuthors();
-        }
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Không thể tải đề thi: ${e.toString()}')),
-      );
-    }
-  }
-
-  void _applyFilters() {
-    setState(() {
-      _currentPage = 0;
-      _tests.clear();
-      _hasMore = true;
-    });
-
-    _loadTests();
+    _controller.toggleTopSection();
   }
 
   void _showFilterDialog() {
-    String? tempLevelFilter = _levelFilter;
-    String? tempAuthorFilter = _authorFilter;
-    double? tempMinPrice = _minPriceFilter;
-    double? tempMaxPrice = _maxPriceFilter;
-    int? tempCategoryId = _categoryIdFilter;
+    String? tempLevelFilter = _controller.levelFilter;
+    String? tempAuthorFilter = _controller.authorFilter;
+    double? tempMinPrice = _controller.minPriceFilter;
+    double? tempMaxPrice = _controller.maxPriceFilter;
+    int? tempCategoryId = _controller.categoryIdFilter;
 
     showModalBottomSheet(
       context: context,
@@ -267,7 +163,7 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                                       : FontWeight.normal,
                                 ),
                               ),
-                              ..._categories.map((category) {
+                              ..._controller.categories.map((category) {
                                 String categoryName = 'Unknown';
                                 int categoryId = -1;
 
@@ -334,7 +230,7 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                           Wrap(
                             spacing: 8,
                             runSpacing: 8,
-                            children: _levelOptions.map((level) {
+                            children: _controller.levelOptions.map((level) {
                               final isSelected = tempLevelFilter == level ||
                                   (level == 'Tất cả' &&
                                       tempLevelFilter == null);
@@ -342,7 +238,7 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                               return FilterChip(
                                 label: Text(level == 'Tất cả'
                                     ? level
-                                    : _translateLevel(level)),
+                                    : _controller.translateLevel(level)),
                                 selected: isSelected,
                                 onSelected: (selected) {
                                   setModalState(() {
@@ -382,12 +278,13 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                             ),
                           ),
                           const SizedBox(height: 10),
-                          _authorOptions.isEmpty
+                          _controller.authorOptions.isEmpty
                               ? const Text('Không có tác giả nào để hiển thị')
                               : Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
-                                  children: _authorOptions.map((author) {
+                                  children:
+                                      _controller.authorOptions.map((author) {
                                     final isSelected =
                                         tempAuthorFilter == author ||
                                             (author == 'Tất cả' &&
@@ -507,14 +404,14 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                     const SizedBox(width: 16),
                     ElevatedButton(
                       onPressed: () {
-                        setState(() {
-                          _levelFilter = tempLevelFilter;
-                          _authorFilter = tempAuthorFilter;
-                          _minPriceFilter = tempMinPrice;
-                          _maxPriceFilter = tempMaxPrice;
-                          _categoryIdFilter = tempCategoryId;
-                        });
-                        _applyFilters();
+                        _controller.updateFilters(
+                          levelFilter: tempLevelFilter,
+                          authorFilter: tempAuthorFilter,
+                          minPriceFilter: tempMinPrice,
+                          maxPriceFilter: tempMaxPrice,
+                          categoryIdFilter: tempCategoryId,
+                        );
+                        _controller.applyFilters();
                         Navigator.pop(context);
                       },
                       child: const Text('Áp dụng'),
@@ -528,39 +425,6 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
         },
       ),
     );
-  }
-
-  String _translateLevel(String level) {
-    switch (level.toUpperCase()) {
-      case 'EASY':
-        return 'Dễ';
-      case 'MEDIUM':
-        return 'Trung bình';
-      case 'HARD':
-        return 'Khó';
-      default:
-        return level;
-    }
-  }
-
-  String _getCategoryName(int categoryId) {
-    try {
-      final category = _categories.firstWhere(
-        (category) => category['id'] == categoryId,
-        orElse: () => {'name': 'Unknown'},
-      );
-
-      final name = category['name'];
-      if (name == null) {
-        print('Warning: Category $categoryId has null name: $category');
-        return 'Unknown';
-      }
-
-      return name.toString();
-    } catch (e) {
-      print('Error getting category name for ID $categoryId: $e');
-      return 'Unknown';
-    }
   }
 
   @override
@@ -582,6 +446,25 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
+          // Add refresh button
+          _isRefreshing
+              ? Container(
+                  width: 48,
+                  alignment: Alignment.center,
+                  child: const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Color(0xFF333333)),
+                    ),
+                  ),
+                )
+              : IconButton(
+                  icon: const Icon(Icons.refresh, color: Color(0xFF333333)),
+                  onPressed: _handleRefresh,
+                ),
           IconButton(
             icon: const Icon(Icons.search, color: Color(0xFF333333)),
             onPressed: () {
@@ -590,13 +473,7 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                 context: context,
                 delegate: PracticeTestSearchDelegate(
                   onSearch: (query) {
-                    setState(() {
-                      _searchQuery = query;
-                      _currentPage = 0;
-                      _tests.clear();
-                      _hasMore = true;
-                    });
-                    _loadTests();
+                    _controller.setSearchQuery(query);
                   },
                 ),
               );
@@ -622,7 +499,7 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
           // Collapsible top section
           AnimatedCrossFade(
             duration: const Duration(milliseconds: 300),
-            crossFadeState: _isTopSectionExpanded
+            crossFadeState: _controller.isTopSectionExpanded
                 ? CrossFadeState.showFirst
                 : CrossFadeState.showSecond,
             firstChild: Column(
@@ -727,7 +604,7 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                 // Category filter
                 SizedBox(
                   height: 50,
-                  child: _categories.isEmpty
+                  child: _controller.categories.isEmpty
                       ? ListView.builder(
                           scrollDirection: Axis.horizontal,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -752,47 +629,44 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                       : ListView.builder(
                           scrollDirection: Axis.horizontal,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount:
-                              _categories.length + 1, // +1 for "All" option
+                          itemCount: _controller.categories.length +
+                              1, // +1 for "All" option
                           itemBuilder: (context, index) {
                             if (index == 0) {
                               return Padding(
                                 padding: const EdgeInsets.only(right: 8),
                                 child: ChoiceChip(
                                   label: const Text('Tất cả'),
-                                  selected: _selectedCategory == 'Tất cả',
+                                  selected:
+                                      _controller.selectedCategory == 'Tất cả',
                                   onSelected: (selected) {
                                     if (selected) {
-                                      setState(() {
-                                        _selectedCategory = 'Tất cả';
-                                        _categoryIdFilter = null;
-                                        _currentPage = 0;
-                                        _tests.clear();
-                                        _hasMore = true;
-                                      });
-                                      _loadTests();
+                                      _controller.selectCategory(
+                                          'Tất cả', null);
                                     }
                                   },
                                   backgroundColor: Colors.grey.shade200,
                                   selectedColor: const Color(0xFF3498DB),
                                   labelStyle: TextStyle(
-                                    color: _selectedCategory == 'Tất cả'
-                                        ? Colors.white
-                                        : Colors.black,
-                                    fontWeight: _selectedCategory == 'Tất cả'
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
+                                    color:
+                                        _controller.selectedCategory == 'Tất cả'
+                                            ? Colors.white
+                                            : Colors.black,
+                                    fontWeight:
+                                        _controller.selectedCategory == 'Tất cả'
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
                                   ),
                                 ),
                               );
                             }
 
-                            final category = _categories[index - 1];
+                            final category = _controller.categories[index - 1];
                             final categoryName =
                                 category['name'] as String? ?? 'Unknown';
                             final categoryId = category['id'] as int? ?? -1;
                             final isSelected =
-                                categoryName == _selectedCategory;
+                                categoryName == _controller.selectedCategory;
 
                             return Padding(
                               padding: const EdgeInsets.only(right: 8),
@@ -801,14 +675,8 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                                 selected: isSelected,
                                 onSelected: (selected) {
                                   if (selected) {
-                                    setState(() {
-                                      _selectedCategory = categoryName;
-                                      _categoryIdFilter = categoryId;
-                                      _currentPage = 0;
-                                      _tests.clear();
-                                      _hasMore = true;
-                                    });
-                                    _loadTests();
+                                    _controller.selectCategory(
+                                        categoryName, categoryId);
                                   }
                                 },
                                 backgroundColor: Colors.grey.shade200,
@@ -827,9 +695,9 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                 ),
 
                 // Applied filters chips
-                if (_levelFilter != null ||
-                    _authorFilter != null ||
-                    _categoryIdFilter != null)
+                if (_controller.levelFilter != null ||
+                    _controller.authorFilter != null ||
+                    _controller.categoryIdFilter != null)
                   Padding(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -837,40 +705,31 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        if (_categoryIdFilter != null)
+                        if (_controller.categoryIdFilter != null)
                           Chip(
                             label: Text(
-                                'Danh mục: ${_getCategoryName(_categoryIdFilter!)}'),
+                                'Danh mục: ${_controller.getCategoryName(_controller.categoryIdFilter!)}'),
                             onDeleted: () {
-                              setState(() {
-                                _categoryIdFilter = null;
-                              });
-                              _applyFilters();
+                              _controller.clearFilter(FilterType.CATEGORY);
                             },
                             backgroundColor: Colors.grey.shade200,
                             deleteIconColor: Colors.black54,
                           ),
-                        if (_levelFilter != null)
+                        if (_controller.levelFilter != null)
                           Chip(
                             label: Text(
-                                'Độ khó: ${_translateLevel(_levelFilter!)}'),
+                                'Độ khó: ${_controller.translateLevel(_controller.levelFilter!)}'),
                             onDeleted: () {
-                              setState(() {
-                                _levelFilter = null;
-                              });
-                              _applyFilters();
+                              _controller.clearFilter(FilterType.LEVEL);
                             },
                             backgroundColor: Colors.grey.shade200,
                             deleteIconColor: Colors.black54,
                           ),
-                        if (_authorFilter != null)
+                        if (_controller.authorFilter != null)
                           Chip(
-                            label: Text('Tác giả: $_authorFilter'),
+                            label: Text('Tác giả: ${_controller.authorFilter}'),
                             onDeleted: () {
-                              setState(() {
-                                _authorFilter = null;
-                              });
-                              _applyFilters();
+                              _controller.clearFilter(FilterType.AUTHOR);
                             },
                             backgroundColor: Colors.grey.shade200,
                             deleteIconColor: Colors.black54,
@@ -896,9 +755,9 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
 
           // Test list
           Expanded(
-            child: _isLoading && _tests.isEmpty
+            child: _controller.isLoading && _controller.tests.isEmpty
                 ? const Center(child: CircularProgressIndicator())
-                : _tests.isEmpty
+                : _controller.tests.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -918,52 +777,56 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                             ),
                             const SizedBox(height: 8),
                             ElevatedButton(
-                              onPressed: () => _loadTests(refresh: true),
+                              onPressed: _handleRefresh,
                               child: const Text('Tải lại'),
                             ),
                           ],
                         ),
                       )
-                    : NotificationListener<ScrollNotification>(
-                        onNotification: (ScrollNotification scrollInfo) {
-                          if (scrollInfo.metrics.pixels ==
-                                  scrollInfo.metrics.maxScrollExtent &&
-                              !_isLoading &&
-                              _hasMore) {
-                            _loadTests();
-                          }
-                          return false;
-                        },
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _tests.length + (_hasMore ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (index == _tests.length) {
-                              return _isLoading
-                                  ? const Center(
-                                      child: Padding(
-                                        padding: EdgeInsets.all(16.0),
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                    )
-                                  : const SizedBox();
+                    : RefreshIndicator(
+                        onRefresh: _handleRefresh,
+                        child: NotificationListener<ScrollNotification>(
+                          onNotification: (ScrollNotification scrollInfo) {
+                            if (scrollInfo.metrics.pixels ==
+                                    scrollInfo.metrics.maxScrollExtent &&
+                                !_controller.isLoading &&
+                                _controller.hasMore) {
+                              _controller.loadTests();
                             }
-
-                            final test = _tests[index];
-                            return PracticeTestCard(
-                              test: test,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        PracticeTestDetailScreen(
-                                            testId: test.testId),
-                                  ),
-                                );
-                              },
-                            );
+                            return false;
                           },
+                          child: ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _controller.tests.length +
+                                (_controller.hasMore ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index == _controller.tests.length) {
+                                return _controller.isLoading
+                                    ? const Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.all(16.0),
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      )
+                                    : const SizedBox();
+                              }
+
+                              final test = _controller.tests[index];
+                              return PracticeTestCard(
+                                test: test,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          PracticeTestDetailScreen(
+                                              testId: test.testId),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
                         ),
                       ),
           ),
@@ -971,19 +834,44 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
       ),
     );
   }
-
-  String _formatPrice(double price) {
-    return price.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]}.',
-        );
-  }
 }
 
 class PracticeTestSearchDelegate extends SearchDelegate<String> {
   final Function(String) onSearch;
 
   PracticeTestSearchDelegate({required this.onSearch});
+
+  @override
+  String get searchFieldLabel => 'Tìm kiếm đề thi...';
+
+  @override
+  TextStyle? get searchFieldStyle => const TextStyle(
+        fontSize: 16,
+        color: Color(0xFF333333),
+      );
+
+  @override
+  ThemeData appBarTheme(BuildContext context) {
+    final theme = Theme.of(context);
+    return theme.copyWith(
+      scaffoldBackgroundColor: Colors.white,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Color(0xFF3498DB)),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade100,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        hintStyle: TextStyle(color: Colors.grey.shade500),
+      ),
+    );
+  }
 
   @override
   List<Widget> buildActions(BuildContext context) {
@@ -1010,50 +898,89 @@ class PracticeTestSearchDelegate extends SearchDelegate<String> {
   @override
   Widget buildResults(BuildContext context) {
     onSearch(query);
-    return Container(); // Results will be shown in the main screen
+    // Đảm bảo background trắng cho kết quả tìm kiếm
+    return Container(
+      color: Colors.white,
+      child: const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3498DB)),
+        ),
+      ),
+    );
   }
 
   @override
   Widget buildSuggestions(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            'Gợi ý tìm kiếm',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Container(
+        color: Colors.white,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'Gợi ý tìm kiếm',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade700,
+                ),
+              ),
             ),
-          ),
+            Expanded(
+              child: ListView.builder(
+                shrinkWrap: true,
+                physics: const BouncingScrollPhysics(),
+                itemCount: 5,
+                itemBuilder: (context, index) {
+                  final suggestions = [
+                    'Flutter',
+                    'React Native',
+                    'Android Development',
+                    'iOS Development',
+                    'Web Development',
+                  ];
+
+                  return Container(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.search,
+                        color: Color(0xFF3498DB),
+                      ),
+                      title: Text(
+                        suggestions[index],
+                        style: const TextStyle(
+                          color: Color(0xFF333333),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      onTap: () {
+                        query = suggestions[index];
+                        showResults(context);
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
-        ListTile(
-          leading: const Icon(Icons.search),
-          title: const Text('Flutter'),
-          onTap: () {
-            query = 'Flutter';
-            showResults(context);
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.search),
-          title: const Text('React Native'),
-          onTap: () {
-            query = 'React Native';
-            showResults(context);
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.search),
-          title: const Text('Frontend'),
-          onTap: () {
-            query = 'Frontend';
-            showResults(context);
-          },
-        ),
-      ],
+      ),
     );
   }
 }

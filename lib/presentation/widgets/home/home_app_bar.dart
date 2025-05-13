@@ -41,6 +41,19 @@ class HomeAppBarWidget extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
+        IconButton(
+          icon: const Icon(
+            Icons.search,
+            color: Color(0xFF3498DB),
+            size: 26,
+          ),
+          onPressed: () {
+            showSearch(
+              context: context,
+              delegate: HomeSearchDelegate(),
+            );
+          },
+        ),
         Stack(
           children: [
             IconButton(
@@ -91,4 +104,124 @@ class HomeAppBarWidget extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+class HomeSearchDelegate extends SearchDelegate<String> {
+  @override
+  String get searchFieldLabel => 'Tìm kiếm khóa học, tài liệu...';
+
+  @override
+  TextStyle? get searchFieldStyle => const TextStyle(fontSize: 16);
+
+  @override
+  ThemeData appBarTheme(BuildContext context) {
+    final theme = Theme.of(context);
+    return theme.copyWith(
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Color(0xFF3498DB)),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade100,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        hintStyle: TextStyle(color: Colors.grey.shade500),
+      ),
+    );
+  }
+
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: const Icon(Icons.clear),
+        onPressed: () {
+          query = '';
+        },
+      ),
+    ];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.arrow_back),
+      onPressed: () {
+        close(context, '');
+      },
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    return buildSuggestions(context);
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    final suggestions = query.isEmpty
+        ? [
+            'Flutter',
+            'React Native',
+            'Android Development',
+            'iOS Development',
+            'Web Development',
+            'Backend Development',
+          ]
+        : [
+            'Flutter Basics',
+            'Flutter Advanced',
+            'Flutter State Management',
+            'Flutter Widgets',
+            'Flutter Animations',
+          ]
+            .where((s) => s.toLowerCase().contains(query.toLowerCase()))
+            .toList();
+
+    return Container(
+      color: Colors.white,
+      child: ListView.builder(
+        itemCount: suggestions.length,
+        itemBuilder: (context, index) {
+          final suggestion = suggestions[index];
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ListTile(
+              leading: const Icon(
+                Icons.search,
+                color: Color(0xFF3498DB),
+              ),
+              title: Text(
+                suggestion,
+                style: const TextStyle(
+                  color: Color(0xFF333333),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              onTap: () {
+                query = suggestion;
+                showResults(context);
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
 }

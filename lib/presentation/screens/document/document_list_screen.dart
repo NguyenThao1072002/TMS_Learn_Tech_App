@@ -26,6 +26,7 @@ class _DocumentListScreenState extends State<DocumentListScreen>
   final bannerUseCase = GetIt.instance<BannerUseCase>();
   late Future<List<BannerModel>> bannersFuture;
   String _selectedFormat = 'Tất cả';
+  bool _isRefreshing = false;
 
   String _selectedCategory = 'Tất cả';
   final List<Map<String, dynamic>> _bannerItems = [
@@ -93,6 +94,35 @@ class _DocumentListScreenState extends State<DocumentListScreen>
     super.dispose();
   }
 
+  // Hàm refresh dữ liệu
+  Future<void> _handleRefresh() async {
+    if (_isRefreshing) return;
+
+    setState(() {
+      _isRefreshing = true;
+    });
+
+    try {
+      // Tải lại banner
+      bannersFuture =
+          bannerUseCase.getBannersByPositionAndPlatform('document', 'mobile');
+
+      // Tải lại danh mục
+      await _documentController.loadCategories();
+
+      // Tải lại dữ liệu tài liệu theo tab hiện tại
+      _reloadCurrentTabData();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
+    }
+
+    return;
+  }
+
   // Function to navigate to detail page and increment views
   void _navigateToDetailAndIncrementViews(
       BuildContext context, DocumentModel document) {
@@ -153,6 +183,26 @@ class _DocumentListScreenState extends State<DocumentListScreen>
             color: Colors.white,
           ),
         ),
+        actions: [
+          // Add refresh button
+          _isRefreshing
+              ? Container(
+                  width: 48,
+                  alignment: Alignment.center,
+                  child: const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                )
+              : IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  onPressed: _handleRefresh,
+                ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.white,
@@ -192,509 +242,515 @@ class _DocumentListScreenState extends State<DocumentListScreen>
   }
 
   Widget _buildTabContent() {
-    return ListView(
-      children: [
-        // Banner ad carousel
+    return RefreshIndicator(
+      onRefresh: _handleRefresh,
+      child: ListView(
+        children: [
+          // Banner ad carousel
 // Banner slider từ dữ liệu API
-        Padding(
-          padding: const EdgeInsets.only(top: 12.0),
-          child: FutureBuilder<List<BannerModel>>(
-            future: bannersFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SizedBox(
-                  height: 150,
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              } else if (snapshot.hasError) {
-                return SizedBox(
-                  height: 150,
-                  child: Center(
-                    child: Text('Lỗi khi tải banner: ${snapshot.error}'),
-                  ),
-                );
-              } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                final banners = snapshot.data!;
-                return CarouselSlider(
-                  options: CarouselOptions(
+          Padding(
+            padding: const EdgeInsets.only(top: 12.0),
+            child: FutureBuilder<List<BannerModel>>(
+              future: bannersFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const SizedBox(
                     height: 150,
-                    aspectRatio: 16 / 9,
-                    viewportFraction: 0.9,
-                    initialPage: 0,
-                    enableInfiniteScroll: true,
-                    reverse: false,
-                    autoPlay: true,
-                    autoPlayInterval: const Duration(seconds: 5),
-                    autoPlayAnimationDuration:
-                        const Duration(milliseconds: 800),
-                    autoPlayCurve: Curves.fastOutSlowIn,
-                    enlargeCenterPage: true,
-                  ),
-                  items: banners.map((banner) {
-                    return Builder(
-                      builder: (BuildContext context) {
-                        return Container(
-                          width: MediaQuery.of(context).size.width,
-                          margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            gradient: LinearGradient(
-                              colors: [
-                                const Color(0xFF5E35B1),
-                                const Color(0xFF5E35B1).withOpacity(0.8)
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                } else if (snapshot.hasError) {
+                  return SizedBox(
+                    height: 150,
+                    child: Center(
+                      child: Text('Lỗi khi tải banner: ${snapshot.error}'),
+                    ),
+                  );
+                } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                  final banners = snapshot.data!;
+                  return CarouselSlider(
+                    options: CarouselOptions(
+                      height: 150,
+                      aspectRatio: 16 / 9,
+                      viewportFraction: 0.9,
+                      initialPage: 0,
+                      enableInfiniteScroll: true,
+                      reverse: false,
+                      autoPlay: true,
+                      autoPlayInterval: const Duration(seconds: 5),
+                      autoPlayAnimationDuration:
+                          const Duration(milliseconds: 800),
+                      autoPlayCurve: Curves.fastOutSlowIn,
+                      enlargeCenterPage: true,
+                    ),
+                    items: banners.map((banner) {
+                      return Builder(
+                        builder: (BuildContext context) {
+                          return Container(
+                            width: MediaQuery.of(context).size.width,
+                            margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              gradient: LinearGradient(
+                                colors: [
+                                  const Color(0xFF5E35B1),
+                                  const Color(0xFF5E35B1).withOpacity(0.8)
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
                             ),
-                          ),
-                          child: Stack(
-                            children: [
-                              Positioned.fill(
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Opacity(
-                                    opacity: 0.3,
-                                    child: Image.network(
-                                      banner.imageUrl,
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                        return Container(
-                                          color: Colors.grey.shade300,
-                                          child: const Center(
-                                            child: Icon(Icons.broken_image,
-                                                size: 50),
-                                          ),
-                                        );
-                                      },
+                            child: Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Opacity(
+                                      opacity: 0.3,
+                                      child: Image.network(
+                                        banner.imageUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return Container(
+                                            color: Colors.grey.shade300,
+                                            child: const Center(
+                                              child: Icon(Icons.broken_image,
+                                                  size: 50),
+                                            ),
+                                          );
+                                        },
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(20.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      banner.title,
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        // Xử lý hành động khi click vào banner
-                                        if (banner.link != null &&
-                                            banner.link!.isNotEmpty) {
-                                          // Mở link hoặc xử lý hành động tương ứng
-                                        }
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.white,
-                                        foregroundColor:
-                                            const Color(0xFF5E35B1),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(20),
-                                        ),
-                                      ),
-                                      child: const Text('Xem ngay'),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  }).toList(),
-                );
-              } else {
-                // Fallback khi không có banner từ API
-                return CarouselSlider(
-                  options: CarouselOptions(
-                    height: 150,
-                    aspectRatio: 16 / 9,
-                    viewportFraction: 0.9,
-                    initialPage: 0,
-                    enableInfiniteScroll: true,
-                    reverse: false,
-                    autoPlay: true,
-                    autoPlayInterval: const Duration(seconds: 5),
-                    autoPlayAnimationDuration:
-                        const Duration(milliseconds: 800),
-                    autoPlayCurve: Curves.fastOutSlowIn,
-                    enlargeCenterPage: true,
-                  ),
-                  items: _bannerItems.map((item) {
-                    return Builder(
-                      builder: (BuildContext context) {
-                        return Container(
-                          width: MediaQuery.of(context).size.width,
-                          margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            gradient: LinearGradient(
-                              colors: [
-                                item['color'],
-                                item['color'].withOpacity(0.8)
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                          child: Stack(
-                            children: [
-                              // Giữ nguyên phần này
-                              Positioned.fill(
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Opacity(
-                                    opacity: 0.3,
-                                    child: Image.network(
-                                      'https://via.placeholder.com/600x300',
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(20.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      item['title'],
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    ElevatedButton(
-                                      onPressed: () {},
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.white,
-                                        foregroundColor: item['color'],
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(20),
-                                        ),
-                                      ),
-                                      child: const Text('Xem ngay'),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  }).toList(),
-                );
-              }
-            },
-          ),
-        ),
-        // Search and filter section
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Search bar
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(32),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
-                      spreadRadius: 1,
-                      blurRadius: 3,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (value) {
-                    if (value.isNotEmpty) {
-                      _documentController.searchDocuments(value);
-                    } else {
-                      _reloadCurrentTabData();
-                    }
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Tìm kiếm tài liệu...',
-                    hintStyle: TextStyle(color: Colors.grey[600]),
-                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, color: Colors.grey),
-                            onPressed: () {
-                              _searchController.clear();
-                              _reloadCurrentTabData();
-                            },
-                          )
-                        : null,
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Filter options
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Format filter
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(left: 4.0, bottom: 4.0),
-                          child: Text(
-                            'Định dạng:',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.grey.shade300),
-                          ),
-                          child: ValueListenableBuilder<String>(
-                              valueListenable:
-                                  _documentController.selectedFilter,
-                              builder: (context, selectedFilter, _) {
-                                return DropdownButton<String>(
-                                  isExpanded: true,
-                                  value: _selectedFormat,
-                                  icon: const Icon(Icons.arrow_drop_down),
-                                  iconSize: 24,
-                                  elevation: 16,
-                                  style: const TextStyle(
-                                      color: Colors.black87, fontSize: 15),
-                                  underline: Container(height: 0),
-                                  alignment: AlignmentDirectional.centerStart,
-                                  isDense: false,
-                                  itemHeight: 50,
-                                  borderRadius: BorderRadius.circular(12),
-                                  menuMaxHeight: 300,
-                                  onChanged: (String? newValue) {
-                                    setState(() {
-                                      _selectedFormat = newValue!;
-                                    });
-                                    _filterDocumentsByFormat(newValue!);
-                                  },
-                                  items: _formatOptions
-                                      .map<DropdownMenuItem<String>>(
-                                          (String value) {
-                                    return DropdownMenuItem<String>(
-                                      value: value,
-                                      alignment: Alignment.centerLeft,
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8.0, vertical: 4.0),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            if (value != 'Tất cả')
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.all(4),
-                                                margin: const EdgeInsets.only(
-                                                    right: 8),
-                                                decoration: BoxDecoration(
-                                                  color: _getColorForDocType(
-                                                      value),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                width: 8,
-                                                height: 8,
-                                              ),
-                                            Text(value),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                                  hint: const Text("Định dạng"),
-                                  dropdownColor: Colors.white,
-                                );
-                              }),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(width: 12),
-
-                  // Category filter
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(left: 4.0, bottom: 4.0),
-                          child: Text(
-                            'Danh mục:',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.grey.shade300),
-                          ),
-                          child: DropdownButton<String>(
-                            isExpanded: true,
-                            value: _selectedCategory,
-                            icon: const Icon(Icons.arrow_drop_down),
-                            iconSize: 24,
-                            elevation: 16,
-                            style: const TextStyle(
-                                color: Colors.black87, fontSize: 15),
-                            underline: Container(height: 0),
-                            alignment: AlignmentDirectional.centerStart,
-                            isDense: false,
-                            itemHeight: 50,
-                            borderRadius: BorderRadius.circular(12),
-                            menuMaxHeight: 300,
-                            onChanged: (String? newValue) {
-                              setState(() {
-                                _selectedCategory = newValue!;
-                              });
-
-                              if (newValue == 'Tất cả') {
-                                _reloadCurrentTabData();
-                              } else {
-                                // Lấy categoryId từ controller
-                                final categoryId = _documentController
-                                    .getCategoryIdByName(newValue);
-
-                                if (categoryId != null) {
-                                  // Sử dụng trực tiếp hàm loadDocumentsByCategory
-                                  _documentController
-                                      .loadDocumentsByCategory(categoryId);
-                                } else {
-                                  print(
-                                      'Không tìm thấy ID cho danh mục: $newValue');
-                                  _reloadCurrentTabData();
-                                }
-                              }
-                            },
-                            items: _categoryOptions
-                                .map<DropdownMenuItem<String>>((String value) {
-                              return DropdownMenuItem<String>(
-                                value: value,
-                                alignment: Alignment.centerLeft,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8.0, vertical: 4.0),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
+                                Padding(
+                                  padding: const EdgeInsets.all(20.0),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      if (value != 'Tất cả')
-                                        Container(
-                                          padding: const EdgeInsets.all(4),
-                                          margin:
-                                              const EdgeInsets.only(right: 8),
-                                          decoration: BoxDecoration(
-                                            color: _getCategoryColor(value),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          width: 8,
-                                          height: 8,
+                                      Text(
+                                        banner.title,
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
                                         ),
-                                      Text(value),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          // Xử lý hành động khi click vào banner
+                                          if (banner.link != null &&
+                                              banner.link!.isNotEmpty) {
+                                            // Mở link hoặc xử lý hành động tương ứng
+                                          }
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.white,
+                                          foregroundColor:
+                                              const Color(0xFF5E35B1),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                        ),
+                                        child: const Text('Xem ngay'),
+                                      ),
                                     ],
                                   ),
                                 ),
-                              );
-                            }).toList(),
-                            hint: const Text("Danh mục"),
-                            dropdownColor: Colors.white,
-                          ),
-                        ),
-                      ],
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    }).toList(),
+                  );
+                } else {
+                  // Fallback khi không có banner từ API
+                  return CarouselSlider(
+                    options: CarouselOptions(
+                      height: 150,
+                      aspectRatio: 16 / 9,
+                      viewportFraction: 0.9,
+                      initialPage: 0,
+                      enableInfiniteScroll: true,
+                      reverse: false,
+                      autoPlay: true,
+                      autoPlayInterval: const Duration(seconds: 5),
+                      autoPlayAnimationDuration:
+                          const Duration(milliseconds: 800),
+                      autoPlayCurve: Curves.fastOutSlowIn,
+                      enlargeCenterPage: true,
+                    ),
+                    items: _bannerItems.map((item) {
+                      return Builder(
+                        builder: (BuildContext context) {
+                          return Container(
+                            width: MediaQuery.of(context).size.width,
+                            margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              gradient: LinearGradient(
+                                colors: [
+                                  item['color'],
+                                  item['color'].withOpacity(0.8)
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                            ),
+                            child: Stack(
+                              children: [
+                                // Giữ nguyên phần này
+                                Positioned.fill(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Opacity(
+                                      opacity: 0.3,
+                                      child: Image.network(
+                                        'https://via.placeholder.com/600x300',
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(20.0),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        item['title'],
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      ElevatedButton(
+                                        onPressed: () {},
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.white,
+                                          foregroundColor: item['color'],
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                        ),
+                                        child: const Text('Xem ngay'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    }).toList(),
+                  );
+                }
+              },
+            ),
+          ),
+          // Search and filter section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Search bar
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.2),
+                        spreadRadius: 1,
+                        blurRadius: 3,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (value) {
+                      if (value.isNotEmpty) {
+                        _documentController.searchDocuments(value);
+                      } else {
+                        _reloadCurrentTabData();
+                      }
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Tìm kiếm tài liệu...',
+                      hintStyle: TextStyle(color: Colors.grey[600]),
+                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, color: Colors.grey),
+                              onPressed: () {
+                                _searchController.clear();
+                                _reloadCurrentTabData();
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
-                ],
-              ),
+                ),
 
-              // Reset filters button
-              if (_selectedFormat != 'Tất cả' ||
-                  _selectedCategory != 'Tất cả' ||
-                  _searchController.text.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          _selectedFormat = 'Tất cả';
-                          _selectedCategory = 'Tất cả';
-                          _searchController.clear();
-                        });
+                const SizedBox(height: 12),
 
-                        // Reload data
-                        _reloadCurrentTabData();
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(Icons.refresh, size: 16),
-                            SizedBox(width: 4),
-                            Text('Đặt lại'),
-                          ],
+                // Filter options
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Format filter
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(left: 4.0, bottom: 4.0),
+                            child: Text(
+                              'Định dạng:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: ValueListenableBuilder<String>(
+                                valueListenable:
+                                    _documentController.selectedFilter,
+                                builder: (context, selectedFilter, _) {
+                                  return DropdownButton<String>(
+                                    isExpanded: true,
+                                    value: _selectedFormat,
+                                    icon: const Icon(Icons.arrow_drop_down),
+                                    iconSize: 24,
+                                    elevation: 16,
+                                    style: const TextStyle(
+                                        color: Colors.black87, fontSize: 15),
+                                    underline: Container(height: 0),
+                                    alignment: AlignmentDirectional.centerStart,
+                                    isDense: false,
+                                    itemHeight: 50,
+                                    borderRadius: BorderRadius.circular(12),
+                                    menuMaxHeight: 300,
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        _selectedFormat = newValue!;
+                                      });
+                                      _filterDocumentsByFormat(newValue!);
+                                    },
+                                    items: _formatOptions
+                                        .map<DropdownMenuItem<String>>(
+                                            (String value) {
+                                      return DropdownMenuItem<String>(
+                                        value: value,
+                                        alignment: Alignment.centerLeft,
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8.0, vertical: 4.0),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              if (value != 'Tất cả')
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.all(4),
+                                                  margin: const EdgeInsets.only(
+                                                      right: 8),
+                                                  decoration: BoxDecoration(
+                                                    color: _getColorForDocType(
+                                                        value),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  width: 8,
+                                                  height: 8,
+                                                ),
+                                              Text(value),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                    hint: const Text("Định dạng"),
+                                    dropdownColor: Colors.white,
+                                  );
+                                }),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    // Category filter
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(left: 4.0, bottom: 4.0),
+                            child: Text(
+                              'Danh mục:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: DropdownButton<String>(
+                              isExpanded: true,
+                              value: _selectedCategory,
+                              icon: const Icon(Icons.arrow_drop_down),
+                              iconSize: 24,
+                              elevation: 16,
+                              style: const TextStyle(
+                                  color: Colors.black87, fontSize: 15),
+                              underline: Container(height: 0),
+                              alignment: AlignmentDirectional.centerStart,
+                              isDense: false,
+                              itemHeight: 50,
+                              borderRadius: BorderRadius.circular(12),
+                              menuMaxHeight: 300,
+                              onChanged: (String? newValue) {
+                                setState(() {
+                                  _selectedCategory = newValue!;
+                                });
+
+                                if (newValue == 'Tất cả') {
+                                  _reloadCurrentTabData();
+                                } else {
+                                  // Lấy categoryId từ controller
+                                  final categoryId = _documentController
+                                      .getCategoryIdByName(newValue);
+
+                                  if (categoryId != null) {
+                                    // Sử dụng trực tiếp hàm loadDocumentsByCategory
+                                    _documentController
+                                        .loadDocumentsByCategory(categoryId);
+                                  } else {
+                                    print(
+                                        'Không tìm thấy ID cho danh mục: $newValue');
+                                    _reloadCurrentTabData();
+                                  }
+                                }
+                              },
+                              items: _categoryOptions
+                                  .map<DropdownMenuItem<String>>(
+                                      (String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  alignment: Alignment.centerLeft,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8.0, vertical: 4.0),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (value != 'Tất cả')
+                                          Container(
+                                            padding: const EdgeInsets.all(4),
+                                            margin:
+                                                const EdgeInsets.only(right: 8),
+                                            decoration: BoxDecoration(
+                                              color: _getCategoryColor(value),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            width: 8,
+                                            height: 8,
+                                          ),
+                                        Text(value),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                              hint: const Text("Danh mục"),
+                              dropdownColor: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Reset filters button
+                if (_selectedFormat != 'Tất cả' ||
+                    _selectedCategory != 'Tất cả' ||
+                    _searchController.text.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedFormat = 'Tất cả';
+                            _selectedCategory = 'Tất cả';
+                            _searchController.clear();
+                          });
+
+                          // Reload data
+                          _reloadCurrentTabData();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.refresh, size: 16),
+                              SizedBox(width: 4),
+                              Text('Đặt lại'),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
 
-              const SizedBox(height: 12),
-            ],
+                const SizedBox(height: 12),
+              ],
+            ),
           ),
-        ),
 
-        // Main content - Document list
-        _buildDocumentListContent(),
-      ],
+          // Main content - Document list
+          _buildDocumentListContent(),
+        ],
+      ),
     );
   }
 

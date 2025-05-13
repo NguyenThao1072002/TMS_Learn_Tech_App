@@ -5,12 +5,13 @@ class VerifyRegisterOtpUseCase {
 
   VerifyRegisterOtpUseCase(this.accountRepository);
 
-  Future<bool> call(String otp, String email) async {
+  Future<bool> call(String otp, String email, String type) async {
     try {
       // Gọi phương thức từ repository với đúng tham số
       final result = await accountRepository.verifyOtp({
         'otp': otp,
         'email': email,
+        'type': type,
       });
       return result;
     } catch (e) {

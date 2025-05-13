@@ -10,6 +10,8 @@ import 'package:tms_app/core/theme/app_styles.dart';
 import 'package:tms_app/presentation/controller/forgot_password_controller.dart';
 import 'package:tms_app/core/utils/toast_helper.dart';
 import 'package:tms_app/presentation/screens/login/login.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tms_app/presentation/screens/onboarding/onboarding_screen.dart';
 
 class RegisterController {
   final RegisterUseCase registerUseCase;
@@ -78,10 +80,11 @@ class RegisterController {
   }
 
   // Phương thức xác thực OTP cho đăng ký
-  Future<Map<String, dynamic>> verifyOtp(String otp, String email) async {
+  Future<Map<String, dynamic>> verifyOtp(
+      String otp, String email, String type) async {
     try {
       // Sử dụng UseCase thay vì gọi trực tiếp repository
-      bool success = await verifyRegisterOtpUseCase.call(otp, email);
+      bool success = await verifyRegisterOtpUseCase.call(otp, email, type);
       if (success) {
         return {'success': true, 'message': 'Xác thực OTP thành công!'};
       } else {
@@ -111,11 +114,19 @@ class RegisterController {
   }
 
   // Chuyển đến màn hình đăng nhập sau khi xác thực OTP thành công
-  void navigateToLogin(BuildContext context) {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
+  // và hiển thị onboarding cho tài khoản mới
+  Future<void> navigateToLogin(BuildContext context) async {
+    // Đặt lại giá trị onboarding_completed để hiển thị onboarding cho tài khoản mới
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboarding_completed', false);
+
+    // Chuyển đến màn hình onboarding
+    if (context.mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        (route) => false,
+      );
+    }
   }
 }

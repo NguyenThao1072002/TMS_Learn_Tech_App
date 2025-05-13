@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 import 'package:tms_app/data/models/practice_test/practice_test_detail_model.dart';
 import 'package:tms_app/data/models/practice_test/practice_test_review_model.dart';
 import 'package:tms_app/domain/usecases/practice_test_usecase.dart';
+import 'package:tms_app/presentation/controller/practice_test_controller.dart';
 import 'package:tms_app/presentation/widgets/practice_test/related_practice_test.dart';
 import 'package:tms_app/presentation/widgets/practice_test/test_review_section.dart';
 
@@ -20,104 +21,31 @@ class PracticeTestDetailScreen extends StatefulWidget {
 class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
   final PracticeTestUseCase _practiceTestUseCase =
       GetIt.instance<PracticeTestUseCase>();
-  late Future<PracticeTestDetailModel?> _testDetailFuture;
+  late PracticeTestDetailController _controller;
 
   @override
   void initState() {
     super.initState();
-    _loadTestDetail();
+    _controller = PracticeTestDetailController(widget.testId);
   }
 
-  void _loadTestDetail() {
-    // Get current user ID if available
-    int? accountId;
-    // User account ID can be obtained from authentication provider when implemented
-
-    _testDetailFuture = _practiceTestUseCase
-        .getPracticeTestDetail(
-      widget.testId,
-      accountId: accountId,
-    )
-        .then((test) {
-      if (test != null) {
-        // Add default values if the API doesn't provide the new fields
-        final updatedTest = _addDefaultValuesIfNeeded(test);
-        return updatedTest;
-      }
-      return test;
-    });
-  }
-
-  PracticeTestDetailModel _addDefaultValuesIfNeeded(
-      PracticeTestDetailModel test) {
-    // If the API doesn't return any values for our new fields, provide some default ones
-    List<String> testContents = test.testContents;
-    List<String> knowledgeRequirements = test.knowledgeRequirements;
-
-    // Add default values for testContents if empty
-    if (testContents.isEmpty) {
-      testContents = [
-        'Kiến thức core và chuyên sâu về ${test.courseTitle}',
-        'Kỹ năng xử lý vấn đề và debug code',
-        'Hiểu biết về các best practices và design patterns',
-        'Khả năng tối ưu hiệu suất ứng dụng',
-      ];
-    }
-
-    // Add default values for knowledgeRequirements if empty
-    if (knowledgeRequirements.isEmpty) {
-      knowledgeRequirements = [
-        'Kiến thức cơ bản về lập trình ${test.courseTitle}',
-        'Đã từng phát triển ít nhất 1 ứng dụng di động',
-        'Hiểu biết về UI/UX và component-based architecture',
-      ];
-    }
-
-    // Only create a new instance if we've modified any of the fields
-    if (testContents != test.testContents ||
-        knowledgeRequirements != test.knowledgeRequirements) {
-      return PracticeTestDetailModel(
-        testId: test.testId,
-        title: test.title,
-        description: test.description,
-        totalQuestion: test.totalQuestion,
-        courseId: test.courseId,
-        courseTitle: test.courseTitle,
-        itemCountPrice: test.itemCountPrice,
-        itemCountReview: test.itemCountReview,
-        rating: test.rating,
-        imageUrl: test.imageUrl,
-        level: test.level,
-        examType: test.examType,
-        status: test.status,
-        price: test.price,
-        cost: test.cost,
-        percentDiscount: test.percentDiscount,
-        purchased: test.purchased,
-        createdAt: test.createdAt,
-        updatedAt: test.updatedAt,
-        intro: test.intro,
-        author: test.author,
-        testContents: testContents,
-        knowledgeRequirements: knowledgeRequirements,
-      );
-    }
-
-    return test;
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: FutureBuilder<PracticeTestDetailModel?>(
-        future: _testDetailFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      body: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          if (_controller.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (snapshot.hasError) {
+          if (_controller.errorMessage != null) {
             return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -137,7 +65,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Lỗi: ${snapshot.error}',
+                    'Lỗi: ${_controller.errorMessage}',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey.shade500,
@@ -146,9 +74,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: () {
-                      setState(() {
-                        _loadTestDetail();
-                      });
+                      _controller.loadTestDetail(widget.testId);
                     },
                     child: const Text('Thử lại'),
                   ),
@@ -157,7 +83,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
             );
           }
 
-          if (!snapshot.hasData || snapshot.data == null) {
+          if (_controller.testDetail == null) {
             return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -193,7 +119,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
             );
           }
 
-          final test = snapshot.data!;
+          final test = _controller.testDetail!;
 
           return CustomScrollView(
             slivers: [
@@ -320,9 +246,9 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                           const SizedBox(width: 12),
                           _buildInfoCard(
                             icon: Icons.bar_chart,
-                            title: _getVietnameseLevel(test.level),
+                            title: _controller.getVietnameseLevel(test.level),
                             subtitle: 'Độ khó',
-                            iconColor: _getLevelColor(test.level),
+                            iconColor: _controller.getLevelColor(test.level),
                           ),
                         ],
                       ),
@@ -409,14 +335,14 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
           );
         },
       ),
-      bottomNavigationBar: FutureBuilder<PracticeTestDetailModel?>(
-        future: _testDetailFuture,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData || snapshot.data == null) {
+      bottomNavigationBar: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          if (_controller.testDetail == null) {
             return const SizedBox.shrink();
           }
 
-          final test = snapshot.data!;
+          final test = _controller.testDetail!;
 
           return Container(
             padding: const EdgeInsets.all(16),
@@ -439,7 +365,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                     children: [
                       if (test.percentDiscount > 0)
                         Text(
-                          '${_formatPrice(test.cost)}đ',
+                          '${_controller.formatPrice(test.cost)}đ',
                           style: TextStyle(
                             fontSize: 14,
                             decoration: TextDecoration.lineThrough,
@@ -450,7 +376,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                         test.purchased
                             ? 'Đã mua'
                             : test.price > 0
-                                ? '${_formatPrice(test.price)}đ'
+                                ? '${_controller.formatPrice(test.price)}đ'
                                 : 'Miễn phí',
                         style: TextStyle(
                           fontSize: 18,
@@ -468,6 +394,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                     // Start the test or purchase flow
                     if (test.purchased) {
                       // Navigate to test taking screen
+                      _controller.startTest();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Bắt đầu làm bài thi...'),
@@ -475,6 +402,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                       );
                     } else if (test.price > 0) {
                       // Show payment options
+                      _controller.purchaseTest();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Đang mở trang thanh toán...'),
@@ -483,6 +411,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                       // TODO: Implement payment flow
                     } else {
                       // Free test - navigate to test taking screen
+                      _controller.startTest();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Bắt đầu làm bài thi miễn phí...'),
@@ -611,7 +540,9 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  test.price > 0 ? '${_formatPrice(test.price)}đ' : 'Miễn phí',
+                  test.price > 0
+                      ? '${_controller.formatPrice(test.price)}đ'
+                      : 'Miễn phí',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -621,7 +552,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                 const SizedBox(width: 8),
                 if (test.percentDiscount > 0)
                   Text(
-                    '${_formatPrice(test.cost)}đ',
+                    '${_controller.formatPrice(test.cost)}đ',
                     style: TextStyle(
                       fontSize: 16,
                       decoration: TextDecoration.lineThrough,
@@ -720,38 +651,5 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
         ],
       ),
     );
-  }
-
-  String _formatPrice(double price) {
-    return price.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]}.',
-        );
-  }
-
-  String _getVietnameseLevel(String level) {
-    switch (level.toUpperCase()) {
-      case 'EASY':
-        return 'Dễ';
-      case 'MEDIUM':
-        return 'Trung bình';
-      case 'HARD':
-        return 'Khó';
-      default:
-        return level;
-    }
-  }
-
-  Color _getLevelColor(String level) {
-    switch (level.toUpperCase()) {
-      case 'EASY':
-        return Colors.green;
-      case 'MEDIUM':
-        return Colors.orange;
-      case 'HARD':
-        return Colors.red;
-      default:
-        return Colors.blue;
-    }
   }
 }

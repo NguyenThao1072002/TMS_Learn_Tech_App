@@ -79,6 +79,7 @@ class _RegisterOtpScreenState extends State<RegisterOtpScreen> {
       final result = await widget.controller.verifyOtp(
         _otpController.text,
         widget.email,
+        'REGISTER',
       );
 
       if (result['success']) {

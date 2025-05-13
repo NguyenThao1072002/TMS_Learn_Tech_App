@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:provider/provider.dart';
 import 'package:tms_app/data/models/practice_test/practice_test_review_model.dart';
 import 'package:tms_app/domain/usecases/practice_test_usecase.dart';
+import 'package:tms_app/presentation/controller/review_practice_test_controller.dart';
 
 class ReviewPracticeTestScreen extends StatefulWidget {
   final int testId;
@@ -19,95 +21,61 @@ class ReviewPracticeTestScreen extends StatefulWidget {
 }
 
 class _ReviewPracticeTestScreenState extends State<ReviewPracticeTestScreen> {
-  final PracticeTestUseCase _practiceTestUseCase =
-      GetIt.instance<PracticeTestUseCase>();
-  final ScrollController _scrollController = ScrollController();
-
-  List<PracticeTestReviewModel> _reviews = [];
-  bool _isLoading = false;
-  bool _hasMore = true;
-  int _currentPage = 0;
-  final int _pageSize = 10;
+  late ReviewPracticeTestController _controller;
 
   @override
   void initState() {
     super.initState();
-    _loadReviews();
-
-    // Add scroll listener for pagination
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels >=
-              _scrollController.position.maxScrollExtent - 200 &&
-          !_isLoading &&
-          _hasMore) {
-        _loadReviews();
-      }
-    });
+    _controller = ReviewPracticeTestController(testId: widget.testId);
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _controller.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadReviews() async {
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final newReviews = await _practiceTestUseCase.getPracticeTestReviews(
-        widget.testId,
-        page: _currentPage,
-        size: _pageSize,
-      );
-
-      setState(() {
-        if (newReviews.isEmpty) {
-          _hasMore = false;
-        } else {
-          _reviews.addAll(newReviews);
-          _currentPage++;
-        }
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Không thể tải đánh giá: ${e.toString()}')),
-        );
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Đánh giá ${widget.testTitle}',
-          style: const TextStyle(fontSize: 18),
-        ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 1,
-      ),
-      body: Column(
-        children: [
-          _buildReviewStats(),
-          Expanded(
-            child: _reviews.isEmpty && !_isLoading
-                ? _buildEmptyState()
-                : _buildReviewsList(),
-          ),
-        ],
+    return ChangeNotifierProvider.value(
+      value: _controller,
+      child: Consumer<ReviewPracticeTestController>(
+        builder: (context, controller, _) {
+          // Show error message if there's one
+          if (controller.errorMessage.isNotEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(controller.errorMessage)),
+                );
+                // Reset error message after showing
+                controller.errorMessage = '';
+              }
+            });
+          }
+
+          return Scaffold(
+            appBar: AppBar(
+              title: Text(
+                'Đánh giá ${widget.testTitle}',
+                style: const TextStyle(fontSize: 18),
+              ),
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+              elevation: 1,
+            ),
+            body: Column(
+              children: [
+                _buildReviewStats(controller),
+                Expanded(
+                  child: controller.reviews.isEmpty && !controller.isLoading
+                      ? _buildEmptyState()
+                      : _buildReviewsList(controller),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -144,24 +112,25 @@ class _ReviewPracticeTestScreenState extends State<ReviewPracticeTestScreen> {
     );
   }
 
-  Widget _buildReviewsList() {
+  Widget _buildReviewsList(ReviewPracticeTestController controller) {
     return ListView.separated(
-      controller: _scrollController,
+      controller: controller.scrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: _reviews.length + (_hasMore ? 1 : 0),
+      itemCount: controller.reviews.length + (controller.hasMore ? 1 : 0),
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
-        if (index == _reviews.length) {
+        if (index == controller.reviews.length) {
           return _buildLoadingIndicator();
         }
 
-        final review = _reviews[index];
-        return _buildReviewItem(review);
+        final review = controller.reviews[index];
+        return _buildReviewItem(review, controller);
       },
     );
   }
 
-  Widget _buildReviewItem(PracticeTestReviewModel review) {
+  Widget _buildReviewItem(
+      PracticeTestReviewModel review, ReviewPracticeTestController controller) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Column(
@@ -204,7 +173,7 @@ class _ReviewPracticeTestScreenState extends State<ReviewPracticeTestScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          _formatDate(review.createdAt),
+                          controller.formatDate(review.createdAt),
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade600,
@@ -243,7 +212,7 @@ class _ReviewPracticeTestScreenState extends State<ReviewPracticeTestScreen> {
     );
   }
 
-  Widget _buildReviewStats() {
+  Widget _buildReviewStats(ReviewPracticeTestController controller) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -264,13 +233,13 @@ class _ReviewPracticeTestScreenState extends State<ReviewPracticeTestScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Đánh giá (${_reviews.length})',
+                    'Đánh giá (${controller.reviews.length})',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  if (_reviews.isNotEmpty)
+                  if (controller.reviews.isNotEmpty)
                     Row(
                       children: [
                         const Icon(
@@ -280,7 +249,9 @@ class _ReviewPracticeTestScreenState extends State<ReviewPracticeTestScreen> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          _calculateAverageRating().toStringAsFixed(1),
+                          controller
+                              .calculateAverageRating()
+                              .toStringAsFixed(1),
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                           ),
@@ -317,20 +288,5 @@ class _ReviewPracticeTestScreenState extends State<ReviewPracticeTestScreen> {
         ],
       ),
     );
-  }
-
-  double _calculateAverageRating() {
-    if (_reviews.isEmpty) return 0;
-    final total = _reviews.fold(0, (sum, review) => sum + review.rating);
-    return total / _reviews.length;
-  }
-
-  String _formatDate(String dateString) {
-    try {
-      final date = DateTime.parse(dateString);
-      return '${date.day}/${date.month}/${date.year}';
-    } catch (e) {
-      return dateString;
-    }
   }
 }
