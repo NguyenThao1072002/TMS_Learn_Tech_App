@@ -20,7 +20,9 @@ import 'package:tms_app/domain/usecases/documents_usecase.dart';
 import 'package:tms_app/domain/usecases/forgot_password_usecase.dart';
 import 'package:tms_app/domain/usecases/login_usecase.dart';
 import 'package:tms_app/domain/usecases/register_usecase.dart';
+import 'package:tms_app/domain/usecases/update_account_usecase.dart';
 import 'package:tms_app/presentation/controller/forgot_password_controller.dart';
+import 'package:tms_app/presentation/controller/my_account/setting/update_account_controller.dart';
 import 'package:tms_app/presentation/controller/verify_otp_controller.dart'; // Import LoginUseCase// Import BlogDataSource
 import 'package:tms_app/data/services/banner_service.dart'; // Import BannerService
 import 'package:tms_app/data/repositories/banner_repository_impl.dart'; // Import BannerRepositoryImpl
@@ -171,6 +173,8 @@ void _registerUseCases() {
   });
 
   sl.registerFactory(() => PracticeTestUseCase(sl()));
+  // Thêm dòng này để đăng ký UpdateAccountUseCase
+  sl.registerFactory(() => UpdateAccountUseCase(sl()));
 }
 
 // Thêm một phương thức mới riêng để đăng ký controllers
@@ -184,6 +188,11 @@ void _registerControllers() {
   // Đảm bảo đăng ký với kiểu cụ thể
   sl.registerLazySingleton<UnifiedSearchController>(
     () => UnifiedSearchController(),
+  );
+  sl.registerLazySingleton<UpdateAccountController>(
+    () => UpdateAccountController(
+      updateAccountUseCase: sl<UpdateAccountUseCase>(),
+    ),
   );
 
   // Đảm bảo đăng ký ForgotPasswordController nếu cần

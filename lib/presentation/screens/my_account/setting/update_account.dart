@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:get/get.dart';
+import 'package:get_it/get_it.dart';
+import 'package:tms_app/data/models/user_update_model.dart';
+import 'package:tms_app/domain/usecases/update_account_usecase.dart';
+import 'package:tms_app/presentation/controller/my_account/setting/update_account_controller.dart';
 
 class UpdateAccountScreen extends StatefulWidget {
   const UpdateAccountScreen({Key? key}) : super(key: key);
@@ -11,22 +16,65 @@ class UpdateAccountScreen extends StatefulWidget {
 }
 
 class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
-  // Controllers cho các trường thông tin
-  final TextEditingController _nameController =
-      TextEditingController(text: 'Nguyễn Văn A');
-  final TextEditingController _emailController =
-      TextEditingController(text: 'nguyenvana@gmail.com');
-  final TextEditingController _phoneController =
-      TextEditingController(text: '0912345678');
+  // Khởi tạo controller thông qua Dependency Injection
+  late final UpdateAccountController _controller;
 
-  // Thông tin khác
-  String _gender = 'Nam';
-  DateTime _birthDate = DateTime(2000, 1, 1);
+  // Controllers cho các trường thông tin
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _genderController =
+      TextEditingController(text: 'Nam');
+  final TextEditingController _birthdayController = TextEditingController();
+
+  // Biến để lưu trạng thái
   File? _profileImage;
-  bool _isLoading = false;
+  String? _currentImagePath;
+  bool _hasUnsavedChanges = false;
+  DateTime _selectedDate = DateTime(2000, 1, 1);
 
   // ImagePicker để chọn ảnh từ thư viện hoặc camera
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Khởi tạo controller thông qua GetIt, tương tự cách DocumentListScreen làm
+    _controller = UpdateAccountController(
+      updateAccountUseCase: GetIt.instance<UpdateAccountUseCase>(),
+    );
+
+    // Lắng nghe sự thay đổi của userProfile
+    _controller.userProfile.listen((profile) {
+      if (profile != null) {
+        setState(() {
+          _nameController.text = profile.fullname ?? '';
+          _emailController.text = profile.email ?? '';
+          _phoneController.text = profile.phone ?? '';
+          _genderController.text = profile.gender ?? 'Nam';
+
+          // Chuyển đổi birthday string từ API sang DateTime
+          if (profile.birthday != null && profile.birthday!.isNotEmpty) {
+            _selectedDate =
+                DateTime.tryParse(profile.birthday!) ?? DateTime(2000, 1, 1);
+            _birthdayController.text =
+                DateFormat('dd/MM/yyyy').format(_selectedDate);
+          }
+
+          _currentImagePath = profile.image;
+        });
+      }
+    });
+
+    // Lấy thông tin người dùng khi màn hình được mở
+    _loadUserData();
+  }
+
+  // Phương thức để tải dữ liệu người dùng
+  Future<void> _loadUserData() async {
+    await _controller.fetchUserProfile();
+  }
 
   @override
   void dispose() {
@@ -38,7 +86,9 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
 
   // Format ngày tháng năm sinh
   String get _formattedBirthDate {
-    return DateFormat('dd/MM/yyyy').format(_birthDate);
+    return _birthdayController.text.isNotEmpty
+        ? _birthdayController.text
+        : DateFormat('dd/MM/yyyy').format(_selectedDate);
   }
 
   // Chọn ảnh từ thư viện
@@ -51,6 +101,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
       if (image != null) {
         setState(() {
           _profileImage = File(image.path);
+          _hasUnsavedChanges = true;
         });
       }
     } catch (e) {
@@ -68,6 +119,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
       if (image != null) {
         setState(() {
           _profileImage = File(image.path);
+          _hasUnsavedChanges = true;
         });
       }
     } catch (e) {
@@ -142,7 +194,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
               },
             ),
 
-            if (_profileImage != null)
+            if (_profileImage != null || _currentImagePath != null)
               ListTile(
                 leading: const CircleAvatar(
                   backgroundColor: Colors.red,
@@ -153,6 +205,8 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                   Navigator.pop(context);
                   setState(() {
                     _profileImage = null;
+                    _currentImagePath = null;
+                    _hasUnsavedChanges = true;
                   });
                 },
               ),
@@ -168,7 +222,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
   Future<void> _selectBirthDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _birthDate,
+      initialDate: _selectedDate,
       firstDate: DateTime(1950),
       lastDate: DateTime.now(),
       builder: (context, child) {
@@ -190,9 +244,12 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
       },
     );
 
-    if (picked != null && picked != _birthDate) {
+    if (picked != null && picked != _selectedDate) {
       setState(() {
-        _birthDate = picked;
+        _selectedDate = picked;
+        _birthdayController.text =
+            DateFormat('dd/MM/yyyy').format(_selectedDate);
+        _hasUnsavedChanges = true;
       });
     }
   }
@@ -216,27 +273,41 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
       return;
     }
 
-    if (_phoneController.text.trim().isEmpty) {
-      _showErrorSnackBar('Vui lòng nhập số điện thoại');
+    // Tạo object data để gửi lên API theo đúng định dạng API
+    final Map<String, dynamic> data = {
+      'fullname': _nameController.text.trim(),
+      'email': _emailController.text.trim(),
+      'phone': _phoneController.text.trim(),
+      'gender': _genderController.text,
+      'birthday': _selectedDate
+          .toIso8601String()
+          .split('.')[0], // Định dạng 2002-07-10T00:00:00
+    };
+
+    // Thêm image nếu có
+    if (_currentImagePath != null && _currentImagePath!.isNotEmpty) {
+      data['image'] = _currentImagePath;
+    }
+
+    print('Dữ liệu gửi lên server: $data');
+
+    // Gọi API cập nhật
+    final success = await _controller.updateAccount(data);
+
+    if (!success) {
+      _showErrorSnackBar(_controller.errorMessage.value);
       return;
     }
 
-    // Bắt đầu loading
-    setState(() {
-      _isLoading = true;
-    });
-
-    // Giả lập gọi API cập nhật thông tin
-    await Future.delayed(const Duration(seconds: 2));
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    // Hiển thị thông báo thành công
+    // Cập nhật thành công, hiển thị thông báo
     if (mounted) {
       _showSuccessDialog();
     }
+
+    // Đặt lại trạng thái chưa lưu
+    setState(() {
+      _hasUnsavedChanges = false;
+    });
   }
 
   // Hiển thị dialog thành công
@@ -272,6 +343,40 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
     );
   }
 
+  // Phương thức để hiện cảnh báo khi có thay đổi chưa lưu
+  void _showUnsavedChangesDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text('Thay đổi chưa được lưu'),
+        content: const Text(
+            'Bạn có thay đổi chưa được lưu. Bạn muốn thoát mà không lưu không?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Tiếp tục chỉnh sửa',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Đóng dialog
+              Navigator.pop(context); // Quay lại màn hình trước
+            },
+            child: const Text(
+              'Thoát không lưu',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -288,178 +393,257 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            // Kiểm tra nếu có thay đổi chưa lưu trước khi thoát
+            if (_hasUnsavedChanges) {
+              _showUnsavedChangesDialog();
+            } else {
+              Navigator.of(context).pop();
+            }
+          },
         ),
       ),
-      body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Phần ảnh đại diện
-              Center(
-                child: Column(
-                  children: [
-                    GestureDetector(
-                      onTap: _showImagePickerOptions,
-                      child: Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 60,
-                            backgroundColor: Colors.grey.shade200,
-                            backgroundImage: _profileImage != null
-                                ? FileImage(_profileImage!)
-                                : const AssetImage(
-                                        'assets/images/avatar_placeholder.png')
-                                    as ImageProvider,
-                            child: _profileImage == null
-                                ? const Icon(Icons.person,
-                                    size: 60, color: Colors.grey)
-                                : null,
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              height: 36,
-                              width: 36,
-                              decoration: BoxDecoration(
-                                color: Colors.blue,
-                                shape: BoxShape.circle,
-                                border:
-                                    Border.all(color: Colors.white, width: 2),
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Chạm để thay đổi ảnh đại diện',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
+      body: _buildBody(),
+    );
+  }
+
+  // Phương thức hiển thị body của màn hình
+  Widget _buildBody() {
+    return Obx(
+      () {
+        // Hiển thị loading khi đang tải dữ liệu
+        if (_controller.isLoading.value &&
+            _controller.userProfile.value == null) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        // Hiển thị thông báo lỗi nếu có
+        if (_controller.errorMessage.value.isNotEmpty &&
+            _controller.userProfile.value == null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                const SizedBox(height: 16),
+                const Text(
+                  'Đã xảy ra lỗi',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
                 ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Thông tin cá nhân
-              const Text(
-                'Thông tin cá nhân',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    _controller.errorMessage.value,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey[700]),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-
-              // Họ tên
-              _buildTextField(
-                label: 'Họ và tên',
-                controller: _nameController,
-                prefixIcon: Icons.person,
-                hintText: 'Nhập họ và tên',
-              ),
-
-              // Số điện thoại
-              _buildTextField(
-                label: 'Số điện thoại',
-                controller: _phoneController,
-                prefixIcon: Icons.phone,
-                hintText: 'Nhập số điện thoại',
-                keyboardType: TextInputType.phone,
-              ),
-
-              // Email (không cho chỉnh sửa)
-              _buildTextField(
-                label: 'Email',
-                controller: _emailController,
-                prefixIcon: Icons.email,
-                readOnly: true,
-                hintText: 'Email của bạn',
-              ),
-
-              // Giới tính
-              _buildDropdownField(
-                label: 'Giới tính',
-                prefixIcon: Icons.person_outline,
-                value: _gender,
-                items: const ['Nam', 'Nữ', 'Khác'],
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _gender = value;
-                    });
-                  }
-                },
-              ),
-
-              // Ngày sinh
-              _buildDatePickerField(
-                label: 'Ngày sinh',
-                value: _formattedBirthDate,
-                prefixIcon: Icons.calendar_today,
-                onTap: _selectBirthDate,
-              ),
-
-              const SizedBox(height: 32),
-
-              // Nút cập nhật
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _updateProfile,
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _loadUserData,
+                  child: const Text('Thử lại'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.blue.withOpacity(0.6),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'Cập nhật thông tin',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
                 ),
-              ),
+              ],
+            ),
+          );
+        }
 
-              const SizedBox(height: 24),
+        // Hiển thị form cập nhật khi đã có dữ liệu
+        return GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Phần ảnh đại diện
+                Center(
+                  child: Column(
+                    children: [
+                      GestureDetector(
+                        onTap: _showImagePickerOptions,
+                        child: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 60,
+                              backgroundColor: Colors.grey.shade200,
+                              backgroundImage: _getProfileImage(),
+                              child: _profileImage == null &&
+                                      _currentImagePath == null
+                                  ? const Icon(Icons.person,
+                                      size: 60, color: Colors.grey)
+                                  : null,
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                height: 36,
+                                width: 36,
+                                decoration: BoxDecoration(
+                                  color: Colors.blue,
+                                  shape: BoxShape.circle,
+                                  border:
+                                      Border.all(color: Colors.white, width: 2),
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Chạm để thay đổi ảnh đại diện',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
-              // Thông tin bổ sung
-              _buildInfoCard(),
-            ],
+                const SizedBox(height: 24),
+
+                // Thông tin cá nhân
+                const Text(
+                  'Thông tin cá nhân',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Họ tên
+                _buildTextField(
+                  label: 'Họ và tên',
+                  controller: _nameController,
+                  prefixIcon: Icons.person,
+                  hintText: 'Nhập họ và tên',
+                  onChanged: (_) => _hasUnsavedChanges = true,
+                ),
+
+                // Số điện thoại
+                _buildTextField(
+                  label: 'Số điện thoại',
+                  controller: _phoneController,
+                  prefixIcon: Icons.phone,
+                  hintText: 'Nhập số điện thoại',
+                  keyboardType: TextInputType.phone,
+                  onChanged: (_) => _hasUnsavedChanges = true,
+                ),
+
+                // Email (không cho chỉnh sửa)
+                _buildTextField(
+                  label: 'Email',
+                  controller: _emailController,
+                  prefixIcon: Icons.email,
+                  readOnly: true,
+                  hintText: 'Email của bạn',
+                ),
+
+                // Giới tính
+                _buildDropdownField(
+                  label: 'Giới tính',
+                  prefixIcon: Icons.person_outline,
+                  controller: _genderController,
+                  items: const ['Nam', 'Nữ', 'Khác'],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _hasUnsavedChanges = true;
+                      });
+                    }
+                  },
+                ),
+
+                // Ngày sinh
+                _buildDatePickerField(
+                  label: 'Ngày sinh',
+                  controller: _birthdayController,
+                  prefixIcon: Icons.calendar_today,
+                  onTap: _selectBirthDate,
+                ),
+
+                const SizedBox(height: 32),
+
+                // Nút cập nhật
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed:
+                        _controller.isLoading.value ? null : _updateProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.blue.withOpacity(0.6),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: _controller.isLoading.value
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            'Cập nhật thông tin',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Thông tin bổ sung
+                _buildInfoCard(),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
+  }
+
+  // Phương thức để lấy ảnh đại diện hiện tại
+  ImageProvider? _getProfileImage() {
+    if (_profileImage != null) {
+      return FileImage(_profileImage!);
+    } else if (_currentImagePath != null && _currentImagePath!.isNotEmpty) {
+      // Kiểm tra nếu là đường dẫn đầy đủ có http thì lấy từ network
+      if (_currentImagePath!.startsWith('http')) {
+        return NetworkImage(_currentImagePath!);
+      }
+      // Nếu là đường dẫn local
+      return AssetImage(_currentImagePath!);
+    }
+    return const AssetImage('assets/images/avatar_placeholder.png');
   }
 
   // Widget hiển thị trường nhập thông tin
@@ -470,6 +654,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
     String? hintText,
     bool readOnly = false,
     TextInputType keyboardType = TextInputType.text,
+    Function(String)? onChanged,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -489,6 +674,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
             controller: controller,
             readOnly: readOnly,
             keyboardType: keyboardType,
+            onChanged: onChanged,
             decoration: InputDecoration(
               hintText: hintText,
               hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -522,7 +708,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
   Widget _buildDropdownField({
     required String label,
     required IconData prefixIcon,
-    required String value,
+    required TextEditingController controller,
     required List<String> items,
     required Function(String?) onChanged,
   }) {
@@ -548,7 +734,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
-                value: value,
+                value: controller.text,
                 isExpanded: true,
                 icon: Icon(Icons.arrow_drop_down, color: Colors.grey.shade700),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -565,7 +751,12 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                     ),
                   );
                 }).toList(),
-                onChanged: onChanged,
+                onChanged: (value) {
+                  if (value != null) {
+                    controller.text = value;
+                    onChanged(value);
+                  }
+                },
               ),
             ),
           ),
@@ -577,7 +768,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
   // Widget hiển thị trường chọn ngày
   Widget _buildDatePickerField({
     required String label,
-    required String value,
+    required TextEditingController controller,
     required IconData prefixIcon,
     required VoidCallback onTap,
   }) {
@@ -610,7 +801,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                   Icon(prefixIcon, color: Colors.blue),
                   const SizedBox(width: 16),
                   Text(
-                    value,
+                    controller.text,
                     style: const TextStyle(fontSize: 16),
                   ),
                   const Spacer(),

@@ -25,14 +25,30 @@ class AuthService {
         final userEmail = userInfo['email'] ?? '';
         final userPhone = userInfo['phone'] ?? '';
 
-        // Save user info to SharedPreferences
+        // Lấy userId từ userInfo
+        final userId = userInfo['id'] ?? userInfo['userId'] ?? '';
+
+        // Lấy JWT token và refreshToken
+        final jwtToken = data['jwt'];
+        final refreshToken = data['refreshToken'];
+
+        // Save user info và tokens to SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user_email', userEmail);
         await prefs.setString('user_phone', userPhone);
+        await prefs.setString('userId', userId.toString());
+
+        // Lưu JWT token và refreshToken
+        await prefs.setString('jwt', jwtToken);
+        await prefs.setString('refreshToken', refreshToken ?? '');
+
+        // Thêm log để kiểm tra
+        print('Saved userId to SharedPreferences: $userId');
+        print('Saved JWT token to SharedPreferences: $jwtToken');
 
         return {
-          'jwt': data['jwt'],
-          'refreshToken': data['refreshToken'],
+          'jwt': jwtToken,
+          'refreshToken': refreshToken,
           'userInfo': userInfo,
         };
       } else {

@@ -1,7 +1,9 @@
+import 'package:tms_app/data/models/user_update_model.dart';
+
 import '../../domain/repositories/account_repository.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
-import '../services/user_service.dart'; 
+import '../services/user_service.dart';
 
 class AccountRepositoryImpl implements AccountRepository {
   final AuthService authService;
@@ -49,5 +51,15 @@ class AccountRepositoryImpl implements AccountRepository {
   @override
   Future<bool> verifyOtp(Map<String, dynamic> body) {
     return authService.verifyOtp(body);
+  }
+
+  @override
+  Future<bool> updateAccount(Map<String, dynamic> body) {
+    return userService.updateAccount(body);
+  }
+
+  @override
+  Future<UserProfile> getUserById(String userId) {
+    return userService.getUserById(userId);
   }
 }
