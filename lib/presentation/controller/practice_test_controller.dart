@@ -278,6 +278,121 @@ class PracticeTestController with ChangeNotifier {
     loadTests();
   }
 
+  // Tìm kiếm chỉ theo tiêu đề và tác giả
+  void search(String? query) {
+    _resetPagination();
+    _isLoading = true;
+    notifyListeners();
+
+    if (query == null || query.isEmpty) {
+      // Nếu query rỗng, lấy tất cả đề thi
+      _filter.searchQuery = null;
+      loadTests().then((_) {
+        _isLoading = false;
+        notifyListeners();
+      });
+      return;
+    }
+
+    try {
+      // Trước tiên, gọi API để lấy càng nhiều kết quả có thể
+      _practiceTestUseCase
+          .getPracticeTests(
+        search: query,
+        page: 0,
+        size: 50, // Lấy nhiều kết quả hơn để có thể lọc
+      )
+          .then((results) {
+        _tests.clear();
+
+        if (results.isEmpty) {
+          print("Không tìm thấy kết quả cho: $query");
+          _isLoading = false;
+          notifyListeners();
+          return;
+        }
+
+        final queryLowerCase = query.toLowerCase();
+
+        // Lọc và sắp xếp kết quả theo mức độ phù hợp
+        final filteredTests = <PracticeTestCardModel>[];
+        final titleMatches = <PracticeTestCardModel>[];
+        final authorMatches = <PracticeTestCardModel>[];
+        final partialMatches = <PracticeTestCardModel>[];
+
+        for (var test in results) {
+          final titleLower = test.title.toLowerCase();
+          final authorLower = test.author.toLowerCase();
+
+          // Tìm kiếm chính xác trong tiêu đề
+          if (titleLower == queryLowerCase) {
+            titleMatches.add(test);
+          }
+          // Tìm kiếm chính xác trong tác giả
+          else if (authorLower == queryLowerCase) {
+            authorMatches.add(test);
+          }
+          // Tìm kiếm một phần trong tiêu đề
+          else if (titleLower.contains(queryLowerCase)) {
+            titleMatches.add(test);
+          }
+          // Tìm kiếm một phần trong tác giả
+          else if (authorLower.contains(queryLowerCase)) {
+            authorMatches.add(test);
+          }
+          // Tìm kiếm một phần của từng từ trong query
+          else {
+            final queryWords = queryLowerCase.split(' ');
+            bool hasMatch = false;
+
+            for (var word in queryWords) {
+              if (word.length > 2 &&
+                  (titleLower.contains(word) || authorLower.contains(word))) {
+                hasMatch = true;
+                break;
+              }
+            }
+
+            if (hasMatch) {
+              partialMatches.add(test);
+            }
+          }
+        }
+
+        // Kết hợp các kết quả theo thứ tự ưu tiên
+        filteredTests.addAll(titleMatches);
+        filteredTests.addAll(authorMatches);
+        filteredTests.addAll(partialMatches);
+
+        // Loại bỏ các bản sao nếu có
+        final uniqueTests = <PracticeTestCardModel>[];
+        final testIds = <int>{};
+
+        for (var test in filteredTests) {
+          if (!testIds.contains(test.testId)) {
+            uniqueTests.add(test);
+            testIds.add(test.testId);
+          }
+        }
+
+        print("Tìm thấy ${uniqueTests.length} kết quả cho: $query");
+        _tests.addAll(uniqueTests);
+        _currentPage = 1; // Đánh dấu là đã tìm xong trang đầu tiên
+        _hasMore = false; // Không cần phân trang khi tìm kiếm
+        _isLoading = false;
+        notifyListeners();
+      }).catchError((error) {
+        print("Lỗi khi tìm kiếm: $error");
+        _isLoading = false;
+        notifyListeners();
+      });
+    } catch (e, stackTrace) {
+      _logError('Error searching tests', e, stackTrace);
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // Chọn danh mục
   void selectCategory(String categoryName, int? categoryId) {
     _selectedCategory = categoryName;

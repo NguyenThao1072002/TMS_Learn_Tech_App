@@ -14,7 +14,7 @@ import 'package:tms_app/domain/repositories/account_repository.dart';
 import 'package:tms_app/domain/repositories/blog_repository.dart';
 import 'package:tms_app/domain/repositories/course_repository.dart';
 import 'package:tms_app/domain/repositories/document_repository.dart';
-import 'package:tms_app/domain/usecases/blog_usercase.dart';
+import 'package:tms_app/domain/usecases/blog_usecase.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
 import 'package:tms_app/domain/usecases/documents_usecase.dart';
 import 'package:tms_app/domain/usecases/forgot_password_usecase.dart';
@@ -35,6 +35,7 @@ import 'package:tms_app/data/services/practice_test/practice_test_service.dart';
 import 'package:tms_app/data/repositories/practice_test_repository_impl.dart';
 import 'package:tms_app/domain/repositories/practice_test_repository.dart';
 import 'package:tms_app/domain/usecases/practice_test_usecase.dart';
+import 'package:tms_app/presentation/controller/unified_search_controller.dart';
 
 // Đảm bảo các import không bị xóa bởi công cụ IDE
 // ignore: unused_element
@@ -101,11 +102,7 @@ void setupLocator() {
   _registerUseCases();
 
   // Đăng ký các Controller
-  sl.registerLazySingleton(
-    () => VerifyOtpController(
-      forgotPasswordController: sl<ForgotPasswordController>(),
-    ),
-  );
+  _registerControllers();
 }
 
 // Đăng ký tất cả các Service
@@ -164,7 +161,7 @@ void _registerUseCases() {
 
   sl.registerFactory(() => BannerUseCase(sl()));
 
-  sl.registerFactory(() => BlogUsercase(sl()));
+  sl.registerLazySingleton(() => BlogUsecase(sl()));
 
   sl.registerLazySingleton(() => DocumentUseCase(sl()));
 
@@ -174,4 +171,26 @@ void _registerUseCases() {
   });
 
   sl.registerFactory(() => PracticeTestUseCase(sl()));
+}
+
+// Thêm một phương thức mới riêng để đăng ký controllers
+void _registerControllers() {
+  sl.registerLazySingleton<VerifyOtpController>(
+    () => VerifyOtpController(
+      forgotPasswordController: sl<ForgotPasswordController>(),
+    ),
+  );
+
+  // Đảm bảo đăng ký với kiểu cụ thể
+  sl.registerLazySingleton<UnifiedSearchController>(
+    () => UnifiedSearchController(),
+  );
+
+  // Đảm bảo đăng ký ForgotPasswordController nếu cần
+  if (!sl.isRegistered<ForgotPasswordController>()) {
+    sl.registerLazySingleton<ForgotPasswordController>(
+      () =>
+          ForgotPasswordController(accountRepository: sl<AccountRepository>()),
+    );
+  }
 }

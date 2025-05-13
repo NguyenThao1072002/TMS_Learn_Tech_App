@@ -247,6 +247,40 @@ class CourseController {
     }
   }
 
+  // Thêm phương thức tìm kiếm khóa học
+  void searchCourses(String query) async {
+    isLoading.value = true;
+    try {
+      if (query.isEmpty) {
+        // Nếu query rỗng, hiển thị tất cả khóa học
+        filteredCourses.value = List.from(allCourses.value);
+      } else {
+        // Sử dụng getAllCourses với tham số search giống như đề thi
+        print('Đang tìm kiếm khóa học với từ khóa: "$query"');
+        final results = await courseUseCase.getAllCourses(search: query);
+        print(
+            'Tìm thấy ${results.length} khóa học phù hợp với từ khóa "$query"');
+        filteredCourses.value = results;
+      }
+    } catch (e) {
+      print('Lỗi khi tìm kiếm khóa học: $e');
+      // Fallback: lọc offline nếu API gặp lỗi
+      if (query.isNotEmpty) {
+        final normalizedQuery = query.toLowerCase().trim();
+        final results = allCourses.value.where((course) {
+          final title = course.title.toLowerCase();
+          final author = course.author.toLowerCase();
+          return title.contains(normalizedQuery) ||
+              author.contains(normalizedQuery);
+        }).toList();
+        filteredCourses.value = results;
+      }
+    } finally {
+      currentPage.value = 1; // Reset về trang đầu tiên khi tìm kiếm
+      isLoading.value = false;
+    }
+  }
+
   void dispose() {
     filteredCourses.dispose();
     allCourses.dispose();

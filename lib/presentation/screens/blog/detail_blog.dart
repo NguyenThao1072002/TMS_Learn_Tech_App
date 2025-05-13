@@ -5,7 +5,7 @@ import 'package:timeago/timeago.dart' as timeago;
 import 'package:flutter_html/flutter_html.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:tms_app/data/models/blog/blog_card_model.dart';
-import 'package:tms_app/domain/usecases/blog_usercase.dart';
+import 'package:tms_app/domain/usecases/blog_usecase.dart';
 import 'package:tms_app/presentation/widgets/blog/blog_card.dart';
 import 'package:tms_app/presentation/widgets/blog/related_blog.dart';
 
@@ -22,7 +22,7 @@ class _DetailBlogScreenState extends State<DetailBlogScreen> {
   bool _isBookmarked = false;
   final ScrollController _scrollController = ScrollController();
   bool _showAppBarTitle = false;
-  final BlogUsercase _blogUsecase = GetIt.instance<BlogUsercase>();
+  final BlogUsecase _blogUsecase = GetIt.instance<BlogUsecase>();
   late Future<BlogCardModel?> _blogFuture;
   bool _viewIncremented = false;
   late Future<List<BlogCardModel>> _relatedBlogsFuture;

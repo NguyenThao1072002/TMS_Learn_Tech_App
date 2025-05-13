@@ -5,12 +5,11 @@ import 'package:tms_app/data/models/course/course_detail/review_course_model.dar
 
 // chỉ cần khai báo phương thức
 abstract class CourseRepository {
-  Future<List<CourseCardModel>> getAllCourses();
-  Future<List<CourseCardModel>> getPopularCourses();
+  Future<List<CourseCardModel>> getAllCourses({String? search});
+  Future<List<CourseCardModel>> getPopularCourses({String? search});
   Future<List<CourseCardModel>> getDiscountCourses();
   Future<OverviewCourseModel?> getOverviewCourseDetail(int id);
   Future<List<ReviewCourseModel>> getReviewCourse(int id);
   Future<List<StructureCourseModel>> getStructureCourse(int id);
   Future<List<CourseCardModel>> getRelatedCourse(int categoryId);
-  
 }

@@ -14,13 +14,13 @@ class PracticeTestService {
 
   /// Get a list of practice tests with optional filters
   /// Parameters:
-  /// - title: Optional search term for test title
+  /// - search: Optional search term for test title or author
   /// - courseId: Optional filter by course ID
   /// - accountId: Optional account ID to check if tests are purchased
   /// - page: Page number (default 0)
   /// - size: Items per page (default 10)
   Future<List<PracticeTestCardModel>> getPracticeTests({
-    String? title,
+    String? search,
     int? courseId,
     int? accountId,
     int page = 0,
@@ -33,8 +33,8 @@ class PracticeTestService {
         'size': size,
       };
 
-      if (title != null && title.isNotEmpty) {
-        queryParams['title'] = title;
+      if (search != null && search.isNotEmpty) {
+        queryParams['search'] = search;
       }
 
       if (courseId != null) {

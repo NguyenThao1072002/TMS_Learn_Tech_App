@@ -4,7 +4,7 @@ import 'package:tms_app/data/models/banner_model.dart';
 import 'package:tms_app/data/models/blog/blog_card_model.dart';
 import 'package:tms_app/data/models/course/course_card_model.dart';
 import 'package:tms_app/domain/usecases/banner_usecase.dart';
-import 'package:tms_app/domain/usecases/blog_usercase.dart';
+import 'package:tms_app/domain/usecases/blog_usecase.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
 import 'package:tms_app/presentation/screens/blog/blog_list.dart';
 import 'package:tms_app/presentation/screens/document/document_list_screen.dart';
@@ -80,7 +80,7 @@ class _HomePageState extends State<HomePage> {
   // Biến đối tượng của các usecase
   final courseUseCase = GetIt.instance<CourseUseCase>();
   final bannerUseCase = GetIt.instance<BannerUseCase>();
-  final blogUseCase = GetIt.instance<BlogUsercase>();
+  final blogUseCase = GetIt.instance<BlogUsecase>();
 
   // Biến lưu trữ các danh sách
   late Future<List<CourseCardModel>> popularCoursesFuture;

@@ -6,11 +6,13 @@ import 'package:tms_app/data/models/course/course_card_model.dart';
 import 'package:tms_app/domain/usecases/category_usecase.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
 import 'package:tms_app/presentation/controller/course_controller.dart';
-import 'package:tms_app/presentation/widgets/component/search_widget.dart';
 import 'package:tms_app/presentation/widgets/component/pagination.dart';
 import 'package:tms_app/presentation/widgets/course/filter_course/category_filter_dialog.dart';
 import 'package:tms_app/presentation/widgets/course/filter_course/discount_filter_dialog.dart';
 import 'course_list.dart';
+import 'package:provider/provider.dart';
+import 'package:tms_app/presentation/controller/unified_search_controller.dart';
+import 'package:tms_app/presentation/widgets/component/search/unified_search_delegate.dart';
 
 class CourseScreen extends StatefulWidget {
   final String? initialFilter;
@@ -28,6 +30,7 @@ class CourseScreen extends StatefulWidget {
 
 class _CourseScreenState extends State<CourseScreen> {
   late final CourseController _controller;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
@@ -43,6 +46,25 @@ class _CourseScreenState extends State<CourseScreen> {
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  // Hàm refresh danh sách khóa học
+  Future<void> _handleRefresh() async {
+    if (_isRefreshing) return;
+
+    setState(() {
+      _isRefreshing = true;
+    });
+
+    try {
+      await _controller.loadCourses();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
+    }
   }
 
   void _showCategoryFilterDialog() {
@@ -84,6 +106,46 @@ class _CourseScreenState extends State<CourseScreen> {
     );
   }
 
+  void _showSearchDialog() {
+    // Get the search controller from provider
+    final searchController =
+        Provider.of<UnifiedSearchController>(context, listen: false);
+
+    showSearch(
+      context: context,
+      delegate: UnifiedSearchDelegate(
+        searchType: SearchType.course,
+        onSearch: (query, type) {
+          searchController.search(query, type);
+        },
+        itemBuilder: (context, item, type) {
+          // Hiển thị kết quả tìm kiếm khóa học
+          return ListTile(
+            title: Text(item.title ?? ''),
+            subtitle: Text(item.author ?? ''),
+            leading: item.imageUrl != null && item.imageUrl.isNotEmpty
+                ? Image.network(
+                    item.imageUrl,
+                    width: 50,
+                    height: 50,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.image, size: 50),
+                  )
+                : const Icon(Icons.book, size: 50),
+            onTap: () {
+              // Đóng màn hình tìm kiếm và chuyển hướng đến khóa học
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/course-detail',
+                  arguments: item.id);
+            },
+          );
+        },
+        searchController: searchController,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -98,6 +160,31 @@ class _CourseScreenState extends State<CourseScreen> {
         ),
         backgroundColor: AppStyles.appBarColor,
         elevation: 0,
+        actions: [
+          // Add refresh button
+          _isRefreshing
+              ? Container(
+                  width: 48,
+                  alignment: Alignment.center,
+                  child: const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                )
+              : IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  onPressed: _handleRefresh,
+                ),
+          // Add search button
+          IconButton(
+            icon: const Icon(Icons.search, color: Colors.white),
+            onPressed: _showSearchDialog,
+          ),
+        ],
       ),
       body: ValueListenableBuilder<bool>(
         valueListenable: _controller.isLoading,
@@ -113,47 +200,50 @@ class _CourseScreenState extends State<CourseScreen> {
             builder: (context, courses, _) {
               return Column(
                 children: [
-                  const SearchWidget(),
                   _buildFilterSection(),
                   Expanded(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          if (courses.isEmpty)
-                            Padding(
-                              padding: EdgeInsets.symmetric(vertical: 50),
-                              child: Column(
-                                children: [
-                                  Icon(Icons.search_off,
-                                      size: 80, color: Colors.grey),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    "Không có khóa học nào",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey.shade700,
+                    child: RefreshIndicator(
+                      onRefresh: _handleRefresh,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Column(
+                          children: [
+                            if (courses.isEmpty)
+                              Padding(
+                                padding: EdgeInsets.symmetric(vertical: 50),
+                                child: Column(
+                                  children: [
+                                    Icon(Icons.search_off,
+                                        size: 80, color: Colors.grey),
+                                    SizedBox(height: 16),
+                                    Text(
+                                      "Không có khóa học nào",
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey.shade700,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
+                              )
+                            else
+                              CourseList(
+                                courses: _controller.getCurrentPageCourses(),
                               ),
-                            )
-                          else
-                            CourseList(
-                              courses: _controller.getCurrentPageCourses(),
-                            ),
-                          if (courses.isNotEmpty)
-                            ValueListenableBuilder<int>(
-                              valueListenable: _controller.currentPage,
-                              builder: (context, currentPage, _) {
-                                return PaginationWidget(
-                                  currentPage: currentPage,
-                                  totalPages: _controller.getTotalPages(),
-                                  onPageChanged: _controller.changePage,
-                                );
-                              },
-                            ),
-                        ],
+                            if (courses.isNotEmpty)
+                              ValueListenableBuilder<int>(
+                                valueListenable: _controller.currentPage,
+                                builder: (context, currentPage, _) {
+                                  return PaginationWidget(
+                                    currentPage: currentPage,
+                                    totalPages: _controller.getTotalPages(),
+                                    onPageChanged: _controller.changePage,
+                                  );
+                                },
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

@@ -9,18 +9,18 @@ class PracticeTestUseCase {
   PracticeTestUseCase(this.practiceTestRepository);
 
   Future<List<PracticeTestCardModel>> getPracticeTests({
-    String? title,
     int? courseId,
     int? accountId,
     int page = 0,
     int size = 10,
+    String? search,
   }) async {
     return await practiceTestRepository.getPracticeTests(
-      title: title,
       courseId: courseId,
       accountId: accountId,
       page: page,
       size: size,
+      search: search,
     );
   }
 
@@ -84,7 +84,7 @@ class PracticeTestUseCase {
     final effectiveCourseId = categoryId ?? courseId;
 
     final tests = await practiceTestRepository.getPracticeTests(
-      title: title,
+      search: title,
       courseId: effectiveCourseId,
       accountId: accountId,
       page: page,

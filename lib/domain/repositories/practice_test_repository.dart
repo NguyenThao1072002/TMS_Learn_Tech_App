@@ -4,7 +4,7 @@ import 'package:tms_app/data/models/practice_test/practice_test_review_model.dar
 
 abstract class PracticeTestRepository {
   Future<List<PracticeTestCardModel>> getPracticeTests({
-    String? title,
+    String? search,
     int? courseId,
     int? accountId,
     int page,

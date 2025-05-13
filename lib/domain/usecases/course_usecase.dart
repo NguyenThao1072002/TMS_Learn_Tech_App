@@ -9,12 +9,12 @@ class CourseUseCase {
 
   CourseUseCase(this.courseRepository);
 
-  Future<List<CourseCardModel>> getAllCourses() async {
-    return await courseRepository.getAllCourses();
+  Future<List<CourseCardModel>> getAllCourses({String? search}) async {
+    return await courseRepository.getAllCourses(search: search);
   }
 
-  Future<List<CourseCardModel>> getPopularCourses() async {
-    return await courseRepository.getPopularCourses();
+  Future<List<CourseCardModel>> getPopularCourses({String? search}) async {
+    return await courseRepository.getPopularCourses(search: search);
   }
 
   Future<List<CourseCardModel>> getDiscountCourses() async {

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:tms_app/presentation/screens/notification/notification_view.dart';
+import 'package:provider/provider.dart';
+import 'package:tms_app/presentation/controller/unified_search_controller.dart';
+import 'package:tms_app/presentation/widgets/component/search/unified_search_delegate.dart';
 
 class HomeAppBarWidget extends StatelessWidget implements PreferredSizeWidget {
   final int unreadNotifications;
@@ -48,9 +51,25 @@ class HomeAppBarWidget extends StatelessWidget implements PreferredSizeWidget {
             size: 26,
           ),
           onPressed: () {
+            final searchController =
+                Provider.of<UnifiedSearchController>(context, listen: false);
             showSearch(
               context: context,
-              delegate: HomeSearchDelegate(),
+              delegate: UnifiedSearchDelegate(
+                searchType: SearchType.all,
+                onSearch: (query, type) {
+                  searchController.search(query, type);
+                },
+                itemBuilder: (context, item, type) {
+                  return ListTile(
+                    title: Text(item.toString()),
+                    onTap: () {
+                      // Xử lý khi người dùng nhấp vào một kết quả
+                    },
+                  );
+                },
+                searchController: searchController,
+              ),
             );
           },
         ),

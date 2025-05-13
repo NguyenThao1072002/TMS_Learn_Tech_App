@@ -11,13 +11,13 @@ class CourseRepositoryImpl implements CourseRepository {
   CourseRepositoryImpl({required this.courseService});
 
   @override
-  Future<List<CourseCardModel>> getAllCourses() async {
-    return await courseService.getAllCourses();
+  Future<List<CourseCardModel>> getAllCourses({String? search}) async {
+    return await courseService.getAllCourses(search: search);
   }
 
   @override
-  Future<List<CourseCardModel>> getPopularCourses() async {
-    return await courseService.getPopularCourses();
+  Future<List<CourseCardModel>> getPopularCourses({String? search}) async {
+    return await courseService.getPopularCourses(search: search);
   }
 
   @override

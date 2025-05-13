@@ -11,6 +11,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tms_app/domain/repositories/account_repository.dart';
 import 'package:tms_app/presentation/screens/onboarding/onboarding_screen.dart';
 import 'package:flutter/rendering.dart';
+import 'package:provider/provider.dart';
+import 'package:tms_app/presentation/controller/unified_search_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,32 +55,41 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'TMS Learn Tech',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-        fontFamily: 'Roboto',
-        appBarTheme: const AppBarTheme(
-          elevation: 0,
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          centerTitle: false,
+    return MultiProvider(
+      providers: [
+        // Cung cấp UnifiedSearchController thông qua Provider
+        ChangeNotifierProvider<UnifiedSearchController>(
+          create: (_) => sl<UnifiedSearchController>(),
         ),
+        // Thêm các provider khác nếu cần
+      ],
+      child: MaterialApp(
+        title: 'TMS Learn Tech',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          visualDensity: VisualDensity.adaptivePlatformDensity,
+          fontFamily: 'Roboto',
+          appBarTheme: const AppBarTheme(
+            elevation: 0,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            centerTitle: false,
+          ),
+        ),
+        debugShowCheckedModeBanner: false,
+        navigatorKey: GlobalKey<NavigatorState>(),
+        routes: {
+          '/teaching_staff': (context) => const TeachingStaffScreen(),
+          '/about_us': (context) => const AboutUsScreen(),
+        },
+        // Flow chọn màn hình hiển thị:
+        // 1. Nếu chưa xem onboarding -> hiển thị OnboardingScreen
+        // 2. Nếu đã xem onboarding nhưng chưa đăng nhập -> hiển thị LoginScreen
+        // 3. Nếu đã xem onboarding và đã đăng nhập -> hiển thị HomeScreen
+        home: showOnboarding
+            ? const OnboardingScreen()
+            : (isLoggedIn ? HomeScreen() : LoginScreen()),
       ),
-      debugShowCheckedModeBanner: false,
-      navigatorKey: GlobalKey<NavigatorState>(),
-      routes: {
-        '/teaching_staff': (context) => const TeachingStaffScreen(),
-        '/about_us': (context) => const AboutUsScreen(),
-      },
-      // Flow chọn màn hình hiển thị:
-      // 1. Nếu chưa xem onboarding -> hiển thị OnboardingScreen
-      // 2. Nếu đã xem onboarding nhưng chưa đăng nhập -> hiển thị LoginScreen
-      // 3. Nếu đã xem onboarding và đã đăng nhập -> hiển thị HomeScreen
-      home: showOnboarding
-          ? const OnboardingScreen()
-          : (isLoggedIn ? HomeScreen() : LoginScreen()),
     );
   }
 }

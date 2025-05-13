@@ -3,7 +3,7 @@ import 'package:get_it/get_it.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tms_app/data/models/blog/blog_card_model.dart';
 import 'package:tms_app/data/models/categories/blog_category.dart';
-import 'package:tms_app/domain/usecases/blog_usercase.dart';
+import 'package:tms_app/domain/usecases/blog_usecase.dart';
 import 'package:tms_app/domain/usecases/category_usecase.dart';
 import 'package:tms_app/presentation/controller/blog_controller.dart';
 import 'package:tms_app/presentation/screens/blog/detail_blog.dart';
@@ -33,7 +33,7 @@ class _BlogListScreenState extends State<BlogListScreen>
     _searchController = TextEditingController();
 
     // Khởi tạo BlogController từ GetIt
-    final blogUsecase = GetIt.instance<BlogUsercase>();
+    final blogUsecase = GetIt.instance<BlogUsecase>();
     final categoryUseCase = GetIt.instance<CategoryUseCase>();
     _blogController = BlogController(
       blogUsecase: blogUsecase,

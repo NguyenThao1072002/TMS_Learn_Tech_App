@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tms_app/data/models/blog/blog_card_model.dart';
 import 'package:tms_app/data/models/categories/blog_category.dart';
-import 'package:tms_app/domain/usecases/blog_usercase.dart';
+import 'package:tms_app/domain/usecases/blog_usecase.dart';
 import 'package:tms_app/domain/usecases/category_usecase.dart';
 
 // Class để gom nhóm các bộ lọc blog
@@ -35,7 +35,7 @@ class BlogFilter {
 }
 
 class BlogController {
-  final BlogUsercase blogUsecase;
+  final BlogUsecase blogUsecase;
   final CategoryUseCase categoryUseCase;
   final ValueNotifier<List<BlogCardModel>> allBlogs = ValueNotifier([]);
   final ValueNotifier<List<BlogCardModel>> filteredBlogs = ValueNotifier([]);

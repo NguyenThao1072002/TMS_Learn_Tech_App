@@ -11,14 +11,14 @@ class PracticeTestRepositoryImpl implements PracticeTestRepository {
 
   @override
   Future<List<PracticeTestCardModel>> getPracticeTests({
-    String? title,
+    String? search,
     int? courseId,
     int? accountId,
     int page = 0,
     int size = 10,
   }) async {
     return await practiceTestService.getPracticeTests(
-      title: title,
+      search: search,
       courseId: courseId,
       accountId: accountId,
       page: page,

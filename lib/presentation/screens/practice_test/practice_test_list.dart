@@ -6,6 +6,9 @@ import 'package:tms_app/domain/usecases/practice_test_usecase.dart';
 import 'package:tms_app/presentation/controller/practice_test_controller.dart';
 import 'package:tms_app/presentation/screens/practice_test/practice_test_detail.dart';
 import 'package:tms_app/presentation/widgets/practice_test/practice_test_card.dart';
+import 'package:tms_app/presentation/controller/unified_search_controller.dart';
+import 'package:tms_app/presentation/widgets/component/search/search_button.dart';
+import 'package:tms_app/presentation/widgets/component/search/unified_search_delegate.dart';
 
 class PracticeTestListScreen extends StatefulWidget {
   const PracticeTestListScreen({Key? key}) : super(key: key);
@@ -19,12 +22,15 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
   late AnimationController _animationController;
   late Animation<double> _iconTurns;
   late PracticeTestController _controller;
+  late UnifiedSearchController _searchController;
   bool _isRefreshing = false;
 
   @override
   void initState() {
     super.initState();
     _controller = PracticeTestController();
+    _searchController =
+        Provider.of<UnifiedSearchController>(context, listen: false);
 
     // Initialize animation controller
     _animationController = AnimationController(
@@ -473,8 +479,9 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                 context: context,
                 delegate: PracticeTestSearchDelegate(
                   onSearch: (query) {
-                    _controller.setSearchQuery(query);
+                    _controller.search(query);
                   },
+                  controller: _controller,
                 ),
               );
             },
@@ -839,7 +846,17 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
 class PracticeTestSearchDelegate extends SearchDelegate<String> {
   final Function(String) onSearch;
 
-  PracticeTestSearchDelegate({required this.onSearch});
+  // Sử dụng controller được truyền từ bên ngoài thay vì tạo mới
+  final PracticeTestController _controller;
+  // Đánh dấu trạng thái tìm kiếm
+  bool _isSearching = false;
+  // Biến đếm thời gian cho debounce tìm kiếm
+  DateTime? _lastSearchTime;
+
+  PracticeTestSearchDelegate({
+    required this.onSearch,
+    required PracticeTestController controller,
+  }) : _controller = controller;
 
   @override
   String get searchFieldLabel => 'Tìm kiếm đề thi...';
@@ -880,6 +897,7 @@ class PracticeTestSearchDelegate extends SearchDelegate<String> {
         icon: const Icon(Icons.clear),
         onPressed: () {
           query = '';
+          _performSearch();
         },
       ),
     ];
@@ -895,22 +913,48 @@ class PracticeTestSearchDelegate extends SearchDelegate<String> {
     );
   }
 
+  // Debounce tìm kiếm - chỉ tìm sau một khoảng thời gian không gõ
+  void _performSearch() {
+    final now = DateTime.now();
+    _lastSearchTime = now;
+
+    // Đánh dấu đang tìm kiếm
+    _isSearching = true;
+
+    // Thực hiện tìm kiếm sau 300ms nếu không có thêm ký tự nào được gõ
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (_lastSearchTime == now) {
+        // Thay đổi để sử dụng search thay vì searchByTitleAndAuthor
+        _controller.search(query);
+
+        _isSearching = false;
+      }
+    });
+  }
+
   @override
   Widget buildResults(BuildContext context) {
-    onSearch(query);
-    // Đảm bảo background trắng cho kết quả tìm kiếm
-    return Container(
-      color: Colors.white,
-      child: const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3498DB)),
-        ),
-      ),
-    );
+    if (query.isNotEmpty) {
+      _performSearch();
+    }
+    // Hiển thị kết quả tìm kiếm trực tiếp trên màn hình tìm kiếm
+    return _buildSearchResultsWidget();
   }
 
   @override
   Widget buildSuggestions(BuildContext context) {
+    // Nếu đang nhập và chưa bắt đầu tìm kiếm, hiển thị gợi ý
+    // Nếu đã tìm kiếm, hiển thị kết quả
+    if (query.isEmpty) {
+      return _buildSuggestionsWidget();
+    } else {
+      // Thực hiện tìm kiếm thời gian thực khi người dùng gõ
+      _performSearch();
+      return _buildSearchResultsWidget();
+    }
+  }
+
+  Widget _buildSuggestionsWidget() {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Container(
@@ -920,13 +964,27 @@ class PracticeTestSearchDelegate extends SearchDelegate<String> {
           children: [
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'Gợi ý tìm kiếm',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade700,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Gợi ý tìm kiếm',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tìm kiếm theo tên đề thi hoặc tác giả',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
               ),
             ),
             Expanded(
@@ -939,7 +997,7 @@ class PracticeTestSearchDelegate extends SearchDelegate<String> {
                     'Flutter',
                     'React Native',
                     'Android Development',
-                    'iOS Development',
+                    'iOS Development 2',
                     'Web Development',
                   ];
 
@@ -971,6 +1029,7 @@ class PracticeTestSearchDelegate extends SearchDelegate<String> {
                       ),
                       onTap: () {
                         query = suggestions[index];
+                        _performSearch();
                         showResults(context);
                       },
                     ),
@@ -980,6 +1039,163 @@ class PracticeTestSearchDelegate extends SearchDelegate<String> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSearchResultsWidget() {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          if (_isSearching || _controller.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3498DB)),
+              ),
+            );
+          }
+
+          if (_controller.tests.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.search_off,
+                    size: 64,
+                    color: Colors.grey.shade400,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Không tìm thấy đề thi phù hợp',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Hệ thống tìm kiếm theo tên đề thi và tác giả',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: _controller.tests.length,
+            itemBuilder: (context, index) {
+              final test = _controller.tests[index];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(12),
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        test.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.stars,
+                            size: 14,
+                            color: Colors.amber.shade700,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _controller.translateLevel(test.level),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Icon(
+                            Icons.person,
+                            size: 14,
+                            color: Colors.blue.shade700,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            test.author,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      test.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ),
+                  trailing: test.price > 0
+                      ? Text(
+                          '${_controller.formatPrice(test.price)}đ',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF3498DB),
+                          ),
+                        )
+                      : const Text(
+                          'Miễn phí',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
+                  onTap: () {
+                    // Đóng màn hình tìm kiếm và chuyển hướng đến chi tiết đề thi
+                    close(context, test.testId.toString());
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            PracticeTestDetailScreen(testId: test.testId),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
