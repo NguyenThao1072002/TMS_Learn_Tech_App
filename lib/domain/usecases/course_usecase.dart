@@ -2,6 +2,7 @@ import 'package:tms_app/data/models/course/course_card_model.dart';
 import 'package:tms_app/data/models/course/course_detail/overview_course_model.dart';
 import 'package:tms_app/data/models/course/course_detail/structure_course_model.dart';
 import 'package:tms_app/data/models/course/course_detail/review_course_model.dart';
+import 'package:tms_app/data/services/course/course_service.dart';
 import 'package:tms_app/domain/repositories/course_repository.dart';
 
 class CourseUseCase {
@@ -9,12 +10,50 @@ class CourseUseCase {
 
   CourseUseCase(this.courseRepository);
 
-  Future<List<CourseCardModel>> getAllCourses({String? search}) async {
-    return await courseRepository.getAllCourses(search: search);
+  Future<List<CourseCardModel>> getAllCourses({
+    String? search,
+    int page = 0,
+    int size = 10,
+    int? accountId,
+  }) async {
+    return await courseRepository.getAllCourses(
+      search: search,
+      page: page,
+      size: size,
+      accountId: accountId,
+    );
   }
 
-  Future<List<CourseCardModel>> getPopularCourses({String? search}) async {
-    return await courseRepository.getPopularCourses(search: search);
+  Future<List<CourseCardModel>> getPopularCourses({
+    String? search,
+    int page = 0,
+    int size = 10,
+    int? accountId,
+  }) async {
+    return await courseRepository.getPopularCourses(
+      search: search,
+      page: page,
+      size: size,
+      accountId: accountId,
+    );
+  }
+
+  Future<CoursePaginationResponse> getCoursesWithPagination({
+    required String type,
+    String? search,
+    List<int>? categoryIds,
+    int page = 0,
+    int size = 10,
+    int? accountId,
+  }) async {
+    return await courseRepository.getCoursesWithPagination(
+      type: type,
+      search: search,
+      categoryIds: categoryIds,
+      page: page,
+      size: size,
+      accountId: accountId,
+    );
   }
 
   Future<List<CourseCardModel>> getDiscountCourses() async {

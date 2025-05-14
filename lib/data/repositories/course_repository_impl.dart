@@ -1,9 +1,9 @@
-import '../../domain/repositories/course_repository.dart';
-import '../models/course/course_card_model.dart';
+import 'package:tms_app/data/models/course/course_card_model.dart';
 import 'package:tms_app/data/models/course/course_detail/overview_course_model.dart';
-import '../models/course/course_detail/structure_course_model.dart';
-import '../models/course/course_detail/review_course_model.dart';
-import '../services/course/course_service.dart';
+import 'package:tms_app/data/models/course/course_detail/structure_course_model.dart';
+import 'package:tms_app/data/models/course/course_detail/review_course_model.dart';
+import 'package:tms_app/data/services/course/course_service.dart';
+import 'package:tms_app/domain/repositories/course_repository.dart';
 
 class CourseRepositoryImpl implements CourseRepository {
   final CourseService courseService;
@@ -11,13 +11,54 @@ class CourseRepositoryImpl implements CourseRepository {
   CourseRepositoryImpl({required this.courseService});
 
   @override
-  Future<List<CourseCardModel>> getAllCourses({String? search}) async {
-    return await courseService.getAllCourses(search: search);
+  Future<List<CourseCardModel>> getAllCourses({
+    String? search,
+    int page = 0,
+    int size = 10,
+    int? accountId,
+  }) async {
+    return await courseService.getAllCourses(
+      search: search,
+      page: page,
+      size: size,
+      accountId: accountId,
+    );
   }
 
   @override
-  Future<List<CourseCardModel>> getPopularCourses({String? search}) async {
-    return await courseService.getPopularCourses(search: search);
+  Future<List<CourseCardModel>> getPopularCourses({
+    String? search,
+    int page = 0,
+    int size = 10,
+    int? accountId,
+  }) async {
+    return await courseService.getPopularCourses(
+      search: search,
+      page: page,
+      size: size,
+      accountId: accountId,
+    );
+  }
+
+  @override
+  Future<CoursePaginationResponse> getCoursesWithPagination({
+    String type = 'popular',
+    String? search,
+    int? categoryId,
+    List<int>? categoryIds,
+    int page = 0,
+    int size = 10,
+    int? accountId,
+  }) async {
+    return await courseService.getCoursesWithPagination(
+      type: type,
+      search: search,
+      categoryId: categoryId,
+      categoryIds: categoryIds,
+      page: page,
+      size: size,
+      accountId: accountId,
+    );
   }
 
   @override
@@ -32,7 +73,7 @@ class CourseRepositoryImpl implements CourseRepository {
 
   @override
   Future<List<ReviewCourseModel>> getReviewCourse(int id) async {
-    return courseService.getReviewCourse(id);
+    return await courseService.getReviewCourse(id);
   }
 
   @override
