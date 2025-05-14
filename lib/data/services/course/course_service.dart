@@ -8,25 +8,160 @@ import 'package:tms_app/data/models/course/course_detail/structure_course_model.
 import 'package:tms_app/data/models/course/course_detail/review_course_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// Thêm class mới để xử lý phản hồi phân trang
+class CoursePaginationResponse {
+  final List<CourseCardModel> content;
+  final int totalElements;
+  final int totalPages;
+  final int currentPage;
+  final int pageSize;
+
+  CoursePaginationResponse({
+    required this.content,
+    required this.totalElements,
+    required this.totalPages,
+    required this.currentPage,
+    required this.pageSize,
+  });
+
+  factory CoursePaginationResponse.fromJson(Map<String, dynamic> json) {
+    final List<CourseCardModel> courses = [];
+    if (json['content'] != null) {
+      json['content'].forEach((courseJson) {
+        courses.add(CourseCardModel.fromJson(courseJson));
+      });
+    }
+
+    return CoursePaginationResponse(
+      content: courses,
+      totalElements: json['totalElements'] ?? 0,
+      totalPages: json['totalPages'] ?? 0,
+      currentPage: json['pageable']?['pageNumber'] ?? 0,
+      pageSize: json['pageable']?['pageSize'] ?? 10,
+    );
+  }
+}
+
 class CourseService {
   final String apiUrl = "${Constants.BASE_URL}/api";
   final Dio dio;
 
   CourseService(this.dio);
 
-  Future<List<CourseCardModel>> getAllCourses({String? search}) async {
+  // Phương thức được cập nhật để hỗ trợ phân trang
+  Future<List<CourseCardModel>> getAllCourses({
+    String? search,
+    int page = 0,
+    int size = 10,
+    int? accountId,
+  }) async {
     try {
-      return await getPopularCourses(search: search);
+      return await getPopularCourses(
+        search: search,
+        page: page,
+        size: size,
+        accountId: accountId,
+      );
     } catch (e) {
+      print('Lỗi khi lấy tất cả khóa học: $e');
       return [];
     }
   }
 
-  Future<List<CourseCardModel>> getPopularCourses({String? search}) async {
+  // Phương thức mới hỗ trợ đầy đủ phân trang
+  Future<CoursePaginationResponse> getCoursesWithPagination({
+    String type = 'popular',
+    String? search,
+    int? categoryId,
+    List<int>? categoryIds,
+    int page = 0,
+    int size = 10,
+    int? accountId,
+  }) async {
     try {
-      // Build query parameters
+      final queryParams = <String, dynamic>{
+        'type': type,
+        'page': page,
+        'size': size,
+      };
+
+      if (search != null && search.isNotEmpty) {
+        queryParams['search'] = search;
+      }
+
+      // Xử lý cho cả categoryId đơn lẻ và danh sách categoryIds
+      if (categoryIds != null && categoryIds.isNotEmpty) {
+        // Chuyển list categoryIds thành chuỗi ngăn cách bởi dấu phẩy
+        queryParams['categoryIds'] = categoryIds.join(',');
+      } else if (categoryId != null && categoryId > 0) {
+        queryParams['categoryIds'] = categoryId;
+      }
+
+      if (accountId != null) {
+        queryParams['accountId'] = accountId;
+      }
+
+      final endpoint = '$apiUrl/courses/public/filter';
+      print('Đang gọi API: $endpoint với tham số: $queryParams');
+
+      final response = await dio.get(
+        endpoint,
+        queryParameters: queryParams,
+        options: Options(
+          validateStatus: (status) => true,
+          headers: {'Accept': 'application/json'},
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+
+        if (responseData != null && responseData['data'] != null) {
+          return CoursePaginationResponse.fromJson(responseData['data']);
+        } else {
+          print('Lỗi: API không trả về dữ liệu hợp lệ');
+          return CoursePaginationResponse(
+            content: [],
+            totalElements: 0,
+            totalPages: 0,
+            currentPage: 0,
+            pageSize: size,
+          );
+        }
+      } else {
+        print('Lỗi API (${response.statusCode}): ${response.data}');
+        return CoursePaginationResponse(
+          content: [],
+          totalElements: 0,
+          totalPages: 0,
+          currentPage: 0,
+          pageSize: size,
+        );
+      }
+    } catch (e) {
+      print('Lỗi khi lấy danh sách khóa học phân trang: $e');
+      return CoursePaginationResponse(
+        content: [],
+        totalElements: 0,
+        totalPages: 0,
+        currentPage: 0,
+        pageSize: size,
+      );
+    }
+  }
+
+  Future<List<CourseCardModel>> getPopularCourses({
+    String? search,
+    int page = 0,
+    int size = 10,
+    int? accountId,
+  }) async {
+    try {
+      // Xây dựng tham số truy vấn
       final queryParams = <String, dynamic>{
         'type': 'popular',
+        'page': page,
+        'size': size,
       };
 
       // Thêm tham số search nếu có
@@ -35,43 +170,53 @@ class CourseService {
         print('Đang tìm kiếm khóa học với từ khóa: "$search"');
       }
 
+      // Thêm accountId nếu có
+      if (accountId != null) {
+        queryParams['accountId'] = accountId;
+      }
+
       final endpoint = '$apiUrl/courses/public/filter';
+      print('Đang gọi API: $endpoint với tham số: $queryParams');
 
       try {
-        final response = await dio.get(endpoint,
-            queryParameters: queryParams,
-            options: Options(
-              validateStatus: (status) => true,
-              headers: {'Accept': 'application/json'},
-            ));
+        final response = await dio.get(
+          endpoint,
+          queryParameters: queryParams,
+          options: Options(
+            validateStatus: (status) => true,
+            headers: {'Accept': 'application/json'},
+          ),
+        );
 
         if (response.statusCode == 200) {
-          final courses = ApiResponseHelper.processList(
-              response.data, CourseCardModel.fromJson);
+          final responseData = response.data;
 
-          if (search != null && search.isNotEmpty) {
-            print(
-                'Tìm thấy ${courses.length} khóa học phù hợp với từ khóa "$search"');
+          if (responseData != null &&
+              responseData['data'] != null &&
+              responseData['data']['content'] != null) {
+            // Xử lý trường hợp API trả về cấu trúc phân trang
+            final List<CourseCardModel> courses = [];
+            responseData['data']['content'].forEach((courseJson) {
+              courses.add(CourseCardModel.fromJson(courseJson));
+            });
+
+            print('Tìm thấy ${courses.length} khóa học');
+            return courses;
+          } else {
+            // Xử lý trường hợp trả về danh sách trực tiếp (không phân trang)
+            return ApiResponseHelper.processList(
+                responseData, CourseCardModel.fromJson);
           }
-
-          return courses;
         } else {
-          if (search != null && search.isNotEmpty) {
-            print(
-                'Lỗi khi tìm kiếm khóa học (${response.statusCode}): ${response.data}');
-          }
+          print('Lỗi API (${response.statusCode}): ${response.data}');
           return [];
         }
       } on DioException catch (e) {
-        if (search != null && search.isNotEmpty) {
-          print('Lỗi khi tìm kiếm khóa học: $e');
-        }
+        print('Lỗi Dio khi lấy khóa học: $e');
         return [];
       }
     } catch (e) {
-      if (search != null && search.isNotEmpty) {
-        print('Lỗi tổng quan khi tìm kiếm khóa học: $e');
-      }
+      print('Lỗi khi lấy khóa học phổ biến: $e');
       return [];
     }
   }
