@@ -173,8 +173,9 @@ void _registerUseCases() {
   });
 
   sl.registerFactory(() => PracticeTestUseCase(sl()));
-  // Thêm dòng này để đăng ký UpdateAccountUseCase
-  sl.registerFactory(() => UpdateAccountUseCase(sl()));
+
+  // Đăng ký UpdateAccountUseCase - chuyển từ registerFactory sang registerLazySingleton
+  sl.registerLazySingleton(() => UpdateAccountUseCase(sl<AccountRepository>()));
 }
 
 // Thêm một phương thức mới riêng để đăng ký controllers
@@ -189,17 +190,19 @@ void _registerControllers() {
   sl.registerLazySingleton<UnifiedSearchController>(
     () => UnifiedSearchController(),
   );
-  sl.registerLazySingleton<UpdateAccountController>(
-    () => UpdateAccountController(
-      updateAccountUseCase: sl<UpdateAccountUseCase>(),
-    ),
-  );
 
-  // Đảm bảo đăng ký ForgotPasswordController nếu cần
+  // Đảm bảo ForgotPasswordController được đăng ký trước khi đăng ký các controller khác phụ thuộc vào nó
   if (!sl.isRegistered<ForgotPasswordController>()) {
     sl.registerLazySingleton<ForgotPasswordController>(
       () =>
           ForgotPasswordController(accountRepository: sl<AccountRepository>()),
     );
   }
+
+  // Đăng ký UpdateAccountController - đảm bảo UpdateAccountUseCase đã được đăng ký
+  sl.registerLazySingleton<UpdateAccountController>(
+    () => UpdateAccountController(
+      updateAccountUseCase: sl<UpdateAccountUseCase>(),
+    ),
+  );
 }

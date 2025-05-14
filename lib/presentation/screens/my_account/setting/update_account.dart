@@ -7,6 +7,7 @@ import 'package:get_it/get_it.dart';
 import 'package:tms_app/data/models/user_update_model.dart';
 import 'package:tms_app/domain/usecases/update_account_usecase.dart';
 import 'package:tms_app/presentation/controller/my_account/setting/update_account_controller.dart';
+import 'package:tms_app/domain/repositories/account_repository.dart';
 
 class UpdateAccountScreen extends StatefulWidget {
   const UpdateAccountScreen({Key? key}) : super(key: key);
@@ -40,10 +41,30 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
   void initState() {
     super.initState();
 
-    // Khởi tạo controller thông qua GetIt, tương tự cách DocumentListScreen làm
-    _controller = UpdateAccountController(
-      updateAccountUseCase: GetIt.instance<UpdateAccountUseCase>(),
-    );
+    // Khởi tạo controller an toàn hơn
+    try {
+      final GetIt getIt = GetIt.instance;
+      // Sử dụng getIt.isRegistered để kiểm tra trước khi lấy
+      if (getIt.isRegistered<UpdateAccountController>()) {
+        _controller = getIt<UpdateAccountController>();
+      } else {
+        print('UpdateAccountController chưa được đăng ký, tạo instance mới');
+        // Khởi tạo thủ công nếu không có trong GetIt
+        final AccountRepository accountRepo = getIt<AccountRepository>();
+        final UpdateAccountUseCase updateAccountUseCase =
+            UpdateAccountUseCase(accountRepo);
+        _controller =
+            UpdateAccountController(updateAccountUseCase: updateAccountUseCase);
+      }
+    } catch (e) {
+      print('Lỗi khi khởi tạo controller: $e');
+      // Khởi tạo với instance mới trong trường hợp GetIt gặp vấn đề
+      final AccountRepository accountRepo = GetIt.instance<AccountRepository>();
+      final UpdateAccountUseCase updateAccountUseCase =
+          UpdateAccountUseCase(accountRepo);
+      _controller =
+          UpdateAccountController(updateAccountUseCase: updateAccountUseCase);
+    }
 
     // Lắng nghe sự thay đổi của userProfile
     _controller.userProfile.listen((profile) {
