@@ -3,9 +3,12 @@ import 'package:get_it/get_it.dart';
 import 'package:tms_app/data/models/practice_test/practice_test_detail_model.dart';
 import 'package:tms_app/data/models/practice_test/practice_test_review_model.dart';
 import 'package:tms_app/domain/usecases/practice_test_usecase.dart';
+import 'package:tms_app/domain/usecases/cart_usecase.dart';
+import 'package:tms_app/presentation/controller/cart_controller.dart';
 import 'package:tms_app/presentation/controller/practice_test_controller.dart';
 import 'package:tms_app/presentation/widgets/practice_test/related_practice_test.dart';
 import 'package:tms_app/presentation/widgets/practice_test/test_review_section.dart';
+import 'package:tms_app/presentation/screens/my_account/checkout/cart.dart';
 
 class PracticeTestDetailScreen extends StatefulWidget {
   final int testId;
@@ -21,16 +24,21 @@ class PracticeTestDetailScreen extends StatefulWidget {
 class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
   final PracticeTestUseCase _practiceTestUseCase =
       GetIt.instance<PracticeTestUseCase>();
+  final CartUseCase _cartUseCase = GetIt.instance<CartUseCase>();
   late PracticeTestDetailController _controller;
+  late CartController _cartController;
+  bool _isAddingToCart = false;
 
   @override
   void initState() {
     super.initState();
     _controller = PracticeTestDetailController(widget.testId);
+    _cartController = CartController(cartUseCase: _cartUseCase);
   }
 
   @override
   void dispose() {
+    _cartController.dispose();
     super.dispose();
   }
 
@@ -389,6 +397,29 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                     ],
                   ),
                 ),
+                if (test.price > 0 && !test.purchased) ...[
+                  OutlinedButton(
+                    onPressed: () => _addToCart(test),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF3498DB)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'Thêm vào giỏ',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF3498DB),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
                 ElevatedButton(
                   onPressed: () {
                     // Start the test or purchase flow
@@ -401,14 +432,10 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                         ),
                       );
                     } else if (test.price > 0) {
-                      // Show payment options
-                      _controller.purchaseTest();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Đang mở trang thanh toán...'),
-                        ),
-                      );
-                      // TODO: Implement payment flow
+                      // Show payment options or add to cart
+                      _addToCart(test);
+                      // Sau khi thêm vào giỏ, điều hướng đến giỏ hàng
+                      _navigateToCart();
                     } else {
                       // Free test - navigate to test taking screen
                       _controller.startTest();
@@ -571,6 +598,26 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                 color: Colors.grey.shade700,
               ),
             ),
+            
+            // Thêm nút Thêm vào giỏ hàng cho đề thi có phí
+            if (test.price > 0) ...[
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _addToCart(test),
+                      icon: const Icon(Icons.shopping_cart_outlined),
+                      label: const Text('Thêm vào giỏ hàng'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        side: const BorderSide(color: Color(0xFF3498DB)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -649,6 +696,101 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // Phương thức thêm đề thi vào giỏ hàng
+  Future<void> _addToCart(PracticeTestDetailModel test) async {
+    if (_isAddingToCart) return; // Tránh nhấn nhiều lần liên tiếp
+    if (test.purchased) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bạn đã mua đề thi này rồi'))
+      );
+      return;
+    }
+    
+    setState(() {
+      _isAddingToCart = true;
+    });
+    
+    try {
+      final success = await _cartController.addToCart(
+        itemId: test.testId,
+        type: "EXAM", // Loại sản phẩm là đề thi
+        price: test.price,
+      );
+      
+      if (success) {
+        _showAddToCartFeedback();
+      } else {
+        if (_cartController.errorMessage.value?.contains('đã có trong giỏ hàng') ?? false) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Đề thi đã có trong giỏ hàng'),
+              backgroundColor: Colors.orange,
+            )
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Không thể thêm vào giỏ hàng. Vui lòng thử lại sau.'),
+              backgroundColor: Colors.red,
+            )
+          );
+        }
+      }
+    } catch (e) {
+      print('Lỗi khi thêm đề thi vào giỏ hàng: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đã xảy ra lỗi: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        )
+      );
+    } finally {
+      setState(() {
+        _isAddingToCart = false;
+      });
+    }
+  }
+
+  // Hiển thị thông báo đã thêm vào giỏ hàng
+  void _showAddToCartFeedback() {
+    final snackBar = SnackBar(
+      content: Row(
+        children: [
+          const Icon(Icons.check_circle, color: Colors.white),
+          const SizedBox(width: 8),
+          Expanded(
+            child: const Text(
+              'Đã thêm đề thi vào giỏ hàng',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+      backgroundColor: Colors.green,
+      duration: const Duration(seconds: 2),
+      action: SnackBarAction(
+        label: 'XEM GIỎ',
+        textColor: Colors.white,
+        onPressed: _navigateToCart,
+      ),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
+  // Chuyển đến màn hình giỏ hàng
+  void _navigateToCart() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CartScreen(
+          preSelectedItemId: _controller.testDetail?.testId.toString(),
+          preSelectedItemType: 'EXAM',
+        ),
       ),
     );
   }

@@ -9,6 +9,8 @@ import 'package:tms_app/data/models/course/course_detail/overview_course_model.d
 import 'package:tms_app/data/models/course/course_detail/structure_course_model.dart';
 import 'package:tms_app/data/models/course/course_detail/review_course_model.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
+import 'package:tms_app/domain/usecases/cart_usecase.dart';
+import 'package:tms_app/presentation/controller/cart_controller.dart';
 import 'package:tms_app/core/DI/service_locator.dart';
 import 'package:tms_app/presentation/screens/my_account/checkout/cart.dart'
     as import_cart;
@@ -36,6 +38,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final CourseUseCase _courseUseCase = sl<CourseUseCase>();
+  final CartUseCase _cartUseCase = sl<CartUseCase>();
+  late CartController _cartController;
 
   OverviewCourseModel? _overviewCourse;
   List<StructureCourseModel> _structureCourse = [];
@@ -48,11 +52,13 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
   bool _isLoadingRelated = true;
   bool _isPurchased = false;
   bool _isDescriptionExpanded = false;
+  bool _isAddingToCart = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _cartController = CartController(cartUseCase: _cartUseCase);
     _loadCourseData();
     _checkPurchaseStatus();
   }
@@ -148,6 +154,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _cartController.dispose();
     super.dispose();
   }
 
@@ -163,11 +170,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
           style: AppStyles.appBarTitleStyle,
         ),
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios, 
-            color: Colors.black, 
-            size: AppDimensions.smallIconSize
-          ),
+          icon: const Icon(Icons.arrow_back_ios,
+              color: Colors.black, size: AppDimensions.smallIconSize),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -274,9 +278,58 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
   }
 
   // Thêm khóa học vào giỏ hàng
-  void _addToCart() {
-    // Thêm trực tiếp vào giỏ hàng mà không cần hiện dialog
-    _showAddToCartFeedback();
+  void _addToCart() async {
+    if (_isAddingToCart) return; // Tránh nhấn nhiều lần liên tiếp
+    if (_isPurchased) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Bạn đã mua khóa học này rồi'))
+      );
+      return;
+    }
+    
+    setState(() {
+      _isAddingToCart = true;
+    });
+    
+    try {
+      final success = await _cartController.addToCart(
+        itemId: widget.course.id,
+        type: "COURSE",
+        price: widget.course.price,
+      );
+      
+      if (success) {
+        _showAddToCartFeedback();
+      } else {
+        if (_cartController.errorMessage.value?.contains('đã có trong giỏ hàng') ?? false) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Khóa học đã có trong giỏ hàng'),
+              backgroundColor: Colors.orange,
+            )
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Không thể thêm vào giỏ hàng. Vui lòng thử lại sau.'),
+              backgroundColor: Colors.red,
+            )
+          );
+        }
+      }
+    } catch (e) {
+      print('Lỗi khi thêm khóa học vào giỏ hàng: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đã xảy ra lỗi: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        )
+      );
+    } finally {
+      setState(() {
+        _isAddingToCart = false;
+      });
+    }
   }
 
   // Hiển thị thông báo đã thêm vào giỏ hàng

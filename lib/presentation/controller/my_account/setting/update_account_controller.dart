@@ -1,6 +1,7 @@
+import 'dart:io';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tms_app/data/models/user_update_model.dart'; // Thêm import
+import 'package:tms_app/data/models/user_update_model.dart';
 import 'package:tms_app/domain/usecases/update_account_usecase.dart';
 
 class UpdateAccountController extends GetxController {
@@ -52,6 +53,23 @@ class UpdateAccountController extends GetxController {
       errorMessage.value = ''; // Xóa thông báo lỗi trước đó
       isSuccess.value = false;
 
+      // Tạo một Map mới để xử lý dữ liệu trước khi gửi
+      final Map<String, dynamic> processedData = {...accountData};
+
+      // Xử lý riêng cho trường hợp image là File
+      if (accountData['image'] != null && accountData['image'] is File) {
+        // Lấy File ra từ accountData để xử lý riêng
+        File imageFile = accountData['image'] as File;
+
+        // Cập nhật processedData với đường dẫn file thay vì đối tượng File
+        // Điều này phụ thuộc vào cách _updateAccountUseCase xử lý
+        processedData['image'] = imageFile.path;
+
+        // Thêm flag để usecase biết đây là file cần xử lý đặc biệt
+        processedData['isImageFile'] = true;
+      }
+
+      // Gọi usecase để cập nhật thông tin
       final result = await _updateAccountUseCase(accountData);
 
       if (!result) {
@@ -76,41 +94,5 @@ class UpdateAccountController extends GetxController {
   Future<String?> getUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('userId');
-  }
-
-  // Cập nhật thông tin cơ bản
-  Future<bool> updateBasicInfo({
-    required String fullName,
-    required String phone,
-    String? avatarUrl,
-  }) async {
-    final Map<String, dynamic> data = {
-      'name': fullName, // Đảm bảo tên field khớp với model
-      'phone': phone,
-    };
-
-    if (avatarUrl != null && avatarUrl.isNotEmpty) {
-      data['profileImagePath'] = avatarUrl; // Đảm bảo tên field khớp với model
-    }
-
-    return updateAccount(data);
-  }
-
-  // Cập nhật thông tin nâng cao
-  Future<bool> updateAdvancedInfo({
-    String? gender,
-    DateTime? birthDate,
-  }) async {
-    final Map<String, dynamic> data = {};
-
-    if (gender != null && gender.isNotEmpty) {
-      data['gender'] = gender;
-    }
-
-    if (birthDate != null) {
-      data['birthDate'] = birthDate.toIso8601String();
-    }
-
-    return updateAccount(data);
   }
 }
