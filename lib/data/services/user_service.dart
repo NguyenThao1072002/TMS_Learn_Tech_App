@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tms_app/data/models/user_update_model.dart';
-import '../models/user_model.dart';
+import 'package:tms_app/data/models/account/user_update_model.dart';
+import '../models/account/user_model.dart';
 import '../../core/utils/constants.dart';
 
 class UserService {

@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tms_app/data/models/user_update_model.dart'; // Thêm import
+import 'package:tms_app/data/models/account/user_update_model.dart'; // Thêm import
 import 'package:tms_app/domain/usecases/update_account_usecase.dart';
 
 class UpdateAccountController extends GetxController {

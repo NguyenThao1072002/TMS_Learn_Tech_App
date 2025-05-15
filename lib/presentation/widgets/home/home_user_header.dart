@@ -4,7 +4,7 @@ import 'package:tms_app/core/di/service_locator.dart';
 import 'package:tms_app/core/theme/app_styles.dart';
 import 'package:tms_app/core/theme/app_dimensions.dart';
 import 'package:tms_app/core/utils/shared_prefs.dart';
-import 'package:tms_app/data/models/user_update_model.dart';
+import 'package:tms_app/data/models/account/user_update_model.dart';
 import 'package:tms_app/domain/repositories/account_repository.dart';
 
 class HomeUserHeader extends StatefulWidget {

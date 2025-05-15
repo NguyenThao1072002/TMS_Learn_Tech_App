@@ -38,6 +38,7 @@ import 'package:tms_app/data/repositories/practice_test_repository_impl.dart';
 import 'package:tms_app/domain/repositories/practice_test_repository.dart';
 import 'package:tms_app/domain/usecases/practice_test_usecase.dart';
 import 'package:tms_app/presentation/controller/unified_search_controller.dart';
+import 'package:tms_app/domain/usecases/change_password_usecase.dart';
 
 // Đảm bảo các import không bị xóa bởi công cụ IDE
 // ignore: unused_element
@@ -176,6 +177,9 @@ void _registerUseCases() {
 
   // Đăng ký UpdateAccountUseCase - chuyển từ registerFactory sang registerLazySingleton
   sl.registerLazySingleton(() => UpdateAccountUseCase(sl<AccountRepository>()));
+
+  sl.registerLazySingleton(
+      () => ChangePasswordUseCase(sl<AccountRepository>()));
 }
 
 // Thêm một phương thức mới riêng để đăng ký controllers

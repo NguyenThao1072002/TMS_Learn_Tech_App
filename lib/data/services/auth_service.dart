@@ -250,4 +250,41 @@ class AuthService {
       return false;
     }
   }
+
+  // Change Password API (requires authentication)
+  Future<bool> changePassword(Map<String, dynamic> body) async {
+    try {
+      // Get JWT token from SharedPreferences
+      final token = await SharedPrefs.getJwtToken();
+
+      if (token == null || token.isEmpty) {
+        print("JWT token not found. Please login again.");
+        return false;
+      }
+
+      final response = await dio.put(
+        '$baseUrl/change-password/1',
+        data: jsonEncode(body),
+        options: Options(headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token'
+        }),
+      );
+
+      print('Change password response: ${response.statusCode}');
+      print('Response data: ${response.data}');
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Error changing password: $e");
+
+      // Print detailed error information
+      if (e is DioException && e.response != null) {
+        print("Error status code: ${e.response?.statusCode}");
+        print("Error data: ${e.response?.data}");
+      }
+
+      return false;
+    }
+  }
 }

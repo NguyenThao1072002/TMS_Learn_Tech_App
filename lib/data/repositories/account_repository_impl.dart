@@ -1,7 +1,7 @@
-import 'package:tms_app/data/models/user_update_model.dart';
+import 'package:tms_app/data/models/account/user_update_model.dart';
 
 import '../../domain/repositories/account_repository.dart';
-import '../models/user_model.dart';
+import '../models/account/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/user_service.dart';
 
@@ -61,5 +61,10 @@ class AccountRepositoryImpl implements AccountRepository {
   @override
   Future<UserProfile> getUserById(String userId) {
     return userService.getUserById(userId);
+  }
+
+  @override
+  Future<bool> changePassword(Map<String, dynamic> body) {
+    return authService.changePassword(body);
   }
 }

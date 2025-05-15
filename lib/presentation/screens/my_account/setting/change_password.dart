@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:tms_app/data/models/account/change_password.dart';
+import 'package:tms_app/domain/usecases/change_password_usecase.dart';
+import 'package:tms_app/core/DI/service_locator.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({Key? key}) : super(key: key);
@@ -36,6 +40,16 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   // Kiểm tra độ mạnh của mật khẩu
   PasswordStrength _passwordStrength = PasswordStrength.weak;
+
+  // Lấy instance của ChangePasswordUseCase
+  late final ChangePasswordUseCase _changePasswordUseCase;
+
+  @override
+  void initState() {
+    super.initState();
+    // Khởi tạo use case từ service locator
+    _changePasswordUseCase = sl<ChangePasswordUseCase>();
+  }
 
   @override
   void dispose() {
@@ -78,7 +92,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   }
 
   // Xử lý khi thay đổi mật khẩu
-  void _changePassword() {
+  Future<void> _changePassword() async {
     // Kiểm tra form
     if (!_formKey.currentState!.validate()) {
       return;
@@ -93,20 +107,41 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       return;
     }
 
-    // Simulate API call
+    // Đặt trạng thái loading
     setState(() {
       _isLoading = true;
     });
 
-    // Giả lập gọi API
-    Future.delayed(const Duration(seconds: 2), () {
+    try {
+      // Tạo model đổi mật khẩu
+      final changePasswordModel = ChangePasswordModel(
+        currentPassword: _currentPasswordController.text,
+        newPassword: _newPasswordController.text,
+        confirmPassword: _confirmPasswordController.text,
+      );
+
+      // Gọi API đổi mật khẩu
+      final result = await _changePasswordUseCase.execute(changePasswordModel);
+
+      // Dừng loading
       setState(() {
         _isLoading = false;
       });
 
-      // Hiển thị thông báo thành công
-      _showChangePasswordSuccessDialog();
-    });
+      if (result) {
+        // Thành công
+        _showChangePasswordSuccessDialog();
+      } else {
+        // Thất bại
+        _showChangePasswordFailedDialog();
+      }
+    } catch (e) {
+      // Xử lý lỗi
+      setState(() {
+        _isLoading = false;
+      });
+      _showChangePasswordFailedDialog(errorMessage: e.toString());
+    }
   }
 
   // Hiển thị dialog thông báo đổi mật khẩu thành công
@@ -130,6 +165,41 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                'Đóng',
+                style:
+                    TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Hiển thị dialog thông báo đổi mật khẩu thất bại
+  void _showChangePasswordFailedDialog({String? errorMessage}) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red, size: 28),
+              SizedBox(width: 10),
+              Text('Thất bại'),
+            ],
+          ),
+          content: Text(errorMessage ??
+              'Đổi mật khẩu không thành công. Vui lòng thử lại sau.'),
+          actions: [
+            TextButton(
+              onPressed: () {
                 Navigator.of(context).pop();
               },
               child: const Text(

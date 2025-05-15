@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
-import 'package:tms_app/data/models/user_update_model.dart';
+import 'package:tms_app/data/models/account/user_update_model.dart';
 import 'package:tms_app/domain/usecases/update_account_usecase.dart';
 import 'package:tms_app/presentation/controller/my_account/setting/update_account_controller.dart';
 import 'package:tms_app/domain/repositories/account_repository.dart';

@@ -3,7 +3,7 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tms_app/core/utils/shared_prefs.dart';
 import 'package:tms_app/data/models/course/course_card_model.dart';
-import 'package:tms_app/data/models/user_update_model.dart';
+import 'package:tms_app/data/models/account/user_update_model.dart';
 import 'package:tms_app/domain/repositories/account_repository.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
 import 'package:tms_app/presentation/controller/course_controller.dart';
