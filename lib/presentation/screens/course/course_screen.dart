@@ -13,6 +13,8 @@ import 'course_list.dart';
 import 'package:provider/provider.dart';
 import 'package:tms_app/presentation/controller/unified_search_controller.dart';
 import 'package:tms_app/presentation/widgets/component/search/unified_search_delegate.dart';
+import 'package:tms_app/presentation/widgets/course/combo_course.dart';
+import 'package:tms_app/presentation/screens/course/combo_course_list.dart';
 
 class CourseScreen extends StatefulWidget {
   final String? initialFilter;
@@ -708,7 +710,13 @@ class _CourseScreenState extends State<CourseScreen>
                                     const SizedBox(height: 12),
                                     ElevatedButton(
                                       onPressed: () {
-                                        _controller.filterCourses('combo');
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const ComboCourseListScreen(),
+                                          ),
+                                        );
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.white,
