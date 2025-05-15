@@ -31,60 +31,14 @@ class HomeUserHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppDimensions.formSpacing),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Xin chào, Nguyen Van A!',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF333333),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 5,
-                        decoration: BoxDecoration(
-                          borderRadius:
-                              BorderRadius.circular(AppDimensions.borderRadius),
-                          color: Colors.grey.shade300,
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: MediaQuery.of(context).size.width * 0.4,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(
-                                    AppDimensions.borderRadius),
-                                color: AppStyles.primaryColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppDimensions.formSpacing / 2),
-                    Text(
-                      '60%',
-                      style: AppStyles.subText.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Hoàn thành Flutter - cơ bản đến nâng cao',
-                  style: AppStyles.subText.copyWith(fontSize: 13),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+          const Expanded(
+            child: Text(
+              'Xin chào, Nguyen Van A!',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF333333),
+              ),
             ),
           ),
         ],

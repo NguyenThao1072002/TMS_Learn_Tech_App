@@ -32,15 +32,21 @@ class CourseCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(15),
           color: isSelected
               ? const Color.fromARGB(255, 231, 244, 255)
-              : const Color.fromARGB(255, 240, 246, 251),
+              : Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 6,
-              spreadRadius: 1,
-              offset: const Offset(1, 3),
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 10,
+              spreadRadius: 0,
+              offset: const Offset(0, 5),
             ),
           ],
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF3498DB)
+                : Colors.grey.withOpacity(0.1),
+            width: 1,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -28,9 +28,34 @@ class CourseScreen extends StatefulWidget {
   State<CourseScreen> createState() => _CourseScreenState();
 }
 
-class _CourseScreenState extends State<CourseScreen> {
+class _CourseScreenState extends State<CourseScreen>
+    with SingleTickerProviderStateMixin {
   late final CourseController _controller;
   bool _isRefreshing = false;
+
+  // Danh sách giảng viên đã chọn
+  List<String> _selectedTeachers = [];
+  List<String> _teachers = [];
+
+  // Danh sách danh mục đã chọn
+  List<int> _selectedCategoryIds = [];
+
+  // Danh sách thông tin mức giảm giá
+  final List<Map<String, dynamic>> _discountOptions = [
+    {'label': '0% - 10%', 'value': '0-10%'},
+    {'label': '10% - 30%', 'value': '10-30%'},
+    {'label': '30% - 50%', 'value': '30-50%'},
+    {'label': '50% - 70%', 'value': '50-70%'},
+    {'label': 'Trên 70%', 'value': '70%+'},
+  ];
+
+  // Danh sách mức giảm giá đã chọn
+  List<String> _selectedDiscountValues = [];
+
+  // Animation controller for expand/collapse icon
+  late AnimationController _animationController;
+  late Animation<double> _iconTurns;
+  bool _isTopSectionExpanded = true;
 
   @override
   void initState() {
@@ -40,10 +65,51 @@ class _CourseScreenState extends State<CourseScreen> {
     _controller =
         CourseController(courseUseCase, categoryUseCase: categoryUseCase);
     _controller.loadCourses();
+
+    // Set initial filter if specified
+    if (widget.initialFilter != null) {
+      _controller.filterCourses(widget.initialFilter!);
+    }
+
+    // Extract teachers
+    Future.delayed(Duration.zero, () {
+      _extractTeachers();
+    });
+
+    // Initialize animation controller
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _iconTurns =
+        Tween<double>(begin: 0.0, end: 0.5).animate(_animationController);
+
+    // Set initial state of animation
+    if (_isTopSectionExpanded) {
+      _animationController.value = 0.0;
+    } else {
+      _animationController.value = 1.0;
+    }
+  }
+
+  void _extractTeachers() {
+    final courses = _controller.allCourses.value;
+    if (courses.isNotEmpty) {
+      final Set<String> teachers = {};
+      for (var course in courses) {
+        if (course.author.isNotEmpty) {
+          teachers.add(course.author);
+        }
+      }
+      setState(() {
+        _teachers = ['Tất cả', ...teachers.toList()];
+      });
+    }
   }
 
   @override
   void dispose() {
+    _animationController.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -58,6 +124,7 @@ class _CourseScreenState extends State<CourseScreen> {
 
     try {
       await _controller.loadCourses();
+      _extractTeachers();
     } finally {
       if (mounted) {
         setState(() {
@@ -90,21 +157,21 @@ class _CourseScreenState extends State<CourseScreen> {
     );
   }
 
-  void _showDiscountFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => ValueListenableBuilder<Map<String, bool>>(
-        valueListenable: _controller.discountRanges,
-        builder: (context, discountRanges, _) {
-          return DiscountFilterDialog(
-            discountRanges: discountRanges,
-            onUpdateRange: _controller.updateDiscountRange,
-            onResetRanges: _controller.resetDiscountRanges,
-          );
-        },
-      ),
-    );
-  }
+  // void _showDiscountFilterDialog() {
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) => ValueListenableBuilder<Map<String, bool>>(
+  //       valueListenable: _controller.discountRanges,
+  //       builder: (context, discountRanges, _) {
+  //         return DiscountFilterDialog(
+  //           discountRanges: discountRanges,
+  //           onUpdateRange: _controller.updateDiscountRange,
+  //           onResetRanges: _controller.resetDiscountRanges,
+  //         );
+  //       },
+  //     ),
+  //   );
+  // }
 
   void _showSearchDialog() {
     // Get the search controller from provider
@@ -146,20 +213,392 @@ class _CourseScreenState extends State<CourseScreen> {
     );
   }
 
+  void _showComprehensiveFilterDialog() {
+    int? tempCategoryId =
+        _selectedCategoryIds.isNotEmpty ? _selectedCategoryIds.first : null;
+    String? tempTeacherFilter =
+        _selectedTeachers.isNotEmpty ? _selectedTeachers.first : null;
+    List<Map<String, dynamic>> tempDiscountRanges =
+        _selectedDiscountValues.isNotEmpty
+            ? _selectedDiscountValues
+                .map((value) => _discountOptions
+                    .firstWhere((option) => option['value'] == value))
+                .toList()
+            : [
+                {'label': '0% - 10%', 'value': '0-10%'},
+                {'label': '10% - 30%', 'value': '10-30%'},
+                {'label': '30% - 50%', 'value': '30-50%'},
+                {'label': '50% - 70%', 'value': '50-70%'},
+                {'label': 'Trên 70%', 'value': '70%+'},
+              ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              top: 20,
+              left: 20,
+              right: 20,
+            ),
+            height: MediaQuery.of(context).size.height * 0.7,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Lọc khóa học',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: ListView(
+                    children: [
+                      // Filter by category
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Danh mục',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          ValueListenableBuilder(
+                            valueListenable: _controller.categories,
+                            builder: (context, categories, _) {
+                              return Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  FilterChip(
+                                    label: const Text('Tất cả'),
+                                    selected: tempCategoryId == null,
+                                    onSelected: (selected) {
+                                      if (selected) {
+                                        setModalState(() {
+                                          _selectedCategoryIds = [];
+                                        });
+                                      }
+                                    },
+                                    backgroundColor: Colors.grey.shade200,
+                                    selectedColor: const Color(0xFF3498DB),
+                                    labelStyle: TextStyle(
+                                      color: tempCategoryId == null
+                                          ? Colors.white
+                                          : Colors.black,
+                                      fontWeight: tempCategoryId == null
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                  ...categories.map((category) {
+                                    final isSelected = _selectedCategoryIds
+                                        .contains(category.id);
+                                    return FilterChip(
+                                      label: Text(category.name),
+                                      selected: isSelected,
+                                      onSelected: (selected) {
+                                        setModalState(() {
+                                          if (selected) {
+                                            _selectedCategoryIds
+                                                .add(category.id!);
+                                          } else {
+                                            _selectedCategoryIds
+                                                .remove(category.id);
+                                          }
+                                        });
+                                      },
+                                      backgroundColor: Colors.grey.shade200,
+                                      selectedColor: const Color(0xFF3498DB),
+                                      labelStyle: TextStyle(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : Colors.black,
+                                        fontWeight: isSelected
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
+                                    );
+                                  }).toList(),
+                                ],
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Filter by teacher
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Giảng viên',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _teachers.isEmpty
+                              ? const Text(
+                                  'Không có giảng viên nào để hiển thị')
+                              : Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: _teachers.map((teacher) {
+                                    final isSelected =
+                                        _selectedTeachers.contains(teacher);
+
+                                    return FilterChip(
+                                      label: Text(teacher),
+                                      selected: isSelected,
+                                      onSelected: (selected) {
+                                        setModalState(() {
+                                          if (selected) {
+                                            _selectedTeachers.add(teacher);
+                                          } else {
+                                            _selectedTeachers.remove(teacher);
+                                          }
+                                        });
+                                      },
+                                      backgroundColor: Colors.grey.shade200,
+                                      selectedColor: const Color(0xFF3498DB),
+                                      labelStyle: TextStyle(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : Colors.black,
+                                        fontWeight: isSelected
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Filter by discount range
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Mức giảm giá',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              ...tempDiscountRanges.map((range) {
+                                final label = range['label'];
+                                final min = range['min'];
+                                final max = range['max'];
+                                final isSelected = _selectedDiscountValues
+                                    .contains(range['value']);
+
+                                return FilterChip(
+                                  label: Text(label),
+                                  selected: isSelected,
+                                  onSelected: (selected) {
+                                    setModalState(() {
+                                      if (selected) {
+                                        _selectedDiscountValues
+                                            .add(range['value']);
+                                      } else {
+                                        _selectedDiscountValues
+                                            .remove(range['value']);
+                                      }
+                                    });
+                                  },
+                                  backgroundColor: Colors.grey.shade200,
+                                  selectedColor: const Color(0xFF3498DB),
+                                  labelStyle: TextStyle(
+                                    color: isSelected
+                                        ? Colors.white
+                                        : Colors.black,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                );
+                              }).toList(),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF3498DB),
+                      ),
+                      child: const Text('Hủy'),
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _selectedCategoryIds = _selectedCategoryIds.isNotEmpty
+                              ? _selectedCategoryIds
+                              : [];
+                          _selectedTeachers = _selectedTeachers.isNotEmpty
+                              ? _selectedTeachers
+                              : [];
+                          _selectedDiscountValues =
+                              _selectedDiscountValues.isNotEmpty
+                                  ? _selectedDiscountValues
+                                  : [];
+                        });
+                        _applyComprehensiveFilters();
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF3498DB),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Áp dụng'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _applyComprehensiveFilters() {
+    // Reset to initial state
+    _controller.filterCourses('all');
+    _controller.resetDiscountRanges();
+
+    // Track if we need to reload the base list
+    bool needsBaseReload = true;
+
+    // Apply discount range filter
+    if (_selectedDiscountValues.isNotEmpty) {
+      _controller.filterCourses('discount');
+      needsBaseReload = false;
+
+      // Apply discount range filter using the correct method signature
+      for (var value in _selectedDiscountValues) {
+        final range = _discountOptions.firstWhere(
+          (option) => option['value'] == value,
+        );
+        final label = range['label'];
+        final min = range['min'];
+        final max = range['max'];
+        if (label == 'Tất cả') {
+          _controller.updateDiscountRange(label, true);
+        } else {
+          _controller.updateDiscountRange(label, true);
+        }
+      }
+    }
+
+    // Apply category filter if selected
+    if (_selectedCategoryIds.isNotEmpty && _selectedCategoryIds.first != null) {
+      _controller.filterByCategories(_selectedCategoryIds);
+      needsBaseReload = false;
+    }
+
+    // Apply teacher filter if selected
+    if (_selectedTeachers.isNotEmpty && _selectedTeachers.first != null) {
+      List<CourseCardModel> courses;
+
+      if (needsBaseReload) {
+        // If no filter applied yet, use all courses
+        courses = _controller.allCourses.value;
+      } else {
+        // Otherwise, filter the already filtered courses
+        courses = _controller.filteredCourses.value;
+      }
+
+      final teacherFiltered = courses
+          .where((course) => _selectedTeachers.contains(course.author))
+          .toList();
+
+      _controller.filteredCourses.value = teacherFiltered;
+    }
+  }
+
+  void _resetComprehensiveFilters() {
+    setState(() {
+      _selectedCategoryIds = [];
+      _selectedTeachers = [];
+      _selectedDiscountValues = [];
+    });
+
+    // Reset all filters in the controller
+    _controller.filterCourses('all');
+    _controller.resetDiscountRanges();
+    _controller.selectedCategoryIds.value = [];
+  }
+
+  bool get _hasActiveFilters =>
+      _selectedCategoryIds.isNotEmpty ||
+      _selectedTeachers.isNotEmpty ||
+      _selectedDiscountValues.isNotEmpty;
+
+  void _toggleTopSection() {
+    setState(() {
+      _isTopSectionExpanded = !_isTopSectionExpanded;
+      if (_isTopSectionExpanded) {
+        _animationController.reverse();
+      } else {
+        _animationController.forward();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppStyles.courseScreenBgColor,
       appBar: AppBar(
         title: const Text(
-          "Danh sách khóa học",
+          "Khóa học",
           style: TextStyle(
-            color: Colors.white,
+            color: Colors.lightBlue,
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: AppStyles.appBarColor,
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
         elevation: 0,
+        // leading: IconButton(
+        //   icon: const Icon(Icons.arrow_back, color: Colors.lightBlue),
+        //   onPressed: () => Navigator.of(context).pop(),
+        // ),
         actions: [
           // Add refresh button
           _isRefreshing
@@ -171,18 +610,34 @@ class _CourseScreenState extends State<CourseScreen> {
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Colors.lightBlue),
                     ),
                   ),
                 )
               : IconButton(
-                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  icon: const Icon(Icons.refresh, color: Colors.lightBlue),
                   onPressed: _handleRefresh,
                 ),
+          // Add filter button
+          IconButton(
+            icon: const Icon(Icons.filter_list, color: Colors.lightBlue),
+            onPressed: _showComprehensiveFilterDialog,
+            tooltip: 'Lọc khóa học',
+          ),
           // Add search button
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
+            icon: const Icon(Icons.search, color: Colors.lightBlue),
             onPressed: _showSearchDialog,
+          ),
+          // Add expand/collapse button
+          IconButton(
+            icon: RotationTransition(
+              turns: _iconTurns,
+              child: const Icon(Icons.expand_more, color: Colors.lightBlue),
+            ),
+            onPressed: _toggleTopSection,
+            tooltip: 'Mở rộng/Thu gọn',
           ),
         ],
       ),
@@ -200,7 +655,166 @@ class _CourseScreenState extends State<CourseScreen> {
             builder: (context, courses, _) {
               return Column(
                 children: [
-                  _buildFilterSection(),
+                  // Collapsible top section with filter buttons and chips
+                  AnimatedCrossFade(
+                    duration: const Duration(milliseconds: 300),
+                    crossFadeState: _isTopSectionExpanded
+                        ? CrossFadeState.showFirst
+                        : CrossFadeState.showSecond,
+                    firstChild: Column(
+                      children: [
+                        // Premium Combo Courses Banner
+                        Container(
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF3498DB), Color(0xFF2980B9)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF3498DB).withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Combo Khóa Học',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      'Tiết kiệm 30% khi đăng ký gói combo khóa học',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        _controller.filterCourses('combo');
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                        foregroundColor:
+                                            const Color(0xFF3498DB),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16, vertical: 10),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(30),
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        'Xem ngay',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                width: 60,
+                                height: 60,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white30,
+                                ),
+                                child: const Icon(
+                                  Icons.shopping_bag,
+                                  size: 30,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Show active filters as chips
+                        if (_hasActiveFilters)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                if (_selectedCategoryIds.isNotEmpty &&
+                                    _selectedCategoryIds.first != null)
+                                  Chip(
+                                    label: Text(
+                                        'Danh mục: ${_getCategoryName(_selectedCategoryIds.first!)}'),
+                                    onDeleted: () {
+                                      setState(() {
+                                        _selectedCategoryIds = [];
+                                      });
+                                      _applyComprehensiveFilters();
+                                    },
+                                    backgroundColor: Colors.grey.shade200,
+                                    deleteIconColor: Colors.black54,
+                                  ),
+                                if (_selectedTeachers.isNotEmpty &&
+                                    _selectedTeachers.first != null)
+                                  Chip(
+                                    label: Text(
+                                        'Giảng viên: ${_selectedTeachers.first}'),
+                                    onDeleted: () {
+                                      setState(() {
+                                        _selectedTeachers = [];
+                                      });
+                                      _applyComprehensiveFilters();
+                                    },
+                                    backgroundColor: Colors.grey.shade200,
+                                    deleteIconColor: Colors.black54,
+                                  ),
+                                if (_selectedDiscountValues.isNotEmpty)
+                                  Chip(
+                                    label: Text(_getDiscountRangeText()),
+                                    onDeleted: () {
+                                      setState(() {
+                                        _selectedDiscountValues = [];
+                                      });
+                                      _applyComprehensiveFilters();
+                                    },
+                                    backgroundColor: Colors.grey.shade200,
+                                    deleteIconColor: Colors.black54,
+                                  ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                    secondChild: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Center(
+                        child: Text(
+                          'Bộ lọc khóa học',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
                   Expanded(
                     child: RefreshIndicator(
                       onRefresh: _handleRefresh,
@@ -228,8 +842,12 @@ class _CourseScreenState extends State<CourseScreen> {
                                 ),
                               )
                             else
-                              CourseList(
-                                courses: _controller.getCurrentPageCourses(),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                child: CourseList(
+                                  courses: _controller.getCurrentPageCourses(),
+                                ),
                               ),
                             if (courses.isNotEmpty)
                               ValueListenableBuilder<int>(
@@ -256,44 +874,39 @@ class _CourseScreenState extends State<CourseScreen> {
     );
   }
 
-  Widget _buildFilterSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppDimensions.standardPadding, vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _buildFilterButton("Danh mục", 'category',
-              onTap: _showCategoryFilterDialog),
-          _buildFilterButton("Giảm giá", 'discount'),
-          _buildFilterButton("Combo khóa học", 'combo'),
-        ],
-      ),
+  String _getCategoryName(int id) {
+    final categories = _controller.categories.value;
+    final category = categories.firstWhere(
+      (cat) => cat.id == id,
+      orElse: () => categories.first,
     );
+    return category.name;
   }
 
-  Widget _buildFilterButton(String label, String filter,
-      {VoidCallback? onTap}) {
-    return ValueListenableBuilder<String>(
-      valueListenable: _controller.selectedFilter,
-      builder: (context, selectedFilter, _) {
-        final isSelected = selectedFilter == filter;
-        return ElevatedButton(
-          onPressed: () {
-            _controller.filterCourses(filter);
-            if (onTap != null) {
-              onTap();
-            } else if (filter == 'discount') {
-              _showDiscountFilterDialog();
-            }
-          },
-          style: AppStyles.courseScreenFilterButtonStyle(isSelected),
-          child: Text(
-            label,
-            style: const TextStyle(color: AppStyles.filterButtonTextColor),
-          ),
+  String _getDiscountRangeText() {
+    if (_selectedDiscountValues.isEmpty) {
+      return 'Tất cả mức giảm giá';
+    } else {
+      final ranges = _selectedDiscountValues.map((value) {
+        final range = _discountOptions.firstWhere(
+          (option) => option['value'] == value,
         );
-      },
-    );
+        final label = range['label'];
+        final min = range['min'];
+        final max = range['max'];
+        if (label == 'Tất cả') {
+          return 'Tất cả mức giảm giá';
+        } else if (min == null && max == null) {
+          return label;
+        } else if (min == null) {
+          return 'Trên $max%';
+        } else if (max == null) {
+          return 'Từ $min%';
+        } else {
+          return 'Giảm giá: $min% - $max%';
+        }
+      }).join(', ');
+      return ranges;
+    }
   }
 }

@@ -252,6 +252,39 @@ class DocumentController {
     filteredDocuments.value = [...filteredDocuments.value]; // Trigger UI update
   }
 
+  // Add a new method for combined filtering
+  void filterDocumentsByFormatAndCategory(
+      String format, int? categoryId) async {
+    isLoading.value = true;
+    try {
+      List<DocumentModel> documents = [];
+
+      // First, get documents by category if needed
+      if (categoryId != null) {
+        documents = await documentUseCase.getDocumentsByCategory(categoryId);
+      } else {
+        // Otherwise, get current tab documents
+        documents = filteredDocuments.value;
+      }
+
+      // Then filter by format if needed
+      if (format != 'Tất cả') {
+        documents = documents
+            .where((document) =>
+                document.format.toLowerCase() == format.toLowerCase())
+            .toList();
+      }
+
+      filteredDocuments.value = documents;
+    } catch (e) {
+      print('Error filtering documents: $e');
+      filteredDocuments.value = [];
+    } finally {
+      isLoading.value = false;
+      currentPage.value = 1; // Reset to first page when filtering
+    }
+  }
+
   void sortDocumentsByDate({bool descending = true}) {
     filteredDocuments.value.sort((a, b) => descending
         ? DateTime.parse(b.createdAt).compareTo(DateTime.parse(a.createdAt))

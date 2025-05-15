@@ -6,14 +6,14 @@ import 'package:tms_app/core/theme/app_styles.dart';
 
 class DiscountCourses extends StatelessWidget {
   final List<CourseCardModel> courses;
-  final bool isLoading; // Tham số để kiểm tra trạng thái loading
-  final String? error; // Tham số để hiển thị lỗi
+  final bool isLoading;
+  final String? error;
 
   const DiscountCourses({
     super.key,
     required this.courses,
-    this.isLoading = false, // Mặc định không loading
-    this.error, // Lỗi có thể là null nếu không có
+    this.isLoading = false,
+    this.error,
   });
 
   @override
@@ -27,7 +27,7 @@ class DiscountCourses extends StatelessWidget {
     if (error != null) {
       return Center(
         child: Text(
-          'Không thể tải khóa học: $error',
+          'Không thể tải khóa học: ${error}',
           style: const TextStyle(color: Colors.red),
         ),
       );

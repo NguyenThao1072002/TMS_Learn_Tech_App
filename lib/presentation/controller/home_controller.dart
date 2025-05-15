@@ -113,20 +113,8 @@ class HomeController {
         },
         child: const CourseScreen(), // Index 2: Course
       ),
-      WillPopScope(
-        onWillPop: () async {
-          selectedIndex.value = 0;
-          return false;
-        },
-        child: const PracticeTestListScreen(), // Index 3: Practice Tests
-      ),
-      WillPopScope(
-        onWillPop: () async {
-          selectedIndex.value = 0;
-          return false;
-        },
-        child: const AccountOverviewScreen(), // Index 4: Account
-      ),
+      const PracticeTestListScreen(), // Index 3: Practice Tests (Không bọc trong WillPopScope)
+      const AccountOverviewScreen(), // Index 4: Account (Không bọc trong WillPopScope)
     ];
   }
 

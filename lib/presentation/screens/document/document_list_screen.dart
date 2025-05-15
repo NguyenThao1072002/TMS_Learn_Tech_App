@@ -9,6 +9,10 @@ import 'package:tms_app/presentation/controller/documnet_controller.dart';
 import 'package:tms_app/presentation/screens/document/document_detail.dart';
 import 'package:tms_app/presentation/widgets/document/document_item.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:tms_app/presentation/widgets/component/pagination.dart';
+import 'package:provider/provider.dart';
+import 'package:tms_app/presentation/controller/unified_search_controller.dart';
+import 'package:tms_app/presentation/widgets/component/search/unified_search_delegate.dart';
 
 class DocumentListScreen extends StatefulWidget {
   const DocumentListScreen({Key? key}) : super(key: key);
@@ -18,7 +22,7 @@ class DocumentListScreen extends StatefulWidget {
 }
 
 class _DocumentListScreenState extends State<DocumentListScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final DocumentController _documentController;
   late TabController _tabController;
   late List<String> _categoryOptions = ['Tất cả'];
@@ -27,8 +31,13 @@ class _DocumentListScreenState extends State<DocumentListScreen>
   late Future<List<BannerModel>> bannersFuture;
   String _selectedFormat = 'Tất cả';
   bool _isRefreshing = false;
-
   String _selectedCategory = 'Tất cả';
+
+  // Animation controller for expand/collapse icon
+  late AnimationController _animationController;
+  late Animation<double> _iconTurns;
+  bool _isTopSectionExpanded = true;
+
   final List<Map<String, dynamic>> _bannerItems = [
     {
       'title': 'Khám phá kho tài liệu mới',
@@ -84,6 +93,21 @@ class _DocumentListScreenState extends State<DocumentListScreen>
     _documentController.loadPopularDocuments();
     bannersFuture =
         bannerUseCase.getBannersByPositionAndPlatform('document', 'mobile');
+
+    // Initialize animation controller
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _iconTurns =
+        Tween<double>(begin: 0.0, end: 0.5).animate(_animationController);
+
+    // Set initial state of animation
+    if (_isTopSectionExpanded) {
+      _animationController.value = 0.0;
+    } else {
+      _animationController.value = 1.0;
+    }
   }
 
   @override
@@ -91,6 +115,7 @@ class _DocumentListScreenState extends State<DocumentListScreen>
     _searchController.dispose();
     _tabController.dispose();
     _documentController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -166,23 +191,270 @@ class _DocumentListScreenState extends State<DocumentListScreen>
     }
   }
 
+  void _showSearchDialog() {
+    // Get the search controller from provider
+    final searchController =
+        Provider.of<UnifiedSearchController>(context, listen: false);
+
+    showSearch(
+      context: context,
+      delegate: UnifiedSearchDelegate(
+        searchType: SearchType.document,
+        onSearch: (query, type) {
+          searchController.search(query, type);
+        },
+        itemBuilder: (context, item, type) {
+          // Hiển thị kết quả tìm kiếm tài liệu
+          return ListTile(
+            title: Text(item.title ?? ''),
+            subtitle: Text('${item.format ?? ''} • ${item.view ?? 0} lượt xem'),
+            leading: item.imageUrl != null && item.imageUrl.isNotEmpty
+                ? Image.network(
+                    item.imageUrl,
+                    width: 50,
+                    height: 50,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.picture_as_pdf, size: 50),
+                  )
+                : const Icon(Icons.picture_as_pdf, size: 50),
+            onTap: () {
+              // Đóng màn hình tìm kiếm và chuyển hướng đến chi tiết tài liệu
+              Navigator.pop(context);
+              if (item is DocumentModel) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DocumentDetailScreen(document: item),
+                  ),
+                );
+              }
+            },
+          );
+        },
+        searchController: searchController,
+      ),
+    );
+  }
+
+  void _showComprehensiveFilterDialog() {
+    String tempFormat = _selectedFormat;
+    String tempCategory = _selectedCategory;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              top: 20,
+              left: 20,
+              right: 20,
+            ),
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Lọc tài liệu',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: ListView(
+                    children: [
+                      // Filter by format
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Định dạng',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _formatOptions.map((format) {
+                              final isSelected = tempFormat == format;
+                              return FilterChip(
+                                label: Text(format),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  setModalState(() {
+                                    tempFormat = selected ? format : 'Tất cả';
+                                  });
+                                },
+                                backgroundColor: Colors.grey.shade200,
+                                selectedColor: Colors.lightBlue,
+                                labelStyle: TextStyle(
+                                  color:
+                                      isSelected ? Colors.white : Colors.black,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Filter by category
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Danh mục',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _categoryOptions.map((category) {
+                              final isSelected = tempCategory == category;
+                              return FilterChip(
+                                label: Text(category),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  setModalState(() {
+                                    tempCategory =
+                                        selected ? category : 'Tất cả';
+                                  });
+                                },
+                                backgroundColor: Colors.grey.shade200,
+                                selectedColor: Colors.lightBlue,
+                                labelStyle: TextStyle(
+                                  color:
+                                      isSelected ? Colors.white : Colors.black,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.lightBlue,
+                      ),
+                      child: const Text('Hủy'),
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _selectedFormat = tempFormat;
+                          _selectedCategory = tempCategory;
+                        });
+
+                        // Get category ID if a category is selected
+                        int? categoryId;
+                        if (_selectedCategory != 'Tất cả') {
+                          categoryId = _documentController
+                              .getCategoryIdByName(_selectedCategory);
+                        }
+
+                        // Apply combined filters
+                        if (_selectedFormat == 'Tất cả' &&
+                            _selectedCategory == 'Tất cả') {
+                          // No filters applied, reload based on current tab
+                          _reloadCurrentTabData();
+                        } else {
+                          // Use the new combined filtering method
+                          _documentController
+                              .filterDocumentsByFormatAndCategory(
+                                  _selectedFormat, categoryId);
+                        }
+
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.lightBlue,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Áp dụng'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _toggleTopSection() {
+    setState(() {
+      _isTopSectionExpanded = !_isTopSectionExpanded;
+      if (_isTopSectionExpanded) {
+        _animationController.reverse();
+      } else {
+        _animationController.forward();
+      }
+    });
+  }
+
+  bool get _hasActiveFilters =>
+      _selectedFormat != 'Tất cả' || _selectedCategory != 'Tất cả';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color.fromARGB(255, 42, 136, 50),
-        centerTitle: false,
-        automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
         title: const Text(
-          'Tài liệu TMS',
+          'Tài liệu',
           style: TextStyle(
-            fontSize: 28,
+            color: Colors.lightBlue,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
           ),
         ),
+        // leading: IconButton(
+        //   icon: const Icon(Icons.arrow_back, color: Colors.lightBlue),
+        //   onPressed: () {
+        //     if (Navigator.of(context).canPop()) {
+        //       Navigator.of(context).pop();
+        //     } else {
+        //       // Trở về trang Home
+        //       Navigator.of(context).pushReplacementNamed('/home');
+        //     }
+        //   },
+        // ),
         actions: [
           // Add refresh button
           _isRefreshing
@@ -194,20 +466,41 @@ class _DocumentListScreenState extends State<DocumentListScreen>
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Colors.lightBlue),
                     ),
                   ),
                 )
               : IconButton(
-                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  icon: const Icon(Icons.refresh, color: Colors.lightBlue),
                   onPressed: _handleRefresh,
                 ),
+          // Add filter button
+          IconButton(
+            icon: const Icon(Icons.filter_list, color: Colors.lightBlue),
+            onPressed: _showComprehensiveFilterDialog,
+            tooltip: 'Lọc tài liệu',
+          ),
+          // Add search button
+          IconButton(
+            icon: const Icon(Icons.search, color: Colors.lightBlue),
+            onPressed: _showSearchDialog,
+          ),
+          // Add expand/collapse button
+          IconButton(
+            icon: RotationTransition(
+              turns: _iconTurns,
+              child: const Icon(Icons.expand_more, color: Colors.lightBlue),
+            ),
+            onPressed: _toggleTopSection,
+            tooltip: 'Mở rộng/Thu gọn',
+          ),
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
+          labelColor: Colors.lightBlue,
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: Colors.lightBlue,
           onTap: (index) {
             if (index == 0) {
               _documentController.loadPopularDocuments();
@@ -217,6 +510,8 @@ class _DocumentListScreenState extends State<DocumentListScreen>
               // Tab 2 - Suggested documents, for now we'll load popular documents
               _documentController.loadPopularDocuments();
             }
+            // Reset về trang 1 khi chuyển tab
+            _documentController.changePage(1);
           },
           tabs: const [
             Tab(text: 'Phổ biến'),
@@ -244,566 +539,364 @@ class _DocumentListScreenState extends State<DocumentListScreen>
   Widget _buildTabContent() {
     return RefreshIndicator(
       onRefresh: _handleRefresh,
-      child: ListView(
-        children: [
-          // Banner ad carousel
-// Banner slider từ dữ liệu API
-          Padding(
-            padding: const EdgeInsets.only(top: 12.0),
-            child: FutureBuilder<List<BannerModel>>(
-              future: bannersFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const SizedBox(
-                    height: 150,
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                } else if (snapshot.hasError) {
-                  return SizedBox(
-                    height: 150,
-                    child: Center(
-                      child: Text('Lỗi khi tải banner: ${snapshot.error}'),
-                    ),
-                  );
-                } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                  final banners = snapshot.data!;
-                  return CarouselSlider(
-                    options: CarouselOptions(
-                      height: 150,
-                      aspectRatio: 16 / 9,
-                      viewportFraction: 0.9,
-                      initialPage: 0,
-                      enableInfiniteScroll: true,
-                      reverse: false,
-                      autoPlay: true,
-                      autoPlayInterval: const Duration(seconds: 5),
-                      autoPlayAnimationDuration:
-                          const Duration(milliseconds: 800),
-                      autoPlayCurve: Curves.fastOutSlowIn,
-                      enlargeCenterPage: true,
-                    ),
-                    items: banners.map((banner) {
-                      return Builder(
-                        builder: (BuildContext context) {
-                          return Container(
-                            width: MediaQuery.of(context).size.width,
-                            margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              gradient: LinearGradient(
-                                colors: [
-                                  const Color(0xFF5E35B1),
-                                  const Color(0xFF5E35B1).withOpacity(0.8)
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          children: [
+            // Collapsible top section with banner and filter chips
+            AnimatedCrossFade(
+              duration: const Duration(milliseconds: 300),
+              crossFadeState: _isTopSectionExpanded
+                  ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
+              firstChild: Column(
+                children: [
+                  // Banner slider từ dữ liệu API
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 12.0),
+                    child: FutureBuilder<List<BannerModel>>(
+                      future: bannersFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const SizedBox(
+                            height: 150,
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        } else if (snapshot.hasError) {
+                          return SizedBox(
+                            height: 150,
+                            child: Center(
+                              child:
+                                  Text('Lỗi khi tải banner: ${snapshot.error}'),
                             ),
-                            child: Stack(
-                              children: [
-                                Positioned.fill(
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Opacity(
-                                      opacity: 0.3,
-                                      child: Image.network(
-                                        banner.imageUrl,
-                                        fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                          return Container(
-                                            color: Colors.grey.shade300,
-                                            child: const Center(
-                                              child: Icon(Icons.broken_image,
-                                                  size: 50),
+                          );
+                        } else if (snapshot.hasData &&
+                            snapshot.data!.isNotEmpty) {
+                          final banners = snapshot.data!;
+                          return CarouselSlider(
+                            options: CarouselOptions(
+                              height: 180,
+                              aspectRatio: 16 / 9,
+                              viewportFraction: 1.0,
+                              initialPage: 0,
+                              enableInfiniteScroll: true,
+                              reverse: false,
+                              autoPlay: true,
+                              autoPlayInterval: const Duration(seconds: 5),
+                              autoPlayAnimationDuration:
+                                  const Duration(milliseconds: 800),
+                              autoPlayCurve: Curves.fastOutSlowIn,
+                              enlargeCenterPage: true,
+                            ),
+                            items: banners.map((banner) {
+                              return Builder(
+                                builder: (BuildContext context) {
+                                  return Container(
+                                    width: MediaQuery.of(context).size.width,
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 0),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          const Color(0xFF5E35B1)
+                                              .withOpacity(0.6),
+                                          const Color(0xFF5E35B1)
+                                              .withOpacity(0.4)
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                    ),
+                                    child: Stack(
+                                      children: [
+                                        Positioned.fill(
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(16),
+                                            child: Opacity(
+                                              opacity: 0.8,
+                                              child: Image.network(
+                                                banner.imageUrl,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error,
+                                                    stackTrace) {
+                                                  return Container(
+                                                    color: Colors.grey.shade300,
+                                                    child: const Center(
+                                                      child: Icon(
+                                                          Icons.broken_image,
+                                                          size: 50),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
                                             ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(20.0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        banner.title,
-                                        style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          // Xử lý hành động khi click vào banner
-                                          if (banner.link != null &&
-                                              banner.link!.isNotEmpty) {
-                                            // Mở link hoặc xử lý hành động tương ứng
-                                          }
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.white,
-                                          foregroundColor:
-                                              const Color(0xFF5E35B1),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(20),
                                           ),
                                         ),
-                                        child: const Text('Xem ngay'),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    }).toList(),
-                  );
-                } else {
-                  // Fallback khi không có banner từ API
-                  return CarouselSlider(
-                    options: CarouselOptions(
-                      height: 150,
-                      aspectRatio: 16 / 9,
-                      viewportFraction: 0.9,
-                      initialPage: 0,
-                      enableInfiniteScroll: true,
-                      reverse: false,
-                      autoPlay: true,
-                      autoPlayInterval: const Duration(seconds: 5),
-                      autoPlayAnimationDuration:
-                          const Duration(milliseconds: 800),
-                      autoPlayCurve: Curves.fastOutSlowIn,
-                      enlargeCenterPage: true,
-                    ),
-                    items: _bannerItems.map((item) {
-                      return Builder(
-                        builder: (BuildContext context) {
-                          return Container(
-                            width: MediaQuery.of(context).size.width,
-                            margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              gradient: LinearGradient(
-                                colors: [
-                                  item['color'],
-                                  item['color'].withOpacity(0.8)
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                            ),
-                            child: Stack(
-                              children: [
-                                // Giữ nguyên phần này
-                                Positioned.fill(
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Opacity(
-                                      opacity: 0.3,
-                                      child: Image.network(
-                                        'https://via.placeholder.com/600x300',
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(20.0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        item['title'],
-                                        style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      ElevatedButton(
-                                        onPressed: () {},
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.white,
-                                          foregroundColor: item['color'],
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                          ),
-                                        ),
-                                        child: const Text('Xem ngay'),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    }).toList(),
-                  );
-                }
-              },
-            ),
-          ),
-          // Search and filter section
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Search bar
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(32),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.2),
-                        spreadRadius: 1,
-                        blurRadius: 3,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (value) {
-                      if (value.isNotEmpty) {
-                        _documentController.searchDocuments(value);
-                      } else {
-                        _reloadCurrentTabData();
-                      }
-                    },
-                    decoration: InputDecoration(
-                      hintText: 'Tìm kiếm tài liệu...',
-                      hintStyle: TextStyle(color: Colors.grey[600]),
-                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear, color: Colors.grey),
-                              onPressed: () {
-                                _searchController.clear();
-                                _reloadCurrentTabData();
-                              },
-                            )
-                          : null,
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // Filter options
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Format filter
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(left: 4.0, bottom: 4.0),
-                            child: Text(
-                              'Định dạng:',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.grey.shade300),
-                            ),
-                            child: ValueListenableBuilder<String>(
-                                valueListenable:
-                                    _documentController.selectedFilter,
-                                builder: (context, selectedFilter, _) {
-                                  return DropdownButton<String>(
-                                    isExpanded: true,
-                                    value: _selectedFormat,
-                                    icon: const Icon(Icons.arrow_drop_down),
-                                    iconSize: 24,
-                                    elevation: 16,
-                                    style: const TextStyle(
-                                        color: Colors.black87, fontSize: 15),
-                                    underline: Container(height: 0),
-                                    alignment: AlignmentDirectional.centerStart,
-                                    isDense: false,
-                                    itemHeight: 50,
-                                    borderRadius: BorderRadius.circular(12),
-                                    menuMaxHeight: 300,
-                                    onChanged: (String? newValue) {
-                                      setState(() {
-                                        _selectedFormat = newValue!;
-                                      });
-                                      _filterDocumentsByFormat(newValue!);
-                                    },
-                                    items: _formatOptions
-                                        .map<DropdownMenuItem<String>>(
-                                            (String value) {
-                                      return DropdownMenuItem<String>(
-                                        value: value,
-                                        alignment: Alignment.centerLeft,
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 8.0, vertical: 4.0),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
+                                        Padding(
+                                          padding: const EdgeInsets.all(20.0),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
                                             children: [
-                                              if (value != 'Tất cả')
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.all(4),
-                                                  margin: const EdgeInsets.only(
-                                                      right: 8),
-                                                  decoration: BoxDecoration(
-                                                    color: _getColorForDocType(
-                                                        value),
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  width: 8,
-                                                  height: 8,
+                                              Text(
+                                                banner.title,
+                                                style: const TextStyle(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
                                                 ),
-                                              Text(value),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              ElevatedButton(
+                                                onPressed: () {
+                                                  // Xử lý hành động khi click vào banner
+                                                  if (banner.link != null &&
+                                                      banner.link!.isNotEmpty) {
+                                                    // Mở link hoặc xử lý hành động tương ứng
+                                                  }
+                                                },
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.white,
+                                                  foregroundColor:
+                                                      const Color(0xFF5E35B1),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            20),
+                                                  ),
+                                                ),
+                                                child: const Text('Xem ngay'),
+                                              ),
                                             ],
                                           ),
                                         ),
-                                      );
-                                    }).toList(),
-                                    hint: const Text("Định dạng"),
-                                    dropdownColor: Colors.white,
-                                  );
-                                }),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(width: 12),
-
-                    // Category filter
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(left: 4.0, bottom: 4.0),
-                            child: Text(
-                              'Danh mục:',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.grey.shade300),
-                            ),
-                            child: DropdownButton<String>(
-                              isExpanded: true,
-                              value: _selectedCategory,
-                              icon: const Icon(Icons.arrow_drop_down),
-                              iconSize: 24,
-                              elevation: 16,
-                              style: const TextStyle(
-                                  color: Colors.black87, fontSize: 15),
-                              underline: Container(height: 0),
-                              alignment: AlignmentDirectional.centerStart,
-                              isDense: false,
-                              itemHeight: 50,
-                              borderRadius: BorderRadius.circular(12),
-                              menuMaxHeight: 300,
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  _selectedCategory = newValue!;
-                                });
-
-                                if (newValue == 'Tất cả') {
-                                  _reloadCurrentTabData();
-                                } else {
-                                  // Lấy categoryId từ controller
-                                  final categoryId = _documentController
-                                      .getCategoryIdByName(newValue);
-
-                                  if (categoryId != null) {
-                                    // Sử dụng trực tiếp hàm loadDocumentsByCategory
-                                    _documentController
-                                        .loadDocumentsByCategory(categoryId);
-                                  } else {
-                                    print(
-                                        'Không tìm thấy ID cho danh mục: $newValue');
-                                    _reloadCurrentTabData();
-                                  }
-                                }
-                              },
-                              items: _categoryOptions
-                                  .map<DropdownMenuItem<String>>(
-                                      (String value) {
-                                return DropdownMenuItem<String>(
-                                  value: value,
-                                  alignment: Alignment.centerLeft,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8.0, vertical: 4.0),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        if (value != 'Tất cả')
-                                          Container(
-                                            padding: const EdgeInsets.all(4),
-                                            margin:
-                                                const EdgeInsets.only(right: 8),
-                                            decoration: BoxDecoration(
-                                              color: _getCategoryColor(value),
-                                              shape: BoxShape.circle,
-                                            ),
-                                            width: 8,
-                                            height: 8,
-                                          ),
-                                        Text(value),
                                       ],
                                     ),
-                                  ),
-                                );
-                              }).toList(),
-                              hint: const Text("Danh mục"),
-                              dropdownColor: Colors.white,
+                                  );
+                                },
+                              );
+                            }).toList(),
+                          );
+                        } else {
+                          // Fallback khi không có banner từ API
+                          return CarouselSlider(
+                            options: CarouselOptions(
+                              height: 180,
+                              aspectRatio: 16 / 9,
+                              viewportFraction: 1.0,
+                              initialPage: 0,
+                              enableInfiniteScroll: true,
+                              reverse: false,
+                              autoPlay: true,
+                              autoPlayInterval: const Duration(seconds: 5),
+                              autoPlayAnimationDuration:
+                                  const Duration(milliseconds: 800),
+                              autoPlayCurve: Curves.fastOutSlowIn,
+                              enlargeCenterPage: true,
                             ),
-                          ),
+                            items: _bannerItems.map((item) {
+                              return Builder(
+                                builder: (BuildContext context) {
+                                  return Container(
+                                    width: MediaQuery.of(context).size.width,
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 0),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          item['color'].withOpacity(0.6),
+                                          item['color'].withOpacity(0.4)
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                    ),
+                                    child: Stack(
+                                      children: [
+                                        Positioned.fill(
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(16),
+                                            child: Opacity(
+                                              opacity: 0.8,
+                                              child: Image.network(
+                                                'https://via.placeholder.com/600x300',
+                                                fit: BoxFit.cover,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.all(20.0),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                item['title'],
+                                                style: const TextStyle(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              ElevatedButton(
+                                                onPressed: () {},
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.white,
+                                                  foregroundColor:
+                                                      item['color'],
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            20),
+                                                  ),
+                                                ),
+                                                child: const Text('Xem ngay'),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              );
+                            }).toList(),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+
+                  // Show active filters as chips
+                  if (_hasActiveFilters)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          if (_selectedFormat != 'Tất cả')
+                            Chip(
+                              label: Text('Định dạng: $_selectedFormat'),
+                              onDeleted: () {
+                                setState(() {
+                                  _selectedFormat = 'Tất cả';
+                                });
+                                // Áp dụng lại bộ lọc với chỉ category
+                                if (_selectedCategory != 'Tất cả') {
+                                  final categoryId = _documentController
+                                      .getCategoryIdByName(_selectedCategory);
+                                  if (categoryId != null) {
+                                    _documentController
+                                        .filterDocumentsByFormatAndCategory(
+                                            'Tất cả', categoryId);
+                                  }
+                                } else {
+                                  _reloadCurrentTabData();
+                                }
+                              },
+                              backgroundColor: Colors.grey.shade200,
+                              deleteIconColor: Colors.black54,
+                            ),
+                          if (_selectedCategory != 'Tất cả')
+                            Chip(
+                              label: Text('Danh mục: $_selectedCategory'),
+                              onDeleted: () {
+                                setState(() {
+                                  _selectedCategory = 'Tất cả';
+                                });
+                                // Áp dụng lại bộ lọc với chỉ format
+                                if (_selectedFormat != 'Tất cả') {
+                                  _documentController
+                                      .filterDocumentsByFormatAndCategory(
+                                          _selectedFormat, null);
+                                } else {
+                                  _reloadCurrentTabData();
+                                }
+                              },
+                              backgroundColor: Colors.grey.shade200,
+                              deleteIconColor: Colors.black54,
+                            ),
                         ],
                       ),
                     ),
-                  ],
+                ],
+              ),
+              secondChild: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Center(
+                  child: Text(
+                    'Bộ lọc tài liệu',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
+              ),
+            ),
 
-                // Reset filters button
-                if (_selectedFormat != 'Tất cả' ||
-                    _selectedCategory != 'Tất cả' ||
-                    _searchController.text.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            _selectedFormat = 'Tất cả';
-                            _selectedCategory = 'Tất cả';
-                            _searchController.clear();
-                          });
+            // Document list
+            ValueListenableBuilder<bool>(
+              valueListenable: _documentController.isLoading,
+              builder: (context, isLoading, _) {
+                if (isLoading) {
+                  return const SizedBox(
+                    height: 300,
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
 
-                          // Reload data
-                          _reloadCurrentTabData();
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.refresh, size: 16),
-                              SizedBox(width: 4),
-                              Text('Đặt lại'),
+                return ValueListenableBuilder<List<DocumentModel>>(
+                  valueListenable: _documentController.filteredDocuments,
+                  builder: (context, documents, _) {
+                    if (documents.isEmpty) {
+                      return SizedBox(
+                        height: 300,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                _searchController.text.isNotEmpty
+                                    ? Icons.search_off
+                                    : Icons.book,
+                                size: 80,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _searchController.text.isNotEmpty
+                                    ? 'Không tìm thấy kết quả cho "${_searchController.text}"'
+                                    : 'Không có tài liệu',
+                                style: const TextStyle(fontSize: 16),
+                              ),
                             ],
                           ),
                         ),
-                      ),
-                    ),
-                  ),
+                      );
+                    }
 
-                const SizedBox(height: 12),
-              ],
-            ),
-          ),
-
-          // Main content - Document list
-          _buildDocumentListContent(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDocumentListContent() {
-    return ValueListenableBuilder<bool>(
-      valueListenable: _documentController.isLoading,
-      builder: (context, isLoading, _) {
-        if (isLoading) {
-          return const SizedBox(
-            height: 300,
-            child: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        } else {
-          return ValueListenableBuilder<List<DocumentModel>>(
-            valueListenable: _documentController.filteredDocuments,
-            builder: (context, documents, _) {
-              if (documents.isEmpty) {
-                return SizedBox(
-                  height: 300,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _searchController.text.isNotEmpty
-                              ? Icons.search_off
-                              : Icons.book,
-                          size: 80,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _searchController.text.isNotEmpty
-                              ? 'Không tìm thấy kết quả cho "${_searchController.text}"'
-                              : 'Không có tài liệu',
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-
-              return ValueListenableBuilder<int>(
-                  valueListenable: _documentController.currentPage,
-                  builder: (context, currentPage, _) {
+                    // Main content with pagination
                     final currentPageDocuments =
                         _documentController.getCurrentPageDocuments();
 
                     return Column(
                       children: [
+                        // Documents grid
                         GridView.builder(
                           padding: const EdgeInsets.all(8),
                           physics: const NeverScrollableScrollPhysics(),
@@ -821,60 +914,39 @@ class _DocumentListScreenState extends State<DocumentListScreen>
                             return GestureDetector(
                               onTap: () {
                                 _navigateToDetailAndIncrementViews(
-                                  context,
-                                  document,
-                                );
+                                    context, document);
                               },
                               child: DocumentItem(document: document),
                             );
                           },
                         ),
 
-                        // Pagination
+                        // Pagination - simplified structure like in CourseScreen
                         if (_documentController.getTotalPages() > 1)
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.arrow_back_ios),
-                                  onPressed: currentPage <= 1
-                                      ? null
-                                      : () => _documentController
-                                          .changePage(currentPage - 1),
-                                  color: currentPage <= 1
-                                      ? Colors.grey.shade400
-                                      : Colors.green,
+                          ValueListenableBuilder<int>(
+                            valueListenable: _documentController.currentPage,
+                            builder: (context, currentPage, _) {
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16.0),
+                                child: PaginationWidget(
+                                  currentPage: currentPage,
+                                  totalPages:
+                                      _documentController.getTotalPages(),
+                                  onPageChanged: _documentController.changePage,
                                 ),
-                                Text(
-                                  'Trang $currentPage/${_documentController.getTotalPages()}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.arrow_forward_ios),
-                                  onPressed: currentPage >=
-                                          _documentController.getTotalPages()
-                                      ? null
-                                      : () => _documentController
-                                          .changePage(currentPage + 1),
-                                  color: currentPage >=
-                                          _documentController.getTotalPages()
-                                      ? Colors.grey.shade400
-                                      : Colors.green,
-                                ),
-                              ],
-                            ),
+                              );
+                            },
                           ),
                       ],
                     );
-                  });
-            },
-          );
-        }
-      },
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 

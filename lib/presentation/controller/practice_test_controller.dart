@@ -119,6 +119,8 @@ class PracticeTestController with ChangeNotifier {
   final List<String> _authorOptions = [];
   bool _isTopSectionExpanded = true;
   String _errorMessage = '';
+  int _totalPages = 1;
+  int _totalElements = 0;
 
   // Bộ lọc
   final PracticeTestFilter _filter = PracticeTestFilter();
@@ -133,6 +135,12 @@ class PracticeTestController with ChangeNotifier {
   List<String> get authorOptions => _authorOptions;
   bool get isTopSectionExpanded => _isTopSectionExpanded;
   String get errorMessage => _errorMessage;
+  int get totalPages => _totalPages;
+  int get totalElements => _totalElements;
+
+  // Getters cho phân trang
+  ValueNotifier<int> currentPageNotifier = ValueNotifier<int>(1);
+  int get displayCurrentPage => currentPageNotifier.value;
 
   // Getters cho các bộ lọc
   String? get levelFilter => _filter.level;
@@ -165,6 +173,26 @@ class PracticeTestController with ChangeNotifier {
   void toggleTopSection() {
     _isTopSectionExpanded = !_isTopSectionExpanded;
     notifyListeners();
+  }
+
+  // Phương thức để thay đổi trang hiện tại (cho phân trang)
+  void changePage(int page) {
+    if (page < 1 || page > _totalPages || page == displayCurrentPage) return;
+
+    currentPageNotifier.value = page;
+    _currentPage = page - 1; // API sử dụng zero-based index
+    _tests.clear(); // Xóa dữ liệu cũ
+    loadTests(refresh: false);
+  }
+
+  // Lấy tổng số trang
+  int getTotalPages() {
+    return _totalPages;
+  }
+
+  // Lấy danh sách đề thi cho trang hiện tại
+  List<PracticeTestCardModel> getCurrentPageTests() {
+    return _tests;
   }
 
   Future<void> loadCategories() async {
@@ -234,15 +262,29 @@ class PracticeTestController with ChangeNotifier {
         size: _pageSize,
       );
 
-      if (tests.isEmpty) {
+      _tests.clear(); // Xóa dữ liệu cũ
+      _tests.addAll(tests);
+
+      // Ước tính tổng số trang dựa trên dữ liệu đã nhận
+      // Nếu trang hiện tại không đầy, đó là trang cuối cùng
+      // Nếu đầy, còn ít nhất một trang nữa
+      if (tests.length < _pageSize) {
+        _totalPages = _currentPage + 1;
+        _totalElements = (_currentPage * _pageSize) + tests.length;
         _hasMore = false;
       } else {
-        _tests.addAll(tests);
-        _currentPage++;
-
-        // Cập nhật danh sách tác giả
-        _extractAuthors();
+        // Ước tính tối thiểu còn ít nhất 1 trang nữa
+        _totalPages = _currentPage + 2;
+        _totalElements = (_currentPage + 2) * _pageSize; // Ước tính
+        _hasMore = true;
       }
+
+      // Cập nhật giá trị cho currentPageNotifier
+      currentPageNotifier.value = _currentPage + 1;
+
+      // Cập nhật danh sách tác giả
+      _extractAuthors();
+
       _isLoading = false;
       notifyListeners();
     } catch (e, stackTrace) {

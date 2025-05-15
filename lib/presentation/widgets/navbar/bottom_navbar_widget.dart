@@ -31,17 +31,8 @@ class BottomNavBar extends StatelessWidget {
             255, 105, 105, 105), // Màu đen khi không được chọn
         showUnselectedLabels: true,
         onTap: (index) {
-          if (index == 3) {
-            // Nếu bấm vào tab Đề thi (index 3)
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const PracticeTestListScreen(),
-              ),
-            );
-          } else {
-            // Các tab khác giữ nguyên chức năng
-            onTap(index);
-          }
+          // Gọi callback onTap cho tất cả các tab, bao gồm cả tab "Đề thi"
+          onTap(index);
         },
         backgroundColor: Colors.white, // Đảm bảo màu nền trắng
       ),

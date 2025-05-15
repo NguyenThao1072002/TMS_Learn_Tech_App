@@ -9,6 +9,7 @@ import 'package:tms_app/presentation/widgets/practice_test/practice_test_card.da
 import 'package:tms_app/presentation/controller/unified_search_controller.dart';
 import 'package:tms_app/presentation/widgets/component/search/search_button.dart';
 import 'package:tms_app/presentation/widgets/component/search/unified_search_delegate.dart';
+import 'package:tms_app/presentation/widgets/component/pagination.dart';
 
 class PracticeTestListScreen extends StatefulWidget {
   const PracticeTestListScreen({Key? key}) : super(key: key);
@@ -405,6 +406,9 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                       onPressed: () {
                         Navigator.pop(context);
                       },
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF3498DB),
+                      ),
                       child: const Text('Hủy'),
                     ),
                     const SizedBox(width: 16),
@@ -420,6 +424,10 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                         _controller.applyFilters();
                         Navigator.pop(context);
                       },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF3498DB),
+                        foregroundColor: Colors.white,
+                      ),
                       child: const Text('Áp dụng'),
                     ),
                   ],
@@ -441,16 +449,16 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
         elevation: 0,
         backgroundColor: Colors.white,
         title: const Text(
-          'Bộ đề thi',
+          'Đề thi',
           style: TextStyle(
-            color: Color(0xFF333333),
+            color: Colors.lightBlue,
             fontWeight: FontWeight.bold,
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF333333)),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        // leading: IconButton(
+        //   icon: const Icon(Icons.arrow_back, color: Colors.lightBlue),
+        //   onPressed: () => Navigator.of(context).pop(),
+        // ),
         actions: [
           // Add refresh button
           _isRefreshing
@@ -463,16 +471,16 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor:
-                          AlwaysStoppedAnimation<Color>(Color(0xFF333333)),
+                          AlwaysStoppedAnimation<Color>(Colors.lightBlue),
                     ),
                   ),
                 )
               : IconButton(
-                  icon: const Icon(Icons.refresh, color: Color(0xFF333333)),
+                  icon: const Icon(Icons.refresh, color: Colors.lightBlue),
                   onPressed: _handleRefresh,
                 ),
           IconButton(
-            icon: const Icon(Icons.search, color: Color(0xFF333333)),
+            icon: const Icon(Icons.search, color: Colors.lightBlue),
             onPressed: () {
               // Implement search functionality
               showSearch(
@@ -487,14 +495,14 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
             },
           ),
           IconButton(
-            icon: const Icon(Icons.filter_list, color: Color(0xFF333333)),
+            icon: const Icon(Icons.filter_list, color: Colors.lightBlue),
             onPressed: _showFilterDialog,
           ),
           // Add expand/collapse button in the app bar
           IconButton(
             icon: RotationTransition(
               turns: _iconTurns,
-              child: const Icon(Icons.expand_more, color: Color(0xFF333333)),
+              child: const Icon(Icons.expand_more, color: Colors.lightBlue),
             ),
             onPressed: _toggleTopSection,
           ),
@@ -792,48 +800,42 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                       )
                     : RefreshIndicator(
                         onRefresh: _handleRefresh,
-                        child: NotificationListener<ScrollNotification>(
-                          onNotification: (ScrollNotification scrollInfo) {
-                            if (scrollInfo.metrics.pixels ==
-                                    scrollInfo.metrics.maxScrollExtent &&
-                                !_controller.isLoading &&
-                                _controller.hasMore) {
-                              _controller.loadTests();
-                            }
-                            return false;
-                          },
-                          child: ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _controller.tests.length +
-                                (_controller.hasMore ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index == _controller.tests.length) {
-                                return _controller.isLoading
-                                    ? const Center(
-                                        child: Padding(
-                                          padding: EdgeInsets.all(16.0),
-                                          child: CircularProgressIndicator(),
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: ListView.builder(
+                                padding: const EdgeInsets.all(16),
+                                itemCount: _controller.tests.length,
+                                itemBuilder: (context, index) {
+                                  final test = _controller.tests[index];
+                                  return PracticeTestCard(
+                                    test: test,
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              PracticeTestDetailScreen(
+                                                  testId: test.testId),
                                         ),
-                                      )
-                                    : const SizedBox();
-                              }
-
-                              final test = _controller.tests[index];
-                              return PracticeTestCard(
-                                test: test,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          PracticeTestDetailScreen(
-                                              testId: test.testId),
-                                    ),
+                                      );
+                                    },
                                   );
                                 },
-                              );
-                            },
-                          ),
+                              ),
+                            ),
+                            // Phân trang
+                            ValueListenableBuilder<int>(
+                              valueListenable: _controller.currentPageNotifier,
+                              builder: (context, currentPage, _) {
+                                return PaginationWidget(
+                                  currentPage: currentPage,
+                                  totalPages: _controller.getTotalPages(),
+                                  onPageChanged: _controller.changePage,
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ),
           ),

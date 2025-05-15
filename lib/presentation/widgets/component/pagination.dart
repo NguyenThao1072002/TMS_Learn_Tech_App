@@ -22,18 +22,19 @@ class PaginationWidget extends StatelessWidget {
     List<int> pagesToShow = _calculatePagesToShow();
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: Column(
         children: [
           // Hiển thị thông tin tổng số mục nếu có
           if (totalElements != null)
             Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
+              padding: const EdgeInsets.only(bottom: 12.0),
               child: Text(
                 'Hiển thị ${_calculateDisplayRange()} trong số $totalElements kết quả',
-                style: const TextStyle(
-                  color: Colors.black54,
+                style: TextStyle(
+                  color: Colors.grey.shade700,
                   fontSize: 14,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -43,47 +44,34 @@ class PaginationWidget extends StatelessWidget {
             children: [
               // Nút trang đầu tiên
               if (totalPages > 7)
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.first_page, color: Colors.blue),
-                    onPressed: currentPage > 1 ? () => onPageChanged(1) : null,
-                    tooltip: 'Trang đầu',
-                  ),
+                _buildNavButton(
+                  icon: Icons.first_page,
+                  onPressed: currentPage > 1 ? () => onPageChanged(1) : null,
+                  tooltip: 'Trang đầu',
                 ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 8),
 
               // Nút trang trước
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.chevron_left, color: Colors.blue),
-                  onPressed: currentPage > 1
-                      ? () => onPageChanged(currentPage - 1)
-                      : null,
-                  tooltip: 'Trang trước',
-                ),
+              _buildNavButton(
+                icon: Icons.chevron_left,
+                onPressed: currentPage > 1
+                    ? () => onPageChanged(currentPage - 1)
+                    : null,
+                tooltip: 'Trang trước',
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
 
               // Số trang
               ...pagesToShow.map((pageNumber) {
                 // Hiển thị dấu ... thay vì số trang
                 if (pageNumber == -1) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6.0),
                     child: Text(
-                      '...',
+                      '•••',
                       style: TextStyle(
-                        color: Colors.blue,
+                        color: Colors.lightBlue.shade700,
+                        letterSpacing: 2,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -93,74 +81,130 @@ class PaginationWidget extends StatelessWidget {
                 final isCurrentPage = pageNumber == currentPage;
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: isCurrentPage ? Colors.blue : Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: !isCurrentPage
-                          ? Border.all(color: Colors.blue)
-                          : null,
-                    ),
-                    child: InkWell(
-                      onTap: () => onPageChanged(pageNumber),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12.0,
-                          vertical: 8.0,
-                        ),
-                        child: Text(
-                          '$pageNumber',
-                          style: TextStyle(
-                            color:
-                                isCurrentPage ? Colors.white : Colors.blue[900],
-                            fontWeight: isCurrentPage
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                  child: _buildPageButton(pageNumber, isCurrentPage),
                 );
               }).toList(),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
 
               // Nút trang sau
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.chevron_right, color: Colors.blue),
-                  onPressed: currentPage < totalPages
-                      ? () => onPageChanged(currentPage + 1)
-                      : null,
-                  tooltip: 'Trang sau',
-                ),
+              _buildNavButton(
+                icon: Icons.chevron_right,
+                onPressed: currentPage < totalPages
+                    ? () => onPageChanged(currentPage + 1)
+                    : null,
+                tooltip: 'Trang sau',
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 8),
 
               // Nút trang cuối
               if (totalPages > 7)
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.last_page, color: Colors.blue),
-                    onPressed: currentPage < totalPages
-                        ? () => onPageChanged(totalPages)
-                        : null,
-                    tooltip: 'Trang cuối',
-                  ),
+                _buildNavButton(
+                  icon: Icons.last_page,
+                  onPressed: currentPage < totalPages
+                      ? () => onPageChanged(totalPages)
+                      : null,
+                  tooltip: 'Trang cuối',
                 ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  // Phương thức xây dựng nút điều hướng
+  Widget _buildNavButton({
+    required IconData icon,
+    required VoidCallback? onPressed,
+    required String tooltip,
+  }) {
+    final isDisabled = onPressed == null;
+
+    return Material(
+      color: Colors.transparent,
+      child: Tooltip(
+        message: tooltip,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            height: 36,
+            width: 36,
+            decoration: BoxDecoration(
+              color: isDisabled ? Colors.grey.shade100 : Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isDisabled
+                    ? Colors.grey.shade300
+                    : Colors.lightBlue.shade300,
+                width: 1.5,
+              ),
+              boxShadow: isDisabled
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: Colors.lightBlue.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+            ),
+            child: Center(
+              child: Icon(
+                icon,
+                color: isDisabled
+                    ? Colors.grey.shade400
+                    : Colors.lightBlue.shade700,
+                size: 20,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Phương thức xây dựng nút số trang
+  Widget _buildPageButton(int pageNumber, bool isCurrentPage) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => onPageChanged(pageNumber),
+        borderRadius: BorderRadius.circular(8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          height: 36,
+          width: 36,
+          decoration: BoxDecoration(
+            color: isCurrentPage ? Colors.lightBlue.shade600 : Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isCurrentPage
+                  ? Colors.lightBlue.shade700
+                  : Colors.lightBlue.shade200,
+              width: 1.5,
+            ),
+            boxShadow: isCurrentPage
+                ? [
+                    BoxShadow(
+                      color: Colors.lightBlue.withOpacity(0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Center(
+            child: Text(
+              '$pageNumber',
+              style: TextStyle(
+                color: isCurrentPage ? Colors.white : Colors.lightBlue.shade800,
+                fontWeight: isCurrentPage ? FontWeight.bold : FontWeight.w500,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
