@@ -28,6 +28,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // Thêm cấu hình để hỗ trợ Google Sign-In
+        manifestPlaceholders["appAuthRedirectScheme"] = "com.example.tms_app"
     }
 
     buildTypes {
@@ -45,4 +48,6 @@ flutter {
 dependencies {
     implementation("androidx.window:window:1.0.0")
     implementation("androidx.core:core:1.6.0") // Updated to stable version
+    // Thêm dependency cho Google Sign-In
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
 }

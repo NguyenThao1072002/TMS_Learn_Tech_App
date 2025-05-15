@@ -14,4 +14,10 @@ class LoginUseCase {
     }; // Chúng ta có thể tạo một Map ở đây
     return await repository.login(body);
   }
+
+  // Phương thức xử lý đăng nhập với Google
+  Future<Map<String, dynamic>?> callGoogleLogin(
+      Map<String, dynamic> googleData) async {
+    return await repository.loginWithGoogle(googleData);
+  }
 }

@@ -402,13 +402,23 @@ class _LoginScreenState extends State<LoginScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: OutlinedButton.icon(
-                                onPressed: () =>
-                                    _controller.loginWithGoogle(context),
-                                icon: const FaIcon(
-                                  FontAwesomeIcons.google,
-                                  color: AppStyles.googleColor,
-                                  size: 20,
-                                ),
+                                onPressed: _loading
+                                    ? null
+                                    : () =>
+                                        _controller.loginWithGoogle(context),
+                                icon: _loading
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const FaIcon(
+                                        FontAwesomeIcons.google,
+                                        color: AppStyles.googleColor,
+                                        size: 20,
+                                      ),
                                 label: const Text(
                                   "Đăng nhập bằng Google",
                                   style: AppStyles.blackButtonText,

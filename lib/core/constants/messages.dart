@@ -26,4 +26,5 @@ class AppMessages {
   // Các thông báo cho đăng nhập với Google
   static const googleLoginCancelled = "Đăng nhập Google bị hủy!";
   static const googleLoginError = "Đăng nhập Google lỗi: ";
+  static const googleLoginSuccess = "Đăng nhập Google thành công";
 }

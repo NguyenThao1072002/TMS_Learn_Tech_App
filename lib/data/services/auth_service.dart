@@ -287,4 +287,58 @@ class AuthService {
       return false;
     }
   }
+
+  // Login with Google
+  Future<Map<String, dynamic>?> loginWithGoogle(
+      Map<String, dynamic> body) async {
+    try {
+      // Gọi API endpoint dành cho đăng nhập Google
+      final response = await dio.post(
+        '$baseUrl/google-login',
+        data: jsonEncode(body),
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+
+        // Debug: In ra toàn bộ response để kiểm tra
+        print('===== GOOGLE LOGIN RESPONSE =====');
+        print(jsonEncode(data));
+        print('=================================');
+
+        final userInfo = data['responsiveDTOJWT'];
+        final userEmail = userInfo['email'] ?? '';
+        final userPhone = userInfo['phone'] ?? '';
+        final userFullName = userInfo['fullname'] ?? '';
+        final userImage = _processImageUrl(userInfo, data);
+        final userId = userInfo['id'] ?? userInfo['userId'] ?? '';
+        final jwtToken = data['jwt'];
+        final refreshToken = data['refreshToken'];
+
+        // Lưu thông tin người dùng và token vào SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(SharedPrefs.KEY_USER_EMAIL, userEmail);
+        await prefs.setString(SharedPrefs.KEY_USER_PHONE, userPhone);
+        await prefs.setString(SharedPrefs.KEY_USER_ID, userId.toString());
+        await prefs.setString(SharedPrefs.KEY_USER_FULLNAME, userFullName);
+        await prefs.setString(SharedPrefs.KEY_USER_IMAGE, userImage);
+        await SharedPrefs.saveJwtToken(jwtToken);
+        await prefs.setString(
+            SharedPrefs.KEY_REFRESH_TOKEN, refreshToken ?? '');
+
+        return {
+          'jwt': jwtToken,
+          'refreshToken': refreshToken,
+          'userInfo': userInfo,
+        };
+      } else {
+        print('Google login failed with status code: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print("Google login failed: $e");
+      return null;
+    }
+  }
 }

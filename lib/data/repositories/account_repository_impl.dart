@@ -67,4 +67,9 @@ class AccountRepositoryImpl implements AccountRepository {
   Future<bool> changePassword(Map<String, dynamic> body) {
     return authService.changePassword(body);
   }
+
+  @override
+  Future<Map<String, dynamic>?> loginWithGoogle(Map<String, dynamic> body) {
+    return authService.loginWithGoogle(body);
+  }
 }
