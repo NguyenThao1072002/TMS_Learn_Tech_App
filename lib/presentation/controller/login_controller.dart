@@ -10,6 +10,7 @@ import '../../domain/usecases/login_usecase.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tms_app/presentation/controller/forgot_password_controller.dart';
 import 'package:tms_app/core/utils/toast_helper.dart';
+import 'package:tms_app/core/utils/shared_prefs.dart';
 import 'package:tms_app/presentation/screens/homePage/home.dart';
 
 class LoginController {
@@ -20,8 +21,6 @@ class LoginController {
   static const String KEY_SAVED_EMAIL = 'saved_email';
   static const String KEY_SAVED_PASSWORD = 'saved_password';
   static const String KEY_REMEMBER_ME = 'remember_me';
-  static const String KEY_AUTH_TOKEN = 'auth_token';
-  static const String KEY_USER_INFO = 'user_info';
   static const String KEY_LAST_LOGIN = 'last_login';
 
   LoginController({required this.loginUseCase});
@@ -32,6 +31,9 @@ class LoginController {
       final response = await loginUseCase.call(identifier, password);
 
       if (response != null) {
+        // In token JWT ra console để test với Postman
+        printJwtToken();
+
         // Đăng nhập thành công
         return {
           'success': true,
@@ -198,8 +200,13 @@ class LoginController {
       final rememberMe = prefs.getBool(KEY_REMEMBER_ME) ?? false;
 
       // 2. Xóa token và thông tin người dùng trong SharedPreferences
-      await prefs.remove(KEY_AUTH_TOKEN);
-      await prefs.remove(KEY_USER_INFO);
+      await SharedPrefs.removeJwtToken();
+      await prefs.remove(SharedPrefs.KEY_USER_EMAIL);
+      await prefs.remove(SharedPrefs.KEY_USER_PHONE);
+      await prefs.remove(SharedPrefs.KEY_USER_ID);
+      await prefs.remove(SharedPrefs.KEY_REFRESH_TOKEN);
+      await prefs.remove(SharedPrefs.KEY_USER_FULLNAME);
+      await prefs.remove(SharedPrefs.KEY_USER_IMAGE);
 
       // 3. Xóa thông tin đăng nhập nếu không chọn "Nhớ mật khẩu"
       if (!rememberMe) {
@@ -241,5 +248,21 @@ class LoginController {
         ),
       ),
     );
+  }
+
+  // In JWT Token ra console để sử dụng trong Postman
+  Future<void> printJwtToken() async {
+    await Future.delayed(
+        const Duration(milliseconds: 500)); // Đợi để đảm bảo token đã được lưu
+    final token = await SharedPrefs.getJwtToken();
+    if (token != null && token.isNotEmpty) {
+      debugPrint(
+          '\n=================== JWT TOKEN FOR POSTMAN ===================');
+      debugPrint(token);
+      debugPrint(
+          '===========================================================\n');
+    } else {
+      debugPrint('Không tìm thấy JWT token!');
+    }
   }
 }

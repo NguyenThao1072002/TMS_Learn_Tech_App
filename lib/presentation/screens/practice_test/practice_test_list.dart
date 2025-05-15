@@ -800,42 +800,63 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                       )
                     : RefreshIndicator(
                         onRefresh: _handleRefresh,
-                        child: Column(
-                          children: [
-                            Expanded(
-                              child: ListView.builder(
-                                padding: const EdgeInsets.all(16),
-                                itemCount: _controller.tests.length,
-                                itemBuilder: (context, index) {
-                                  final test = _controller.tests[index];
-                                  return PracticeTestCard(
-                                    test: test,
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              PracticeTestDetailScreen(
-                                                  testId: test.testId),
-                                        ),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount:
+                              _controller.tests.length + 1, // +1 cho phân trang
+                          itemBuilder: (context, index) {
+                            // Hiển thị phân trang ở cuối danh sách
+                            if (index == _controller.tests.length) {
+                              return ValueListenableBuilder<int>(
+                                valueListenable:
+                                    _controller.currentPageNotifier,
+                                builder: (context, currentPage, _) {
+                                  return ValueListenableBuilder<int>(
+                                    valueListenable:
+                                        _controller.totalPagesNotifier,
+                                    builder: (context, totalPages, _) {
+                                      return ValueListenableBuilder<int>(
+                                        valueListenable:
+                                            _controller.totalElementsNotifier,
+                                        builder: (context, totalElements, _) {
+                                          if (totalPages <= 1) {
+                                            return const SizedBox.shrink();
+                                          }
+
+                                          return Padding(
+                                            padding: const EdgeInsets.only(
+                                                bottom: 16, top: 8),
+                                            child: PaginationWidget(
+                                              currentPage: currentPage,
+                                              totalPages: totalPages,
+                                              onPageChanged:
+                                                  _controller.changePage,
+                                            ),
+                                          );
+                                        },
                                       );
                                     },
                                   );
                                 },
-                              ),
-                            ),
-                            // Phân trang
-                            ValueListenableBuilder<int>(
-                              valueListenable: _controller.currentPageNotifier,
-                              builder: (context, currentPage, _) {
-                                return PaginationWidget(
-                                  currentPage: currentPage,
-                                  totalPages: _controller.getTotalPages(),
-                                  onPageChanged: _controller.changePage,
+                              );
+                            }
+
+                            // Hiển thị đề thi
+                            final test = _controller.tests[index];
+                            return PracticeTestCard(
+                              test: test,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        PracticeTestDetailScreen(
+                                            testId: test.testId),
+                                  ),
                                 );
                               },
-                            ),
-                          ],
+                            );
+                          },
                         ),
                       ),
           ),

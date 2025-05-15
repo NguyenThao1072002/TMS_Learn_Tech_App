@@ -140,6 +140,10 @@ class PracticeTestController with ChangeNotifier {
 
   // Getters cho phân trang
   ValueNotifier<int> currentPageNotifier = ValueNotifier<int>(1);
+  ValueNotifier<int> totalPagesNotifier = ValueNotifier<int>(1);
+  ValueNotifier<int> totalElementsNotifier = ValueNotifier<int>(0);
+  final int itemsPerPage = 10;
+
   int get displayCurrentPage => currentPageNotifier.value;
 
   // Getters cho các bộ lọc
@@ -279,8 +283,10 @@ class PracticeTestController with ChangeNotifier {
         _hasMore = true;
       }
 
-      // Cập nhật giá trị cho currentPageNotifier
+      // Cập nhật giá trị cho các ValueNotifier
       currentPageNotifier.value = _currentPage + 1;
+      totalPagesNotifier.value = _totalPages;
+      totalElementsNotifier.value = _totalElements;
 
       // Cập nhật danh sách tác giả
       _extractAuthors();
@@ -525,6 +531,14 @@ class PracticeTestController with ChangeNotifier {
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]}.',
         );
+  }
+
+  @override
+  void dispose() {
+    currentPageNotifier.dispose();
+    totalPagesNotifier.dispose();
+    totalElementsNotifier.dispose();
+    super.dispose();
   }
 }
 

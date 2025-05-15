@@ -853,10 +853,14 @@ class _CourseScreenState extends State<CourseScreen>
                               ValueListenableBuilder<int>(
                                 valueListenable: _controller.currentPage,
                                 builder: (context, currentPage, _) {
-                                  return PaginationWidget(
-                                    currentPage: currentPage,
-                                    totalPages: _controller.getTotalPages(),
-                                    onPageChanged: _controller.changePage,
+                                  return Padding(
+                                    padding: const EdgeInsets.only(
+                                        bottom: 16, top: 8),
+                                    child: PaginationWidget(
+                                      currentPage: currentPage,
+                                      totalPages: _controller.getTotalPages(),
+                                      onPageChanged: _controller.changePage,
+                                    ),
                                   );
                                 },
                               ),

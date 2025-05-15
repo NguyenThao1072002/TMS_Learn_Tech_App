@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tms_app/core/utils/shared_prefs.dart';
 import 'package:tms_app/data/models/course/course_card_model.dart';
+import 'package:tms_app/data/models/user_update_model.dart';
+import 'package:tms_app/domain/repositories/account_repository.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
 import 'package:tms_app/presentation/controller/course_controller.dart';
 import 'package:tms_app/presentation/screens/my_account/setting/setting.dart';
@@ -13,6 +17,7 @@ import 'package:tms_app/presentation/screens/my_account/learning_result/learning
 import 'package:tms_app/presentation/screens/my_account/my_course/activate_course.dart';
 import 'package:tms_app/presentation/screens/my_account/overview/rank.dart';
 import 'package:tms_app/presentation/screens/my_account/chat.dart';
+import 'package:tms_app/core/di/service_locator.dart';
 // import 'package:tms_app/core/app_export.dart';
 
 class StatCard extends StatefulWidget {
@@ -181,11 +186,12 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
   bool _isLoading = true;
   int _dayStreaks = 15;
 
-  // Dữ liệu mẫu
-  final String _userName = "Thu Thảo";
-  final String _userEmail = "tt.1072002@gmail.com";
-  final String _userAvatar =
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop";
+  // Thông tin người dùng
+  String _userName = "";
+  String _userEmail = "";
+  String _userAvatar = "";
+  bool _isLoadingUserInfo = true;
+  String? _errorLoadingUser;
 
   // Số liệu tổng quan
   final int _totalPoints = 375;
@@ -205,12 +211,59 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
     _courseController = CourseController(_courseUseCase);
     _loadMyCourses();
 
+    // Tải thông tin người dùng
+    _loadUserInfo();
+
     // Khởi tạo timer cho hiệu ứng màu chạy
     _colorTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
       setState(() {
         _colorIndex = (_colorIndex + 1) % _gradientColorSets.length;
       });
     });
+  }
+
+  // Tải thông tin người dùng từ API
+  Future<void> _loadUserInfo() async {
+    try {
+      setState(() {
+        _isLoadingUserInfo = true;
+        _errorLoadingUser = null;
+      });
+
+      // Lấy userId từ SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(SharedPrefs.KEY_USER_ID);
+
+      if (userId == null || userId.isEmpty) {
+        setState(() {
+          _errorLoadingUser = "Không tìm thấy thông tin người dùng";
+          _isLoadingUserInfo = false;
+        });
+        return;
+      }
+
+      // Lấy thông tin người dùng từ repository
+      final accountRepository = sl<AccountRepository>();
+      final userProfile = await accountRepository.getUserById(userId);
+
+      // Cập nhật thông tin người dùng
+      setState(() {
+        _userName = userProfile.fullname ?? 'Người dùng';
+        _userEmail = userProfile.email ?? '';
+        _userAvatar = userProfile.image ?? '';
+        _isLoadingUserInfo = false;
+      });
+
+      // In thông tin ra console để debug
+      debugPrint(
+          'Đã tải thông tin người dùng: $_userName, Avatar: $_userAvatar');
+    } catch (e) {
+      setState(() {
+        _errorLoadingUser = "Lỗi khi tải thông tin người dùng: $e";
+        _isLoadingUserInfo = false;
+      });
+      debugPrint('Lỗi khi tải thông tin người dùng: $e');
+    }
   }
 
   Future<void> _loadMyCourses() async {
@@ -363,7 +416,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Phần thông tin người dùng và avatar
+              // Phần thông tin người dùng với avatar
               _buildUserInfoSection(),
 
               // Phần tổng quan số liệu
@@ -413,31 +466,80 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
       child: Row(
         children: [
           // Avatar
-          CircleAvatar(
-            radius: 30,
-            backgroundImage: NetworkImage(_userAvatar),
-            backgroundColor: Colors.grey[200],
-          ),
+          _isLoadingUserInfo
+              ? CircleAvatar(
+                  radius: 30,
+                  backgroundColor: Colors.white,
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                    strokeWidth: 2,
+                  ),
+                )
+              : CircleAvatar(
+                  radius: 30,
+                  backgroundColor: Colors.white,
+                  backgroundImage:
+                      _userAvatar.isNotEmpty ? NetworkImage(_userAvatar) : null,
+                  child: _userAvatar.isEmpty
+                      ? Text(
+                          _userName.isNotEmpty
+                              ? _userName[0].toUpperCase()
+                              : "U",
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: primaryColor,
+                          ),
+                        )
+                      : null,
+                ),
           const SizedBox(width: 16),
           // Thông tin người dùng
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _userName,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  _userEmail,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
-                ),
+                _isLoadingUserInfo
+                    ? const Text(
+                        'Đang tải...',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : _errorLoadingUser != null
+                        ? const Text(
+                            'Người dùng',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : Text(
+                            _userName,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                const SizedBox(height: 4),
+                _isLoadingUserInfo
+                    ? Text(
+                        '...',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      )
+                    : Text(
+                        _userEmail.isNotEmpty ? _userEmail : "Chưa có email",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
               ],
             ),
           ),

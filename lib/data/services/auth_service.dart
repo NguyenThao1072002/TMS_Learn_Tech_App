@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/utils/constants.dart';
+import '../../core/utils/shared_prefs.dart';
 
 class AuthService {
   final Dio dio;
@@ -21,9 +22,25 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final data = response.data;
+
+        // Debug: In ra toàn bộ response để kiểm tra
+        print('===== LOGIN RESPONSE =====');
+        print(jsonEncode(data));
+        print('=========================');
+
         final userInfo = data['responsiveDTOJWT'];
+
+        // Debug: In ra thông tin userInfo để kiểm tra
+        print('===== USER INFO =====');
+        print(jsonEncode(userInfo));
+        print('====================');
+
         final userEmail = userInfo['email'] ?? '';
         final userPhone = userInfo['phone'] ?? '';
+        final userFullName = userInfo['fullname'] ?? '';
+
+        // Xử lý URL ảnh
+        final userImage = _processImageUrl(userInfo, data);
 
         // Lấy userId từ userInfo
         final userId = userInfo['id'] ?? userInfo['userId'] ?? '';
@@ -34,17 +51,22 @@ class AuthService {
 
         // Save user info và tokens to SharedPreferences
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_email', userEmail);
-        await prefs.setString('user_phone', userPhone);
-        await prefs.setString('userId', userId.toString());
+        await prefs.setString(SharedPrefs.KEY_USER_EMAIL, userEmail);
+        await prefs.setString(SharedPrefs.KEY_USER_PHONE, userPhone);
+        await prefs.setString(SharedPrefs.KEY_USER_ID, userId.toString());
+        await prefs.setString(SharedPrefs.KEY_USER_FULLNAME, userFullName);
+        await prefs.setString(SharedPrefs.KEY_USER_IMAGE, userImage);
 
-        // Lưu JWT token và refreshToken
-        await prefs.setString('jwt', jwtToken);
-        await prefs.setString('refreshToken', refreshToken ?? '');
+        // Lưu JWT token và refreshToken sử dụng SharedPrefs
+        await SharedPrefs.saveJwtToken(jwtToken);
+        await prefs.setString(
+            SharedPrefs.KEY_REFRESH_TOKEN, refreshToken ?? '');
 
         // Thêm log để kiểm tra
         print('Saved userId to SharedPreferences: $userId');
         print('Saved JWT token to SharedPreferences: $jwtToken');
+        print('Saved user fullname: $userFullName');
+        print('Saved user image: $userImage');
 
         return {
           'jwt': jwtToken,
@@ -59,6 +81,55 @@ class AuthService {
       print("Login failed: $e");
       return null;
     }
+  }
+
+  // Phương thức xử lý URL ảnh từ response API
+  String _processImageUrl(
+      Map<String, dynamic> userInfo, Map<String, dynamic> data) {
+    // Debug: Kiểm tra cụ thể trường image
+    print('Image field: ${userInfo['image']}');
+
+    // Thử các trường khác có thể chứa URL ảnh
+    String userImage = '';
+    final possibleImageFields = [
+      'image',
+      'avatar',
+      'profileImage',
+      'imageUrl',
+      'avatarUrl',
+      'profile_image'
+    ];
+    for (var field in possibleImageFields) {
+      if (userInfo.containsKey(field) &&
+          userInfo[field] != null &&
+          userInfo[field].toString().isNotEmpty) {
+        print('Found image in field: $field = ${userInfo[field]}');
+        if (userImage.isEmpty) {
+          userImage = userInfo[field].toString();
+        }
+      }
+    }
+
+    // Nếu vẫn không tìm thấy
+    if (userImage.isEmpty) {
+      userImage = userInfo['image'] ?? '';
+    }
+
+    // Kiểm tra nếu ảnh trong data ở cấp cao hơn
+    if (userImage.isEmpty &&
+        data.containsKey('image') &&
+        data['image'] != null) {
+      userImage = data['image'].toString();
+      print('Found image in root data: $userImage');
+    }
+
+    // Thêm prefix cho URL ảnh nếu cần
+    if (userImage.isNotEmpty && !userImage.startsWith('http')) {
+      userImage = 'https://$userImage';
+      print('Modified image URL: $userImage');
+    }
+
+    return userImage;
   }
 
   // Register API
@@ -94,8 +165,8 @@ class AuthService {
   Future<Map<String, String?>> getUserData() async {
     final prefs = await SharedPreferences.getInstance();
     return {
-      'email': prefs.getString('user_email'),
-      'phone': prefs.getString('user_phone'),
+      'email': prefs.getString(SharedPrefs.KEY_USER_EMAIL),
+      'phone': prefs.getString(SharedPrefs.KEY_USER_PHONE),
     };
   }
 

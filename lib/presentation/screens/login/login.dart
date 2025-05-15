@@ -88,6 +88,9 @@ class _LoginScreenState extends State<LoginScreen> {
             _rememberMe,
           );
 
+          // In JWT token ra console để test với Postman
+          await _controller.printJwtToken();
+
           // Chuyển tới màn hình chính
           if (mounted) {
             _controller.navigateToHome(context);
@@ -114,6 +117,16 @@ class _LoginScreenState extends State<LoginScreen> {
           });
         }
       }
+    }
+  }
+
+  // Thêm phương thức để in JWT token từ màn hình đăng nhập (để test)
+  void _printToken() async {
+    try {
+      await _controller.printJwtToken();
+      ToastHelper.showSuccessToast("Token đã được in ra console");
+    } catch (e) {
+      ToastHelper.showErrorToast("Lỗi: $e");
     }
   }
 
