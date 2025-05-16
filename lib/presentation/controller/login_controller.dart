@@ -406,6 +406,28 @@ class LoginController {
     );
   }
 
+  // Cập nhật mật khẩu đã lưu sau khi đổi mật khẩu
+  Future<void> updateSavedPassword(String newPassword) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final rememberMe = prefs.getBool(KEY_REMEMBER_ME) ?? false;
+
+      // Chỉ cập nhật mật khẩu nếu đã bật chế độ nhớ mật khẩu
+      if (rememberMe) {
+        final savedEmail = prefs.getString(KEY_SAVED_EMAIL) ?? "";
+
+        if (savedEmail.isNotEmpty) {
+          await prefs.setString(KEY_SAVED_PASSWORD, newPassword);
+          await prefs.setString(
+              KEY_LAST_LOGIN, DateTime.now().toIso8601String());
+          debugPrint('Đã cập nhật mật khẩu đã lưu cho: $savedEmail');
+        }
+      }
+    } catch (e) {
+      debugPrint('Lỗi khi cập nhật mật khẩu đã lưu: $e');
+    }
+  }
+
   // In JWT Token ra console để sử dụng trong Postman
   Future<void> printJwtToken() async {
     await Future.delayed(

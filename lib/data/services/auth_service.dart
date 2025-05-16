@@ -256,14 +256,18 @@ class AuthService {
     try {
       // Get JWT token from SharedPreferences
       final token = await SharedPrefs.getJwtToken();
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(SharedPrefs.KEY_USER_ID) ?? '1';
 
       if (token == null || token.isEmpty) {
         print("JWT token not found. Please login again.");
         return false;
       }
 
+      // Tách và sửa lại URL để tránh trùng lặp "/account"
+      final baseUrlWithoutAccount = Constants.BASE_URL; // Không thêm /account
       final response = await dio.put(
-        '$baseUrl/change-password/1',
+        '$baseUrlWithoutAccount/api/account/change-password/$userId',
         data: jsonEncode(body),
         options: Options(headers: {
           'Content-Type': 'application/json',

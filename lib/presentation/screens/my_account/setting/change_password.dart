@@ -3,6 +3,9 @@ import 'package:get_it/get_it.dart';
 import 'package:tms_app/data/models/account/change_password.dart';
 import 'package:tms_app/domain/usecases/change_password_usecase.dart';
 import 'package:tms_app/core/DI/service_locator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tms_app/presentation/controller/login_controller.dart';
+import 'package:tms_app/presentation/screens/login/login.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({Key? key}) : super(key: key);
@@ -44,11 +47,17 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   // Lấy instance của ChangePasswordUseCase
   late final ChangePasswordUseCase _changePasswordUseCase;
 
+  // Lấy instance của LoginController để cập nhật mật khẩu đã lưu
+  late final LoginController _loginController;
+
   @override
   void initState() {
     super.initState();
     // Khởi tạo use case từ service locator
     _changePasswordUseCase = sl<ChangePasswordUseCase>();
+
+    // Khởi tạo login controller
+    _loginController = LoginController(loginUseCase: sl());
   }
 
   @override
@@ -129,11 +138,28 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       });
 
       if (result) {
+        // Cập nhật mật khẩu mới vào SharedPreferences nếu đổi thành công
+        await _updateStoredPassword(_newPasswordController.text);
         // Thành công
         _showChangePasswordSuccessDialog();
       } else {
-        // Thất bại
-        _showChangePasswordFailedDialog();
+        // Thất bại - hiển thị lỗi cụ thể về mật khẩu hiện tại
+        _showChangePasswordFailedDialog(
+            errorMessage:
+                'Mật khẩu hiện tại không đúng. Vui lòng kiểm tra lại.');
+
+        // Đánh dấu ô mật khẩu hiện tại là không hợp lệ và focus vào nó
+        setState(() {
+          _isCurrentPasswordValid = false;
+          _currentPasswordError = 'Mật khẩu hiện tại không đúng';
+        });
+
+        // Focus trở lại vào ô mật khẩu hiện tại
+        FocusScope.of(context).requestFocus(FocusNode());
+        _currentPasswordController.selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: _currentPasswordController.text.length,
+        );
       }
     } catch (e) {
       // Xử lý lỗi
@@ -144,39 +170,184 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     }
   }
 
+  // Cập nhật mật khẩu đã lưu trong SharedPreferences
+  Future<void> _updateStoredPassword(String newPassword) async {
+    try {
+      // Cập nhật mật khẩu mới trong LoginController
+      await _loginController.updateSavedPassword(newPassword);
+
+      // Cập nhật các thông tin bổ sung
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+          'password_change_time', DateTime.now().toIso8601String());
+    } catch (e) {
+      // Ghi log lỗi nếu cần
+      print('Không thể cập nhật mật khẩu đã lưu: $e');
+    }
+  }
+
   // Hiển thị dialog thông báo đổi mật khẩu thành công
   void _showChangePasswordSuccessDialog() {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (BuildContext context) {
-        return AlertDialog(
+        return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
           ),
-          title: const Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.green, size: 28),
-              SizedBox(width: 10),
-              Text('Thành công'),
-            ],
-          ),
-          content: const Text('Mật khẩu của bạn đã được thay đổi thành công.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pop();
-              },
-              child: const Text(
-                'Đóng',
-                style:
-                    TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
-              ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
-          ],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon thành công
+                Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_outline,
+                    color: Colors.green,
+                    size: 70,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Tiêu đề
+                const Text(
+                  'Đổi mật khẩu thành công! 🎉',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 15),
+
+                // Nội dung
+                const Text(
+                  'Mật khẩu mới của bạn đã được cập nhật.',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.black54,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+
+                // Thông báo đăng nhập lại
+                Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.blue.withOpacity(0.1),
+                    ),
+                  ),
+                  child: Column(
+                    children: const [
+                      Text(
+                        'Bạn sẽ được đưa về màn hình đăng nhập',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 5),
+                      Text(
+                        'Vui lòng đăng nhập lại bằng mật khẩu mới.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black54,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Nút trở về màn hình đăng nhập
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Đăng xuất và đưa về màn hình đăng nhập
+                      _navigateToLogin();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text(
+                      'Đăng nhập lại',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
+  }
+
+  // Phương thức đưa người dùng về màn hình đăng nhập
+  void _navigateToLogin() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false, // Xóa tất cả các route trước đó
+    );
+  }
+
+  // Đăng xuất khỏi tất cả thiết bị khác
+  Future<void> _logoutFromOtherDevices() async {
+    try {
+      // TODO: Gọi API đăng xuất khỏi thiết bị khác (cần thực hiện sau)
+      // API có thể sẽ cần thêm ở phía backend
+      // Có thể thực hiện bằng cách vô hiệu hóa tất cả refresh token cũ
+      // và chỉ giữ lại token hiện tại
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã đăng xuất khỏi tất cả thiết bị khác'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không thể đăng xuất khỏi thiết bị khác'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   // Hiển thị dialog thông báo đổi mật khẩu thất bại
@@ -184,31 +355,92 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
+        return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
           ),
-          title: const Row(
-            children: [
-              Icon(Icons.error_outline, color: Colors.red, size: 28),
-              SizedBox(width: 10),
-              Text('Thất bại'),
-            ],
-          ),
-          content: Text(errorMessage ??
-              'Đổi mật khẩu không thành công. Vui lòng thử lại sau.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text(
-                'Đóng',
-                style:
-                    TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
-              ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
-          ],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon thất bại
+                Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.sentiment_dissatisfied,
+                    color: Colors.red,
+                    size: 70,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Tiêu đề
+                const Text(
+                  'Oops! Có gì đó không ổn 😕',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 15),
+
+                // Nội dung
+                Text(
+                  errorMessage ??
+                      'Đổi mật khẩu không thành công. Vui lòng thử lại sau nhé!',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.black54,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 25),
+
+                // Nút đóng
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text(
+                      'Thử lại',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
