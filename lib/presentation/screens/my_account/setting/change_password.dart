@@ -319,7 +319,25 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   }
 
   // Phương thức đưa người dùng về màn hình đăng nhập
-  void _navigateToLogin() {
+  void _navigateToLogin() async {
+    try {
+      // Xóa thông tin đăng nhập đã lưu
+      final prefs = await SharedPreferences.getInstance();
+
+      // Xóa tất cả thông tin đăng nhập đã lưu để người dùng phải nhập lại
+      await prefs.remove(LoginController.KEY_SAVED_EMAIL);
+      await prefs.remove(LoginController.KEY_SAVED_PASSWORD);
+      await prefs.remove(LoginController.KEY_REMEMBER_ME);
+
+      // Giữ lại token cho đến khi đăng nhập mới
+      // await SharedPrefs.removeJwtToken();
+
+      debugPrint('Đã xóa thông tin đăng nhập được lưu sau khi đổi mật khẩu');
+    } catch (e) {
+      debugPrint('Lỗi khi xóa thông tin đăng nhập: $e');
+    }
+
+    // Chuyển hướng về màn hình đăng nhập và xóa stack
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const LoginScreen()),
       (route) => false, // Xóa tất cả các route trước đó
