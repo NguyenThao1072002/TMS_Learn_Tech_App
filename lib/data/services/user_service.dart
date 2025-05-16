@@ -55,7 +55,7 @@ class UserService {
     }
   }
 
-// Update Account
+  // Update Account
   Future<bool> updateAccount(Map<String, dynamic> body) async {
     try {
       // Lấy userId và token từ SharedPreferences
@@ -64,23 +64,12 @@ class UserService {
       final token = prefs.getString('jwt');
 
       if (userId.isEmpty) {
-        print("User ID not found in SharedPreferences");
         return false;
       }
 
       if (token == null || token.isEmpty) {
-        print("JWT token not found. Please login again.");
         return false;
       }
-
-      print('URL: $baseUrl/api/account/update/$userId');
-
-      // In chi tiết về kiểu dữ liệu của từng field
-      body.forEach((key, value) {
-        print('Field: $key, Type: ${value.runtimeType}, Value: $value');
-      });
-
-      print('Token: $token');
 
       // Chuyển đổi sang form-data
       var formData = FormData();
@@ -89,20 +78,16 @@ class UserService {
       File? imageFile;
       if (body.containsKey('image')) {
         var imageValue = body['image'];
-        print('Image value type: ${imageValue.runtimeType}');
 
         if (imageValue is File) {
           imageFile = imageValue;
-          print('Image is File: ${imageFile.path}');
         } else if (imageValue is String && imageValue.isNotEmpty) {
           if (imageValue.startsWith('/')) {
             // Đây là đường dẫn local
             imageFile = File(imageValue);
-            print('Image is path string: $imageValue');
           } else {
             // Đây có thể là URL, không cần xử lý đặc biệt
             formData.fields.add(MapEntry('image', imageValue.toString()));
-            print('Image is URL string: $imageValue');
           }
         }
 
@@ -114,7 +99,6 @@ class UserService {
       body.forEach((key, value) {
         if (value != null) {
           formData.fields.add(MapEntry(key, value.toString()));
-          print('Added field: $key = ${value.toString()}');
         }
       });
 
@@ -126,14 +110,10 @@ class UserService {
             filename: imageFile.path.split('/').last,
           );
           formData.files.add(MapEntry('image', multipart));
-          print('Added image file: ${imageFile.path}');
         } catch (e) {
-          print('Error adding image file: $e');
+          // Xử lý lỗi nếu có
         }
       }
-
-      print('FormData fields: ${formData.fields}');
-      print('FormData files: ${formData.files.length}');
 
       final response = await dio.put(
         '$baseUrl/api/account/update/$userId',
@@ -145,19 +125,9 @@ class UserService {
         ),
       );
 
-      print('Response status: ${response.statusCode}');
-      print('Response data: ${response.data}');
-
       return response.statusCode == 200;
     } catch (e) {
-      print("Error updating account: $e");
-
-      // In chi tiết hơn về lỗi nếu là DioException
-      if (e is DioException && e.response != null) {
-        print("Error status code: ${e.response?.statusCode}");
-        print("Error data: ${e.response?.data}");
-      }
-
+      // Xử lý lỗi
       return false;
     }
   }

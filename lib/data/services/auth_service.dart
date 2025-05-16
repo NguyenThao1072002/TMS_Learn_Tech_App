@@ -7,7 +7,7 @@ import '../../core/utils/shared_prefs.dart';
 class AuthService {
   final Dio dio;
   final String baseUrl =
-      '${Constants.BASE_URL}/account'; // Sử dụng URL từ constants
+      '${Constants.BASE_URL}/api/account'; // Thêm prefix /api vào baseUrl
 
   AuthService(this.dio);
 
@@ -251,40 +251,134 @@ class AuthService {
     }
   }
 
+  // Kiểm tra mật khẩu hiện tại trước khi đổi
+  Future<bool> verifyCurrentPassword(
+      String email, String currentPassword) async {
+    try {
+      // Tạo body request chứa email và mật khẩu hiện tại
+      final loginBody = {'email': email, 'password': currentPassword};
+
+      // Gọi API login để kiểm tra mật khẩu hiện tại
+      final response = await dio.post(
+        '$baseUrl/dang-nhap',
+        data: jsonEncode(loginBody),
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+
+      // Nếu login thành công, mật khẩu hiện tại đúng
+      return response.statusCode == 200;
+    } catch (e) {
+      // Nếu có lỗi (như thông tin đăng nhập không đúng), trả về false
+      return false;
+    }
+  }
+
   // Change Password API (requires authentication)
   Future<bool> changePassword(Map<String, dynamic> body) async {
     try {
       // Get JWT token from SharedPreferences
       final token = await SharedPrefs.getJwtToken();
 
+      // Lấy SharedPreferences instance
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(SharedPrefs.KEY_USER_ID);
+      final email = prefs.getString(SharedPrefs.KEY_USER_EMAIL) ?? '';
+
       if (token == null || token.isEmpty) {
-        print("JWT token not found. Please login again.");
         return false;
       }
 
+      if (userId == null || userId.isEmpty) {
+        return false;
+      }
+
+      // Kiểm tra mật khẩu hiện tại trước khi cho phép đổi
+      final isCurrentPasswordValid =
+          await verifyCurrentPassword(email, body['currentPassword']);
+
+      if (!isCurrentPasswordValid) {
+        return false; // Trả về false nếu mật khẩu hiện tại không đúng
+      }
+
+      final endpoint =
+          '${Constants.BASE_URL}/api/account/change-password/$userId';
+
       final response = await dio.put(
-        '$baseUrl/change-password/1',
+        endpoint,
         data: jsonEncode(body),
         options: Options(headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
           'Authorization': 'Bearer $token'
         }),
       );
 
-      print('Change password response: ${response.statusCode}');
-      print('Response data: ${response.data}');
+      // Kiểm tra cả status code và nội dung response
+      if (response.statusCode == 200) {
+        // Kiểm tra thêm message từ API
+        if (response.data != null &&
+            response.data['message'] != null &&
+            response.data['message']
+                .toString()
+                .toLowerCase()
+                .contains('sai mật khẩu')) {
+          print(
+              'API trả về lỗi sai mật khẩu nhưng với status 200: ${response.data}');
+          return false;
+        }
 
-      return response.statusCode == 200;
-    } catch (e) {
-      print("Error changing password: $e");
+        // Nếu API trả về thành công, cập nhật mật khẩu trong SharedPreferences
+        await _updatePasswordData(body['newPassword']);
 
-      // Print detailed error information
-      if (e is DioException && e.response != null) {
-        print("Error status code: ${e.response?.statusCode}");
-        print("Error data: ${e.response?.data}");
+        // Đảm bảo rằng mật khẩu đã được lưu đúng
+        await _clearOldPasswordData();
+
+        return true;
       }
 
       return false;
+    } catch (e) {
+      if (e is DioException && e.response != null) {
+        print('Change password failed: ${e.response?.data}');
+      }
+      return false;
+    }
+  }
+
+  // Cập nhật thông tin mật khẩu trong SharedPreferences
+  Future<void> _updatePasswordData(String newPassword) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Xóa tất cả các thông tin đăng nhập đã lưu
+      await prefs.remove('saved_password');
+      await prefs.remove('saved_email');
+      await prefs.remove('remember_me');
+      await prefs.remove('password_cached');
+      await prefs.remove('password_last_changed');
+      await prefs.remove('last_login');
+
+      // Lưu thời gian thay đổi mật khẩu
+      await prefs.setString(
+          'password_last_changed', DateTime.now().toIso8601String());
+    } catch (e) {
+      print("Lỗi khi xóa thông tin đăng nhập: $e");
+    }
+  }
+
+  // Xóa thông tin mật khẩu cũ và đảm bảo rằng tất cả thông tin đăng nhập được xóa
+  Future<void> _clearOldPasswordData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Xóa các thông tin đăng nhập
+      await prefs.remove('password_cached');
+      await prefs.remove('saved_password');
+      await prefs.remove('saved_email');
+      await prefs.setBool('remember_me', false);
+      await prefs.remove('last_login');
+    } catch (e) {
+      print("Lỗi khi xóa thông tin đăng nhập: $e");
     }
   }
 

@@ -11,7 +11,6 @@ class ChangePasswordUseCase {
       final result = await repository.changePassword(model.toJson());
       return result;
     } catch (e) {
-      print('Error in ChangePasswordUseCase: $e');
       return false;
     }
   }
