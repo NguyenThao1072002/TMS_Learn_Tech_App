@@ -185,7 +185,10 @@ void _registerUseCases() {
   // Thêm dòng này để đăng ký UpdateAccountUseCase
   sl.registerFactory(() => UpdateAccountUseCase(sl()));
 
-   sl.registerLazySingleton(
+  // Đăng ký CartUseCase
+  sl.registerFactory(() => CartUseCase(sl()));
+
+  sl.registerLazySingleton(
       () => ChangePasswordUseCase(sl<AccountRepository>()));
 }
 
