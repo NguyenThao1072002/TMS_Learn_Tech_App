@@ -477,9 +477,4 @@ class CourseService {
       return [];
     }
   }
-
-  // Future<String> _getToken() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   return prefs.getString('jwt') ?? '';
-  // }
 }

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-
+import 'package:http_parser/http_parser.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tms_app/data/models/account/user_update_model.dart';
@@ -74,36 +74,73 @@ class UserService {
       }
 
       print('URL: $baseUrl/api/account/update/$userId');
-      print('Data: $body');
+
+      // In chi tiết về kiểu dữ liệu của từng field
+      body.forEach((key, value) {
+        print('Field: $key, Type: ${value.runtimeType}, Value: $value');
+      });
+
       print('Token: $token');
 
       // Chuyển đổi sang form-data
       var formData = FormData();
-      body.forEach((key, value) {
-        formData.fields.add(MapEntry(key, value.toString()));
-      });
 
-      // Nếu có file ảnh cần upload
-      if (body.containsKey('image') && body['image'] is File) {
-        File imageFile = body['image'];
-        formData.files.add(
-          MapEntry(
-            'image',
-            await MultipartFile.fromFile(
-              imageFile.path,
-              filename: imageFile.path.split('/').last,
-            ),
-          ),
-        );
+      // Xử lý file ảnh riêng để tránh chuyển đổi không đúng kiểu
+      File? imageFile;
+      if (body.containsKey('image')) {
+        var imageValue = body['image'];
+        print('Image value type: ${imageValue.runtimeType}');
+
+        if (imageValue is File) {
+          imageFile = imageValue;
+          print('Image is File: ${imageFile.path}');
+        } else if (imageValue is String && imageValue.isNotEmpty) {
+          if (imageValue.startsWith('/')) {
+            // Đây là đường dẫn local
+            imageFile = File(imageValue);
+            print('Image is path string: $imageValue');
+          } else {
+            // Đây có thể là URL, không cần xử lý đặc biệt
+            formData.fields.add(MapEntry('image', imageValue.toString()));
+            print('Image is URL string: $imageValue');
+          }
+        }
+
+        // Xóa khỏi body để không xử lý ở vòng lặp dưới
+        body.remove('image');
       }
 
+      // Thêm các trường dữ liệu khác
+      body.forEach((key, value) {
+        if (value != null) {
+          formData.fields.add(MapEntry(key, value.toString()));
+          print('Added field: $key = ${value.toString()}');
+        }
+      });
+
+      // Nếu có file ảnh, thêm vào form-data
+      if (imageFile != null) {
+        try {
+          var multipart = await MultipartFile.fromFile(
+            imageFile.path,
+            filename: imageFile.path.split('/').last,
+          );
+          formData.files.add(MapEntry('image', multipart));
+          print('Added image file: ${imageFile.path}');
+        } catch (e) {
+          print('Error adding image file: $e');
+        }
+      }
+
+      print('FormData fields: ${formData.fields}');
+      print('FormData files: ${formData.files.length}');
+
       final response = await dio.put(
-        '$baseUrl/api/account/update/$userId', // Đảm bảo đường dẫn API đúng
-        data: formData, // Sử dụng form-data
+        '$baseUrl/api/account/update/$userId',
+        data: formData,
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',
-            // Không cần set Content-Type khi sử dụng FormData, Dio sẽ tự động thêm
           },
         ),
       );

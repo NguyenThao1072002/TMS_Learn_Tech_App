@@ -1,20 +1,24 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tms_app/data/repositories/blog_repository_impl.dart';
+import 'package:tms_app/data/repositories/cart_repository_impl.dart';
 
 import 'package:tms_app/data/repositories/course_repository_impl.dart';
 import 'package:tms_app/data/repositories/document_repository_impl.dart';
 import 'package:tms_app/data/services/auth_service.dart'; // Import AuthService
 import 'package:tms_app/data/services/blog_service.dart';
+import 'package:tms_app/data/services/cart/cart_service.dart';
 import 'package:tms_app/data/services/course/course_service.dart';
 import 'package:tms_app/data/services/document/document_service.dart';
 import 'package:tms_app/data/services/user_service.dart'; // Import UserService
 import 'package:tms_app/data/repositories/account_repository_impl.dart';
 import 'package:tms_app/domain/repositories/account_repository.dart';
 import 'package:tms_app/domain/repositories/blog_repository.dart';
+import 'package:tms_app/domain/repositories/cart_repository.dart';
 import 'package:tms_app/domain/repositories/course_repository.dart';
 import 'package:tms_app/domain/repositories/document_repository.dart';
 import 'package:tms_app/domain/usecases/blog_usecase.dart';
+import 'package:tms_app/domain/usecases/cart_usecase.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
 import 'package:tms_app/domain/usecases/documents_usecase.dart';
 import 'package:tms_app/domain/usecases/forgot_password_usecase.dart';
@@ -120,6 +124,7 @@ void _registerServices() {
   sl.registerLazySingleton(() => CategoryService());
   sl.registerLazySingleton(() => PracticeTestService(sl()));
   sl.registerLazySingleton(() => DocumentService(sl()));
+  sl.registerLazySingleton(() => CartService(sl()));
 }
 
 // Đăng ký tất cả các Repository
@@ -150,6 +155,9 @@ void _registerRepositories() {
 
   sl.registerLazySingleton<DocumentRepository>(
       () => DocumentRepositoryImpl(documentService: sl<DocumentService>()));
+
+  sl.registerLazySingleton<CartRepository>(
+      () => CartRepositoryImpl(cartService: sl<CartService>()));
 }
 
 // Đăng ký tất cả các UseCase
@@ -174,11 +182,10 @@ void _registerUseCases() {
   });
 
   sl.registerFactory(() => PracticeTestUseCase(sl()));
+  // Thêm dòng này để đăng ký UpdateAccountUseCase
+  sl.registerFactory(() => UpdateAccountUseCase(sl()));
 
-  // Đăng ký UpdateAccountUseCase - chuyển từ registerFactory sang registerLazySingleton
-  sl.registerLazySingleton(() => UpdateAccountUseCase(sl<AccountRepository>()));
-
-  sl.registerLazySingleton(
+   sl.registerLazySingleton(
       () => ChangePasswordUseCase(sl<AccountRepository>()));
 }
 

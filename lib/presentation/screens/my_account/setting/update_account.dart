@@ -41,30 +41,9 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
   void initState() {
     super.initState();
 
-    // Khởi tạo controller an toàn hơn
-    try {
-      final GetIt getIt = GetIt.instance;
-      // Sử dụng getIt.isRegistered để kiểm tra trước khi lấy
-      if (getIt.isRegistered<UpdateAccountController>()) {
-        _controller = getIt<UpdateAccountController>();
-      } else {
-        print('UpdateAccountController chưa được đăng ký, tạo instance mới');
-        // Khởi tạo thủ công nếu không có trong GetIt
-        final AccountRepository accountRepo = getIt<AccountRepository>();
-        final UpdateAccountUseCase updateAccountUseCase =
-            UpdateAccountUseCase(accountRepo);
-        _controller =
-            UpdateAccountController(updateAccountUseCase: updateAccountUseCase);
-      }
-    } catch (e) {
-      print('Lỗi khi khởi tạo controller: $e');
-      // Khởi tạo với instance mới trong trường hợp GetIt gặp vấn đề
-      final AccountRepository accountRepo = GetIt.instance<AccountRepository>();
-      final UpdateAccountUseCase updateAccountUseCase =
-          UpdateAccountUseCase(accountRepo);
-      _controller =
-          UpdateAccountController(updateAccountUseCase: updateAccountUseCase);
-    }
+    _controller = UpdateAccountController(
+      updateAccountUseCase: GetIt.instance<UpdateAccountUseCase>(),
+    );
 
     // Lắng nghe sự thay đổi của userProfile
     _controller.userProfile.listen((profile) {
@@ -239,7 +218,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
     );
   }
 
-  // Hiển thị dialog chọn ngày sinh
+// Hiển thị dialog chọn ngày sinh
   Future<void> _selectBirthDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -266,6 +245,26 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
     );
 
     if (picked != null && picked != _selectedDate) {
+      // Tính toán thời điểm 5 năm trước
+      final DateTime fiveYearsAgo =
+          DateTime.now().subtract(const Duration(days: 365 * 5 + 1));
+
+      // Kiểm tra nếu ngày đã chọn lớn hơn fiveYearsAgo (nghĩa là nhỏ hơn 5 tuổi)
+      if (picked.isAfter(fiveYearsAgo)) {
+        // Hiển thị thông báo lỗi
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tuổi phải lớn hơn 5 tuổi'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        // Không cập nhật ngày sinh đã chọn
+        return;
+      }
+
+      // Nếu tuổi hợp lệ, cập nhật ngày sinh
       setState(() {
         _selectedDate = picked;
         _birthdayController.text =
@@ -286,7 +285,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
     );
   }
 
-  // Xử lý cập nhật thông tin
+// Xử lý cập nhật thông tin
   Future<void> _updateProfile() async {
     // Kiểm tra thông tin hợp lệ
     if (_nameController.text.trim().isEmpty) {
@@ -294,7 +293,17 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
       return;
     }
 
-    // Tạo object data để gửi lên API theo đúng định dạng API
+    // Kiểm tra định dạng số điện thoại
+    bool isValidPhone = RegExp(
+      r'^(?:\+84|84|0)[3|5|7|8|9][0-9]{8}$',
+    ).hasMatch(_phoneController.text.trim());
+
+    if (_phoneController.text.trim().isNotEmpty && !isValidPhone) {
+      _showErrorSnackBar('Số điện thoại không hợp lệ');
+      return;
+    }
+
+    // Tạo object data để gửi lên API theo đúng định dạng form-data
     final Map<String, dynamic> data = {
       'fullname': _nameController.text.trim(),
       'email': _emailController.text.trim(),
@@ -305,9 +314,10 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
           .split('.')[0], // Định dạng 2002-07-10T00:00:00
     };
 
-    // Thêm image nếu có
-    if (_currentImagePath != null && _currentImagePath!.isNotEmpty) {
-      data['image'] = _currentImagePath;
+    // Nếu có ảnh mới được chọn
+    if (_profileImage != null) {
+      // Thêm ảnh dưới dạng File vào data để controller có thể xử lý gửi form-data
+      data['image'] = _profileImage;
     }
 
     print('Dữ liệu gửi lên server: $data');
@@ -568,9 +578,28 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                   prefixIcon: Icons.phone,
                   hintText: 'Nhập số điện thoại',
                   keyboardType: TextInputType.phone,
-                  onChanged: (_) => _hasUnsavedChanges = true,
-                ),
+                  onChanged: (value) {
+                    _hasUnsavedChanges = true;
 
+                    // Kiểm tra số điện thoại hợp lệ
+                    bool isValidPhone = RegExp(
+                      r'^(?:\+84|84|0)[3|5|7|8|9][0-9]{8}$',
+                    ).hasMatch(value.trim());
+
+                    // Hiển thị lỗi nếu số điện thoại không hợp lệ và có giá trị
+                    if (value.trim().isNotEmpty && !isValidPhone) {
+                      // Hiển thị lỗi - ở đây bạn có thể dùng ScaffoldMessenger nếu muốn
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Số điện thoại không hợp lệ'),
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                ),
                 // Email (không cho chỉnh sửa)
                 _buildTextField(
                   label: 'Email',
