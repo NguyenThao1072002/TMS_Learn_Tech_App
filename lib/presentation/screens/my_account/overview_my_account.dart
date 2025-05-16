@@ -18,6 +18,10 @@ import 'package:tms_app/presentation/screens/my_account/my_course/activate_cours
 import 'package:tms_app/presentation/screens/my_account/overview/rank.dart';
 import 'package:tms_app/presentation/screens/my_account/chat.dart';
 import 'package:tms_app/core/di/service_locator.dart';
+import 'package:tms_app/domain/usecases/overview_my_account_usecase.dart';
+import 'package:tms_app/data/models/account/overview_my_account_model.dart';
+import 'package:tms_app/core/lifecycle_observer.dart';
+import 'package:intl/intl.dart';
 // import 'package:tms_app/core/app_export.dart';
 
 class StatCard extends StatefulWidget {
@@ -184,7 +188,6 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
   final CourseUseCase _courseUseCase = GetIt.instance<CourseUseCase>();
   List<CourseCardModel> _myCourses = [];
   bool _isLoading = true;
-  int _dayStreaks = 15;
 
   // Thông tin người dùng
   String _userName = "";
@@ -193,10 +196,17 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
   bool _isLoadingUserInfo = true;
   String? _errorLoadingUser;
 
-  // Số liệu tổng quan
-  final int _totalPoints = 375;
-  final int _totalCourses = 5;
-  final int _totalDocuments = 47;
+  // Account overview data
+  AccountOverviewModel? _accountOverview;
+  bool _isLoadingOverview = true;
+  String? _errorLoadingOverview;
+
+  // Số liệu tổng quan (will be replaced with API data)
+  int _totalPoints = 0;
+  int _dayStreaks = 0;
+  int _totalCourses = 0;
+  int _totalDocuments = 0;
+  double _balanceWallet = 0.0;
 
   // Số lượng cho badges
   final int _cartItemCount = 3;
@@ -214,11 +224,25 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
     // Tải thông tin người dùng
     _loadUserInfo();
 
+    // Tải account overview
+    _loadAccountOverview();
+
     // Khởi tạo timer cho hiệu ứng màu chạy
     _colorTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
       setState(() {
         _colorIndex = (_colorIndex + 1) % _gradientColorSets.length;
       });
+    });
+
+    // Đăng ký lắng nghe sự kiện để reload khi mở ứng dụng từ background
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final observer = LifecycleObserver(
+        onResume: () {
+          debugPrint('Ứng dụng tiếp tục hoạt động, kiểm tra dữ liệu...');
+          _reloadDataIfNeeded();
+        },
+      );
+      WidgetsBinding.instance.addObserver(observer);
     });
   }
 
@@ -266,6 +290,57 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
     }
   }
 
+  // Tải account overview từ API
+  Future<void> _loadAccountOverview() async {
+    try {
+      setState(() {
+        _isLoadingOverview = true;
+        _errorLoadingOverview = null;
+      });
+
+      // Lấy userId từ SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(SharedPrefs.KEY_USER_ID);
+      final token = prefs.getString('jwt');
+
+      // Debug info
+      debugPrint('Loading account overview for userId: $userId');
+      debugPrint('Current JWT token: ${token?.substring(0, 20)}...');
+
+      if (userId == null || userId.isEmpty) {
+        setState(() {
+          _errorLoadingOverview = "Không tìm thấy thông tin người dùng";
+          _isLoadingOverview = false;
+        });
+        return;
+      }
+
+      // Lấy thông tin overview từ repository
+      final accountRepository = sl<AccountRepository>();
+      final overviewData = await accountRepository.getAccountOverview(userId);
+
+      // Cập nhật thông tin overview
+      setState(() {
+        _accountOverview = overviewData;
+        _totalPoints = overviewData.totalPoints;
+        _dayStreaks = overviewData.dayStreak;
+        _totalCourses = overviewData.countCourse;
+        _totalDocuments = overviewData.countDocument;
+        _balanceWallet = overviewData.balanceWallet;
+        _isLoadingOverview = false;
+      });
+
+      debugPrint(
+          'Đã tải account overview thành công: ${overviewData.toJson()}');
+    } catch (e) {
+      setState(() {
+        _errorLoadingOverview = "Lỗi khi tải thông tin tổng quan: $e";
+        _isLoadingOverview = false;
+      });
+      debugPrint('Lỗi khi tải thông tin tổng quan: $e');
+    }
+  }
+
   Future<void> _loadMyCourses() async {
     setState(() {
       _isLoading = true;
@@ -295,6 +370,22 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
         backgroundColor: const Color.fromARGB(255, 255, 255, 255),
         elevation: 0,
         actions: [
+          // Nút refresh để tải lại dữ liệu
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.blue),
+            onPressed: () {
+              debugPrint('Nút refresh được nhấn, tải lại dữ liệu...');
+              setState(() {
+                _isLoadingOverview = true;
+              });
+              // Xóa SharedPreferences cache nếu cần
+              _clearSharedPrefsCache().then((_) {
+                // Tải lại dữ liệu
+                _loadUserInfo();
+                _loadAccountOverview();
+              });
+            },
+          ),
           // Kích hoạt khóa học
           IconButton(
             icon: const Icon(Icons.key, color: Colors.blue),
@@ -576,55 +667,59 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
             ],
           ),
           const SizedBox(height: 16),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            childAspectRatio: 1.6,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            children: [
-              _buildStatCard(
-                title: "Day Streaks",
-                value: _dayStreaks.toString(),
-                icon: Icons.local_fire_department,
-                color: primaryColor,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          StreakScreen(currentStreak: _dayStreaks),
+          _isLoadingOverview
+              ? const Center(
+                  child: CircularProgressIndicator(),
+                )
+              : GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  childAspectRatio: 1.6,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  children: [
+                    _buildStatCard(
+                      title: "Day Streaks",
+                      value: _dayStreaks.toString(),
+                      icon: Icons.local_fire_department,
+                      color: primaryColor,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                StreakScreen(currentStreak: _dayStreaks),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-              _buildStatCard(
-                title: "Điểm",
-                value: "250",
-                icon: Icons.star,
-                color: accentColor,
-                onTap: () {
-                  _navigateToRank();
-                },
-              ),
-              _buildStatCard(
-                title: "Khoá học",
-                value: "4",
-                icon: Icons.school,
-                color: blueColor,
-                onTap: () {
-                  _navigateToMyCourses();
-                },
-              ),
-              _buildStatCard(
-                title: "Tài liệu",
-                value: "12",
-                icon: Icons.description,
-                color: purpleColor,
-              ),
-            ],
-          ),
+                    _buildStatCard(
+                      title: "Điểm",
+                      value: _totalPoints.toString(),
+                      icon: Icons.star,
+                      color: accentColor,
+                      onTap: () {
+                        _navigateToRank();
+                      },
+                    ),
+                    _buildStatCard(
+                      title: "Khoá học",
+                      value: _totalCourses.toString(),
+                      icon: Icons.school,
+                      color: blueColor,
+                      onTap: () {
+                        _navigateToMyCourses();
+                      },
+                    ),
+                    _buildStatCard(
+                      title: "Tài liệu",
+                      value: _totalDocuments.toString(),
+                      icon: Icons.description,
+                      color: purpleColor,
+                    ),
+                  ],
+                ),
         ],
       ),
     );
@@ -855,7 +950,13 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
 
   // Widget hiển thị ví của tôi
   Widget _buildWalletSection() {
-    final double balance = 500000; // 500,000 VND
+    // Chuyển đổi từ balanceWallet (double) sang định dạng hiển thị
+    final balance = _balanceWallet;
+    final formattedBalance = NumberFormat.currency(
+      locale: 'vi_VN',
+      symbol: '₫',
+      decimalDigits: 0,
+    ).format(balance);
 
     return Card(
       elevation: 0,
@@ -933,7 +1034,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '${(balance / 1000).toStringAsFixed(0)}K VND',
+                    formattedBalance,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -1022,5 +1123,81 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
         builder: (context) => const RankScreen(),
       ),
     );
+  }
+
+  // Thêm phương thức để reload dữ liệu khi màn hình được focus lại
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Kiểm tra xem có đang hiển thị màn hình này không
+    final route = ModalRoute.of(context);
+    if (route != null && route.isCurrent) {
+      _reloadDataIfNeeded();
+    }
+  }
+
+  // Phương thức reload dữ liệu khi cần thiết
+  Future<void> _reloadDataIfNeeded() async {
+    try {
+      // Lấy userId hiện tại từ SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final currentUserId = prefs.getString(SharedPrefs.KEY_USER_ID);
+
+      // Kiểm tra cờ new_login
+      final isNewLogin = prefs.getBool('new_login') ?? false;
+      if (isNewLogin) {
+        debugPrint('Phát hiện đăng nhập mới, reload dữ liệu');
+        // Reset cờ
+        await prefs.setBool('new_login', false);
+
+        // Force reload
+        await _loadUserInfo();
+        await _loadAccountOverview();
+        return;
+      }
+
+      // So sánh với userId đã lưu trong model
+      if (_accountOverview != null &&
+          _accountOverview!.accountId.toString() != currentUserId) {
+        debugPrint('Phát hiện thay đổi userId, reload dữ liệu');
+        debugPrint(
+            'Saved ID: ${_accountOverview!.accountId}, Current ID: $currentUserId');
+
+        // Reload dữ liệu nếu userId thay đổi
+        await _loadUserInfo();
+        await _loadAccountOverview();
+      }
+    } catch (e) {
+      debugPrint('Lỗi khi kiểm tra cập nhật dữ liệu: $e');
+    }
+  }
+
+  // Phương thức để xóa cache trong SharedPreferences
+  Future<void> _clearSharedPrefsCache() async {
+    try {
+      debugPrint('Đang xóa cache...');
+
+      // Lấy userId hiện tại để giữ lại
+      final prefs = await SharedPreferences.getInstance();
+      final currentUserId = prefs.getString(SharedPrefs.KEY_USER_ID);
+      final currentToken = prefs.getString('jwt');
+
+      debugPrint('Current userId: $currentUserId');
+      debugPrint(
+          'Current token: ${currentToken != null ? "${currentToken.substring(0, 10)}..." : "null"}');
+
+      // Xóa cache tạm thời (nếu cần)
+      // Ở đây chúng ta không xóa userId và token để tránh mất đăng nhập
+
+      // Force reload
+      if (_accountOverview != null) {
+        debugPrint('Force clearing account overview cache');
+        setState(() {
+          _accountOverview = null;
+        });
+      }
+    } catch (e) {
+      debugPrint('Lỗi khi xóa cache: $e');
+    }
   }
 }

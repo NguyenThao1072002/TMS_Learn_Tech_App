@@ -25,6 +25,7 @@ import 'package:tms_app/domain/usecases/forgot_password_usecase.dart';
 import 'package:tms_app/domain/usecases/login_usecase.dart';
 import 'package:tms_app/domain/usecases/register_usecase.dart';
 import 'package:tms_app/domain/usecases/update_account_usecase.dart';
+import 'package:tms_app/domain/usecases/overview_my_account_usecase.dart';
 import 'package:tms_app/presentation/controller/forgot_password_controller.dart';
 import 'package:tms_app/presentation/controller/my_account/setting/update_account_controller.dart';
 import 'package:tms_app/presentation/controller/verify_otp_controller.dart'; // Import LoginUseCase// Import BlogDataSource
@@ -190,6 +191,9 @@ void _registerUseCases() {
 
   sl.registerLazySingleton(
       () => ChangePasswordUseCase(sl<AccountRepository>()));
+      
+  // Đăng ký OverviewMyAccountUseCase
+  sl.registerFactory(() => OverviewMyAccountUseCase(sl<AccountRepository>()));
 }
 
 // Thêm một phương thức mới riêng để đăng ký controllers

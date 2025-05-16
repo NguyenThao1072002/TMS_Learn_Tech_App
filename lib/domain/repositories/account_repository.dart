@@ -1,5 +1,6 @@
 import 'package:tms_app/data/models/account/user_model.dart';
 import 'package:tms_app/data/models/account/user_update_model.dart';
+import 'package:tms_app/data/models/account/overview_my_account_model.dart';
 
 abstract class AccountRepository {
   Future<Map<String, dynamic>?> login(Map<String, dynamic> body);
@@ -14,4 +15,5 @@ abstract class AccountRepository {
   Future<UserProfile> getUserById(String userId);
   Future<bool> changePassword(Map<String, dynamic> body);
   Future<Map<String, dynamic>?> loginWithGoogle(Map<String, dynamic> body);
+  Future<AccountOverviewModel> getAccountOverview(String userId);
 }

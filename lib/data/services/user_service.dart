@@ -4,6 +4,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tms_app/data/models/account/user_update_model.dart';
+import 'package:tms_app/data/models/account/overview_my_account_model.dart';
 import '../models/account/user_model.dart';
 import '../../core/utils/constants.dart';
 
@@ -159,6 +160,65 @@ class UserService {
       }
 
       return false;
+    }
+  }
+
+  // Get account overview
+  Future<AccountOverviewModel> getAccountOverview(String userId) async {
+    try {
+      // Get token from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt');
+
+      // Debug để kiểm tra
+      print('===== GETTING ACCOUNT OVERVIEW =====');
+      print('UserID being requested: $userId');
+      print('Token length: ${token?.length ?? 0}');
+      print('Token first 10 chars: ${token?.substring(0, 10) ?? "null"}');
+
+      if (token == null || token.isEmpty) {
+        throw Exception("JWT token not found. Please login again.");
+      }
+
+      // Xây dựng đường dẫn API đầy đủ
+      final url = '$baseUrl/api/account/overview/$userId';
+      print('Calling API: $url');
+
+      final response = await dio.get(
+        url,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token'
+          },
+        ),
+      );
+
+      print('Response status: ${response.statusCode}');
+      print('Response data type: ${response.data.runtimeType}');
+      print('Response data: ${response.data}');
+
+      if (response.statusCode == 200 && response.data['status'] == 200) {
+        // Parse the data from the nested structure
+        final AccountOverviewModel overview =
+            AccountOverviewModel.fromJson(response.data['data']);
+
+        print('Parsed account ID: ${overview.accountId}');
+        print('Parsed total points: ${overview.totalPoints}');
+
+        return overview;
+      } else {
+        throw Exception(
+            "Failed to load account overview: ${response.data['message']}");
+      }
+    } catch (e) {
+      print('===== ERROR GETTING ACCOUNT OVERVIEW =====');
+      print('Error details: $e');
+      if (e is DioException) {
+        print('Request: ${e.requestOptions.uri}');
+        print('Response: ${e.response?.data}');
+      }
+      throw Exception("Failed to load account overview: $e");
     }
   }
 }

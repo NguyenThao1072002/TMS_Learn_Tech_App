@@ -173,11 +173,52 @@ class LoginController {
 
   // Chuyển hướng đến màn hình chính sau khi đăng nhập thành công
   void navigateToHome(BuildContext context) {
+    // In thông tin token và userId để debug
+    _printUserInfo();
+
+    // Đặt cờ để báo hiệu đăng nhập mới
+    _setNewLoginFlag();
+
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const HomeScreen()),
       (route) => false,
     );
+  }
+
+  // In thông tin người dùng hiện tại để debug
+  Future<void> _printUserInfo() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(SharedPrefs.KEY_USER_ID);
+      final email = prefs.getString(SharedPrefs.KEY_USER_EMAIL);
+      final token = prefs.getString('jwt');
+
+      debugPrint('===== USER INFO AFTER LOGIN =====');
+      debugPrint('User ID: $userId');
+      debugPrint('Email: $email');
+      if (token != null && token.isNotEmpty) {
+        debugPrint('Token length: ${token.length}');
+        debugPrint('Token first 10 chars: ${token.substring(0, 10)}...');
+      } else {
+        debugPrint('Token: null or empty');
+      }
+    } catch (e) {
+      debugPrint('Error getting user info: $e');
+    }
+  }
+
+  // Đặt cờ báo hiệu đăng nhập mới để các màn hình khác biết cần tải lại dữ liệu
+  Future<void> _setNewLoginFlag() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('new_login', true);
+      await prefs.setString(
+          'last_login_time', DateTime.now().toIso8601String());
+      debugPrint('Set new login flag');
+    } catch (e) {
+      debugPrint('Error setting new login flag: $e');
+    }
   }
 
   // Đăng nhập với Google

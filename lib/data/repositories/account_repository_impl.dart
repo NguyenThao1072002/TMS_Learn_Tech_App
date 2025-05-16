@@ -1,4 +1,5 @@
 import 'package:tms_app/data/models/account/user_update_model.dart';
+import 'package:tms_app/data/models/account/overview_my_account_model.dart';
 
 import '../../domain/repositories/account_repository.dart';
 import '../models/account/user_model.dart';
@@ -71,5 +72,10 @@ class AccountRepositoryImpl implements AccountRepository {
   @override
   Future<Map<String, dynamic>?> loginWithGoogle(Map<String, dynamic> body) {
     return authService.loginWithGoogle(body);
+  }
+
+  @override
+  Future<AccountOverviewModel> getAccountOverview(String userId) {
+    return userService.getAccountOverview(userId);
   }
 }
