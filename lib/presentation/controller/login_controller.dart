@@ -113,9 +113,18 @@ class LoginController {
       await prefs.setString(KEY_SAVED_PASSWORD, password);
       await prefs.setBool(KEY_REMEMBER_ME, true);
       await prefs.setString(KEY_LAST_LOGIN, DateTime.now().toIso8601String());
+
+      // Ghi log
+      debugPrint('Đã lưu thông tin đăng nhập cho: $email');
     } else {
       // Xóa thông tin đăng nhập nếu không chọn "Nhớ mật khẩu"
-      await _clearLoginInfo();
+      await prefs.remove(KEY_SAVED_EMAIL);
+      await prefs.remove(KEY_SAVED_PASSWORD);
+      await prefs.remove(KEY_REMEMBER_ME);
+      await prefs.remove(KEY_LAST_LOGIN);
+
+      // Ghi log
+      debugPrint('Đã xóa thông tin đăng nhập đã lưu');
     }
   }
 
@@ -342,22 +351,26 @@ class LoginController {
   // Đăng xuất người dùng
   Future<void> logout(BuildContext context) async {
     try {
-      // Xóa thông tin token
-      await SharedPrefs.removeJwtToken();
-
-      // Xóa thông tin đăng nhập đã lưu tùy thuộc vào tùy chọn "nhớ mật khẩu"
+      // 1. Lấy trạng thái "Nhớ mật khẩu"
       final prefs = await SharedPreferences.getInstance();
-      final remember = prefs.getBool(KEY_REMEMBER_ME) ?? false;
+      final rememberMe = prefs.getBool(KEY_REMEMBER_ME) ?? false;
 
-      if (!remember) {
-        await _clearLoginInfo();
+      // 2. Xóa token và thông tin người dùng trong SharedPreferences
+      await SharedPrefs.removeJwtToken();
+      await prefs.remove(SharedPrefs.KEY_USER_EMAIL);
+      await prefs.remove(SharedPrefs.KEY_USER_PHONE);
+      await prefs.remove(SharedPrefs.KEY_USER_ID);
+      await prefs.remove(SharedPrefs.KEY_REFRESH_TOKEN);
+      await prefs.remove(SharedPrefs.KEY_USER_FULLNAME);
+      await prefs.remove(SharedPrefs.KEY_USER_IMAGE);
+
+      // 3. Xóa thông tin đăng nhập nếu không chọn "Nhớ mật khẩu"
+      if (!rememberMe) {
+        await prefs.remove(KEY_SAVED_EMAIL);
+        await prefs.remove(KEY_SAVED_PASSWORD);
+        await prefs.remove(KEY_REMEMBER_ME);
+        await prefs.remove(KEY_LAST_LOGIN);
       }
-
-      // Các thông tin người dùng khác có thể cần xóa
-      await prefs.remove('user_name');
-      await prefs.remove('user_fullname');
-      await prefs.remove('user_avatar');
-      await prefs.remove('user_image');
 
       // 4. Đăng xuất khỏi Google nếu đã đăng nhập bằng Google
       final isSignedIn = await _googleSignIn.isSignedIn();
@@ -376,26 +389,6 @@ class LoginController {
       );
     } catch (error) {
       ToastHelper.showErrorToast("Đã xảy ra lỗi khi đăng xuất: $error");
-    }
-  }
-
-  // Xóa thông tin đăng nhập đã lưu
-  Future<void> _clearLoginInfo() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(KEY_SAVED_EMAIL);
-    await prefs.remove(KEY_SAVED_PASSWORD);
-    await prefs.setBool(KEY_REMEMBER_ME, false);
-    await prefs.remove(KEY_LAST_LOGIN);
-  }
-
-  // Cập nhật mật khẩu đã lưu sau khi đổi mật khẩu
-  Future<void> updateSavedPassword(String newPassword) async {
-    try {
-      // Xóa toàn bộ thông tin đăng nhập đã lưu
-      await _clearLoginInfo();
-      debugPrint('Đã xóa thông tin đăng nhập sau khi đổi mật khẩu thành công');
-    } catch (e) {
-      debugPrint('Lỗi khi xử lý thông tin đăng nhập sau khi đổi mật khẩu: $e');
     }
   }
 
