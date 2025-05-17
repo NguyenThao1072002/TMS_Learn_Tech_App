@@ -16,4 +16,5 @@ abstract class AccountRepository {
   Future<bool> changePassword(Map<String, dynamic> body);
   Future<Map<String, dynamic>?> loginWithGoogle(Map<String, dynamic> body);
   Future<AccountOverviewModel> getAccountOverview(String userId);
+  Future<bool> forgotPassword(String email);
 }

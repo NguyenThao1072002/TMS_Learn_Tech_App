@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tms_app/presentation/controller/forgot_password_controller.dart'; // Import controller thích hợp
 import 'package:tms_app/core/di/service_locator.dart'; // Đảm bảo DI (Dependency Injection) cho ForgotPasswordController
 import 'package:tms_app/presentation/widgets/component/bottom_wave_clipper.dart';
+import 'package:tms_app/presentation/screens/login/verify_otp_screen.dart'; // Thêm import cho VerifyOtpScreen
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
@@ -20,6 +21,7 @@ class VerifyEmailScreen extends StatefulWidget {
 class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   final TextEditingController _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -37,19 +39,48 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
 
   Future<void> _handleSendOtp() async {
     if (_formKey.currentState!.validate()) {
+      // Đặt trạng thái loading
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Đảm bảo UI được cập nhật trước khi thực hiện API call
+      await Future.delayed(const Duration(milliseconds: 50));
+
       try {
         final email = _emailController.text.trim();
         final result = await widget.controller.sendOtpToEmail(email);
 
         if (result) {
-          Navigator.pushNamed(context, '/verifyOtp', arguments: email);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => VerifyOtpScreen(
+                email: email,
+                controller: widget.controller,
+              ),
+            ),
+          );
+
+          // Tắt loading sau khi chuyển màn hình
+          setState(() {
+            _isLoading = false;
+          });
         } else {
+          setState(() {
+            _isLoading = false;
+          });
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
                 content: Text('Không thể gửi OTP, vui lòng thử lại!')),
           );
         }
       } catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString())),
         );
@@ -181,6 +212,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                                   const SizedBox(height: 24),
                                   SizedBox(
                                     width: double.infinity,
+                                    height: 50,
                                     child: ElevatedButton(
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.blue,
@@ -191,15 +223,25 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                                               BorderRadius.circular(10),
                                         ),
                                       ),
-                                      onPressed: _handleSendOtp,
-                                      child: const Text(
-                                        'Gửi mã',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                      onPressed:
+                                          _isLoading ? null : _handleSendOtp,
+                                      child: _isLoading
+                                          ? const SizedBox(
+                                              width: 24,
+                                              height: 24,
+                                              child: CircularProgressIndicator(
+                                                color: Colors.white,
+                                                strokeWidth: 3,
+                                              ),
+                                            )
+                                          : const Text(
+                                              'Gửi mã',
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
                                     ),
                                   ),
                                 ],

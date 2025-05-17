@@ -78,4 +78,9 @@ class AccountRepositoryImpl implements AccountRepository {
   Future<AccountOverviewModel> getAccountOverview(String userId) {
     return userService.getAccountOverview(userId);
   }
+
+  @override
+  Future<bool> forgotPassword(String email) {
+    return authService.forgotPassword(email);
+  }
 }

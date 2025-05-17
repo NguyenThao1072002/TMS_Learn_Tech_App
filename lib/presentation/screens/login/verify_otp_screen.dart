@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
+import 'package:tms_app/core/utils/toast_helper.dart';
 import 'package:tms_app/presentation/controller/forgot_password_controller.dart';
 import 'package:tms_app/presentation/widgets/component/bottom_wave_clipper.dart';
+import 'package:tms_app/presentation/screens/login/reset_password_screen.dart';
 
 class VerifyOtpScreen extends StatefulWidget {
-  final String email;
+  final String email; // Có thể là email hoặc số điện thoại
   final ForgotPasswordController controller;
+  final bool isPhoneNumber;
 
   const VerifyOtpScreen({
     Key? key,
-    required this.email,
+    required this.email, // Giữ tên tham số là email để khỏi sửa quá nhiều code
     required this.controller,
+    this.isPhoneNumber = false, // Mặc định là xác thực qua email
   }) : super(key: key);
 
   @override
@@ -31,25 +35,41 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
     if (_otpController.text.length != 4) return;
 
     setState(() => _isLoading = true);
+
     try {
+      print("Đang xác thực OTP: ${_otpController.text}");
+
       final result = await widget.controller.verifyOtp(
         _otpController.text,
         widget.email,
       );
 
+      setState(() => _isLoading = false);
+
+      print("Kết quả xác thực OTP: $result");
+
       if (result) {
-        Navigator.pushNamed(context, '/reset-password');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Mã OTP không hợp lệ!')),
+        print("OTP đúng, chuyển tới màn hình đặt lại mật khẩu");
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ResetPasswordScreen(
+              email: widget.email,
+              otp: _otpController.text,
+            ),
+          ),
         );
+      } else {
+        print("OTP không đúng, hiển thị thông báo lỗi");
+        ToastHelper.showErrorToast(
+            'Mã OTP không chính xác. Vui lòng kiểm tra lại!');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
-    } finally {
+      print("Lỗi khi xác thực OTP: $e");
       setState(() => _isLoading = false);
+      // Sử dụng ToastHelper thay vì Get.snackbar
+      ToastHelper.showErrorToast(
+          'Đã xảy ra lỗi khi xác thực OTP. Vui lòng thử lại sau.');
     }
   }
 
@@ -107,7 +127,9 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Mã OTP đã được gửi đến ${widget.email}',
+                      widget.isPhoneNumber
+                          ? 'Mã OTP đã được gửi đến SĐT ${widget.email}'
+                          : 'Mã OTP đã được gửi đến ${widget.email}',
                       textAlign: TextAlign.center,
                       style: const TextStyle(fontSize: 14, color: Colors.grey),
                     ),
@@ -144,9 +166,8 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                               inactiveColor: Colors.grey,
                             ),
                             onChanged: (value) {
-                              if (value.length == 4) {
-                                _verifyOtp();
-                              }
+                              // Không tự động xác thực khi nhập đủ 4 số
+                              // Người dùng phải nhấn nút Xác thực
                             },
                           ),
                           const SizedBox(height: 24),
@@ -184,11 +205,10 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                                     try {
                                       await widget.controller
                                           .sendOtpToEmail(widget.email);
+                                      ToastHelper.showSuccessToast(
+                                          'Đã gửi lại mã OTP');
                                     } catch (e) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(content: Text(e.toString())),
-                                      );
+                                      ToastHelper.showErrorToast(e.toString());
                                     } finally {
                                       setState(() => _isLoading = false);
                                     }
