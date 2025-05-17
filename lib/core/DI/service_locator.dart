@@ -44,6 +44,7 @@ import 'package:tms_app/domain/repositories/practice_test_repository.dart';
 import 'package:tms_app/domain/usecases/practice_test_usecase.dart';
 import 'package:tms_app/presentation/controller/unified_search_controller.dart';
 import 'package:tms_app/domain/usecases/change_password_usecase.dart';
+import 'package:tms_app/presentation/controller/course_controller.dart';
 
 // Đảm bảo các import không bị xóa bởi công cụ IDE
 // ignore: unused_element
@@ -223,4 +224,12 @@ void _registerControllers() {
       updateAccountUseCase: sl<UpdateAccountUseCase>(),
     ),
   );
+
+  // Đảm bảo CourseController chỉ được đăng ký một lần
+  if (!sl.isRegistered<CourseController>()) {
+    sl.registerLazySingleton<CourseController>(() => CourseController(
+          sl<CourseUseCase>(),
+          categoryUseCase: sl<CategoryUseCase>(),
+        ));
+  }
 }

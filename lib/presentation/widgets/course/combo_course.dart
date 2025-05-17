@@ -1,18 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:tms_app/data/models/course/course_card_model.dart';
+import 'package:tms_app/data/models/course/combo_course/combo_course_detail_model.dart';
 import 'package:tms_app/presentation/screens/course/course_detail.dart';
+import 'package:tms_app/presentation/controller/course_controller.dart';
+import 'package:get_it/get_it.dart';
+import 'package:intl/intl.dart';
+import 'package:tms_app/presentation/widgets/course/course_card.dart';
 
-class ComboCourseScreen extends StatelessWidget {
-  const ComboCourseScreen({Key? key}) : super(key: key);
+class ComboCourseScreen extends StatefulWidget {
+  final int? comboId;
+
+  const ComboCourseScreen({this.comboId, Key? key}) : super(key: key);
+
+  @override
+  State<ComboCourseScreen> createState() => _ComboCourseScreenState();
+}
+
+class _ComboCourseScreenState extends State<ComboCourseScreen> {
+  late final CourseController _controller;
+  bool _isLoading = true;
+  ComboCourseDetailModel? _combo;
+  final _currencyFormat =
+      NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = GetIt.instance<CourseController>();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      if (widget.comboId != null) {
+        // Nếu có comboId, lấy chi tiết combo đó
+        _combo = await _controller.getComboDetail(widget.comboId!);
+      } else {
+        // Nếu không có comboId, lấy combo đầu tiên trong danh sách
+        if (_controller.comboCourses.value.isEmpty) {
+          await _controller.loadComboCourses();
+        }
+
+        if (_controller.comboCourses.value.isNotEmpty) {
+          final firstCombo = _controller.comboCourses.value.first;
+          _combo = await _controller.getComboDetail(firstCombo.id);
+        }
+      }
+    } catch (e) {
+      print('Lỗi khi tải combo: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'Combo Khóa Học',
-          style: TextStyle(
+        title: Text(
+          _combo?.name ?? 'Combo Khóa Học',
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.lightBlue,
           ),
@@ -21,97 +77,107 @@ class ComboCourseScreen extends StatelessWidget {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.lightBlue),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Banner section
-                _buildPromoBanner(),
-                const SizedBox(height: 24),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _combo == null
+              ? const Center(
+                  child: Text('Không tìm thấy thông tin combo khóa học!'),
+                )
+              : Column(
+                  children: [
+                    // Main content - scrollable
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Banner section
+                              _buildPromoBanner(_combo!),
+                              const SizedBox(height: 24),
 
-                // Combo details
-                const Text(
-                  'Combo 3 Khóa Học Premium',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF333333),
-                  ),
+                              // Combo details
+                              Text(
+                                _combo!.name,
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF333333),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              _buildComboDescription(_combo!),
+                              const SizedBox(height: 24),
+
+                              // Course cards
+                              const Padding(
+                                padding: EdgeInsets.only(bottom: 8.0),
+                                child: Text(
+                                  'Khóa học trong combo',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF333333),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                height:
+                                    280, // Fixed height for horizontal scrolling list
+                                child: ListView(
+                                  scrollDirection: Axis.horizontal,
+                                  children: _combo!.courses.map((course) {
+                                    return Container(
+                                      width: MediaQuery.of(context).size.width *
+                                          0.7,
+                                      child: _buildCourseCard(
+                                        course: course.toCardModel(),
+                                        context: context,
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Price summary
+                              _buildPriceSummary(_combo!),
+                              const SizedBox(
+                                  height: 80), // Extra padding for button
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Fixed buttons at bottom
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 12.0),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            spreadRadius: 0,
+                            offset: const Offset(0, -2),
+                          ),
+                        ],
+                      ),
+                      child: SafeArea(
+                        top: false,
+                        child: _buildRegisterButton(_combo!),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                _buildComboDescription(),
-                const SizedBox(height: 24),
-
-                // Course cards
-                _buildCourseCard(
-                  title: 'Flutter Master Course',
-                  author: 'Nguyễn Văn A',
-                  originalPrice: 1200000,
-                  discountPrice: 900000,
-                  rating: 4.8,
-                  students: 1234,
-                  image: 'https://www.linkpicture.com/q/flutter-course.jpg',
-                  description:
-                      'Khóa học toàn diện về Flutter giúp bạn xây dựng ứng dụng di động đa nền tảng.',
-                  tag: 'Hot',
-                  context: context,
-                ),
-                const SizedBox(height: 20),
-
-                _buildCourseCard(
-                  title: 'React Native Advanced',
-                  author: 'Trần Thị B',
-                  originalPrice: 1500000,
-                  discountPrice: 1150000,
-                  rating: 4.7,
-                  students: 976,
-                  image:
-                      'https://www.linkpicture.com/q/react-native-course.jpg',
-                  description:
-                      'Nâng cao kỹ năng React Native và xây dựng ứng dụng chuyên nghiệp.',
-                  tag: 'New',
-                  context: context,
-                ),
-                const SizedBox(height: 20),
-
-                _buildCourseCard(
-                  title: 'UX/UI Design Masterclass',
-                  author: 'Lê Văn C',
-                  originalPrice: 1300000,
-                  discountPrice: 1000000,
-                  rating: 4.9,
-                  students: 1567,
-                  image: 'https://www.linkpicture.com/q/ui-ux-design.jpg',
-                  description:
-                      'Học thiết kế UX/UI từ cơ bản đến nâng cao và xây dựng portfolio ấn tượng.',
-                  tag: 'Best Seller',
-                  context: context,
-                ),
-                const SizedBox(height: 30),
-
-                // Price summary
-                _buildPriceSummary(),
-                const SizedBox(height: 24),
-
-                // Register button
-                _buildRegisterButton(),
-                const SizedBox(height: 40),
-
-                // Testimonials
-                _buildTestimonials(),
-                const SizedBox(height: 40),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 
-  Widget _buildPromoBanner() {
+  Widget _buildPromoBanner(ComboCourseDetailModel combo) {
     return Container(
       margin: const EdgeInsets.only(top: 20, bottom: 10),
       padding: const EdgeInsets.all(0),
@@ -154,30 +220,30 @@ class ComboCourseScreen extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'TIẾT KIỆM 30%',
-                              style: TextStyle(
+                              'TIẾT KIỆM ${combo.discount}%',
+                              style: const TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Text(
-                              'Combo 3 khóa học cao cấp với giá cực ưu đãi',
-                              style: TextStyle(
+                              'Combo ${combo.courses.length} khóa học cao cấp với giá cực ưu đãi',
+                              style: const TextStyle(
                                 fontSize: 14,
                                 color: Colors.white,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            SizedBox(height: 16),
-                            Text(
-                              'Ưu đãi có hạn đến 30/12/2023',
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Ưu đãi có hạn!',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.white70,
@@ -193,10 +259,10 @@ class ComboCourseScreen extends StatelessWidget {
                           color: Colors.white.withOpacity(0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
-                            '30%',
-                            style: TextStyle(
+                            '${combo.discount}%',
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -241,7 +307,7 @@ class ComboCourseScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildComboDescription() {
+  Widget _buildComboDescription(ComboCourseDetailModel combo) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -267,9 +333,9 @@ class ComboCourseScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Tiết kiệm 30% khi đăng ký combo 3 khóa học cao cấp. Bạn sẽ được cấp quyền truy cập trọn đời vào tất cả nội dung khóa học, bao gồm các cập nhật trong tương lai.',
-            style: TextStyle(
+          Text(
+            combo.description,
+            style: const TextStyle(
               fontSize: 14,
               color: Color(0xFF555555),
               height: 1.5,
@@ -281,7 +347,8 @@ class ComboCourseScreen extends StatelessWidget {
               _buildFeatureItem(
                   Icons.check_circle_outline, 'Truy cập trọn đời'),
               const SizedBox(width: 16),
-              _buildFeatureItem(Icons.ondemand_video, '50+ giờ học'),
+              _buildFeatureItem(
+                  Icons.ondemand_video, '${combo.courses.length}+ khóa học'),
               const SizedBox(width: 16),
               _buildFeatureItem(Icons.workspace_premium, 'Chứng chỉ'),
             ],
@@ -309,46 +376,13 @@ class ComboCourseScreen extends StatelessWidget {
   }
 
   Widget _buildCourseCard({
-    required String title,
-    required String author,
-    required double originalPrice,
-    required double discountPrice,
-    required double rating,
-    required int students,
-    required String image,
-    required String description,
-    required String tag,
+    required CourseCardModel course,
     required BuildContext context,
   }) {
-    final formattedOriginalPrice =
-        (originalPrice / 1000).toStringAsFixed(0) + 'K';
-    final formattedDiscountPrice =
-        (discountPrice / 1000).toStringAsFixed(0) + 'K';
-
-    return GestureDetector(
-      onTap: () {
-        // Navigate to course detail
-        // Using a mock CourseCardModel
-        final course = CourseCardModel(
-          id: 1,
-          title: title,
-          description: description,
-          imageUrl: image,
-          cost: discountPrice,
-          price: discountPrice,
-          oldPrice: originalPrice.toString(),
-          numberOfStudents: students,
-          author: author,
-          courseOutput: '',
-          duration: 15,
-          language: 'Tiếng Việt',
-          status: true,
-          type: 'Premium',
-          categoryName: 'Development',
-          discountPercent:
-              ((originalPrice - discountPrice) / originalPrice * 100).round(),
-        );
-
+    return CourseCard(
+      course: course,
+      selectedIndex: null,
+      onTap: (course) {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -356,220 +390,14 @@ class ComboCourseScreen extends StatelessWidget {
           ),
         );
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              spreadRadius: 0,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Course image with tag
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: Image.network(
-                    image,
-                    height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: 180,
-                      color: Colors.grey.shade200,
-                      child: const Center(
-                        child: Icon(Icons.broken_image,
-                            size: 50, color: Colors.grey),
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade700,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      tag,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 12,
-                  right: 12,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.star, color: Colors.amber, size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          rating.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            // Course details
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF333333),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 12,
-                        backgroundColor: Colors.blue.shade100,
-                        child: Text(
-                          author[0].toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          author,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                      height: 1.4,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Text(
-                        '$formattedDiscountPrice VND',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue.shade700,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$formattedOriginalPrice VND',
-                        style: TextStyle(
-                          fontSize: 14,
-                          decoration: TextDecoration.lineThrough,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade100,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '-${((originalPrice - discountPrice) / originalPrice * 100).round()}%',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.red.shade700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Icon(Icons.people, size: 16, color: Colors.grey.shade600),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$students học viên',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Icon(Icons.access_time,
-                          size: 16, color: Colors.grey.shade600),
-                      const SizedBox(width: 4),
-                      Text(
-                        '15+ giờ học',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
-  Widget _buildPriceSummary() {
+  Widget _buildPriceSummary(ComboCourseDetailModel combo) {
+    // Tính tổng giá gốc
+    double totalOriginalPrice =
+        combo.courses.fold(0, (sum, course) => sum + course.cost);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -589,17 +417,26 @@ class ComboCourseScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          _buildPriceRow('Flutter Master Course', '1.200.000 VND'),
-          const SizedBox(height: 8),
-          _buildPriceRow('React Native Advanced', '1.500.000 VND'),
-          const SizedBox(height: 8),
-          _buildPriceRow('UX/UI Design Masterclass', '1.300.000 VND'),
+
+          // Hiển thị giá từng khóa
+          ...combo.courses.map((course) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _buildPriceRow(
+                  course.title, _currencyFormat.format(course.cost)),
+            );
+          }),
+
           const SizedBox(height: 12),
           Divider(color: Colors.grey.shade300),
           const SizedBox(height: 12),
-          _buildPriceRow('Tổng cộng', '4.000.000 VND', isBold: true),
+          _buildPriceRow(
+              'Tổng cộng', _currencyFormat.format(totalOriginalPrice),
+              isBold: true),
           const SizedBox(height: 8),
-          _buildPriceRow('Giảm giá', '-1.200.000 VND', isDiscount: true),
+          _buildPriceRow('Giảm giá',
+              '-${_currencyFormat.format(totalOriginalPrice - combo.price)}',
+              isDiscount: true),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
@@ -628,7 +465,7 @@ class ComboCourseScreen extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            '2.800.000 VND',
+                            _currencyFormat.format(combo.price),
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -644,7 +481,7 @@ class ComboCourseScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              'Tiết kiệm 30%',
+                              'Tiết kiệm ${combo.discount}%',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -690,164 +527,101 @@ class ComboCourseScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRegisterButton() {
-    return Container(
-      width: double.infinity,
-      height: 56,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF3498DB),
-            Color(0xFF2980B9),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
-            blurRadius: 10,
-            spreadRadius: 0,
-            offset: const Offset(0, 4),
+  Widget _buildRegisterButton(ComboCourseDetailModel combo) {
+    return Row(
+      children: [
+        // Add to cart button
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                spreadRadius: 0,
+                offset: const Offset(0, 2),
+              ),
+            ],
+            border: Border.all(color: const Color(0xFF3498DB), width: 2),
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            // Handle registration
-          },
-          borderRadius: BorderRadius.circular(28),
-          child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.shopping_cart,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Đăng ký ngay',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Đã thêm combo khóa học vào giỏ hàng'),
+                    backgroundColor: Colors.green,
                   ),
+                );
+              },
+              borderRadius: BorderRadius.circular(28),
+              child: const Center(
+                child: Icon(
+                  Icons.shopping_cart,
+                  color: Color(0xFF3498DB),
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 16),
+
+        // Register now button
+        Expanded(
+          child: Container(
+            height: 56,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF3498DB),
+                  Color(0xFF2980B9),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.blue.withOpacity(0.3),
+                  blurRadius: 10,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTestimonials() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Học viên nói gì về combo khóa học này',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF333333),
-          ),
-        ),
-        const SizedBox(height: 16),
-        _buildTestimonialCard(
-          name: 'Nguyễn Văn X',
-          comment:
-              'Đây là combo khóa học tuyệt vời nhất mà tôi từng tham gia. Nội dung đi từ cơ bản đến nâng cao, giảng viên nhiệt tình và kiến thức rất thực tế.',
-          avatar: 'https://i.pravatar.cc/150?img=11',
-          rating: 5,
-        ),
-        const SizedBox(height: 16),
-        _buildTestimonialCard(
-          name: 'Trần Thị Y',
-          comment:
-              'Combo khóa học này giúp tôi tiết kiệm rất nhiều chi phí mà vẫn có được kiến thức đầy đủ. Rất hài lòng và khuyên các bạn nên đăng ký sớm!',
-          avatar: 'https://i.pravatar.cc/150?img=5',
-          rating: 5,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTestimonialCard({
-    required String name,
-    required String comment,
-    required String avatar,
-    required int rating,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            spreadRadius: 0,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundImage: NetworkImage(avatar),
-                backgroundColor: Colors.grey.shade200,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF333333),
-                      ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Đăng ký khóa học thành công'),
+                      backgroundColor: Colors.green,
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: List.generate(
-                        5,
-                        (index) => Icon(
-                          index < rating ? Icons.star : Icons.star_border,
-                          color: Colors.amber,
-                          size: 16,
-                        ),
-                      ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(28),
+                child: const Center(
+                  child: Text(
+                    'Đăng ký ngay',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            comment,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade700,
-              height: 1.5,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

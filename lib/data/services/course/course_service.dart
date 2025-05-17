@@ -6,6 +6,7 @@ import 'package:tms_app/core/utils/api_response_helper.dart';
 import 'package:tms_app/data/models/course/course_detail/overview_course_model.dart';
 import 'package:tms_app/data/models/course/course_detail/structure_course_model.dart';
 import 'package:tms_app/data/models/course/course_detail/review_course_model.dart';
+import 'package:tms_app/data/models/course/combo_course/combo_course_detail_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Thêm class mới để xử lý phản hồi phân trang
@@ -474,6 +475,247 @@ class CourseService {
       }
     } catch (e) {
       print('Lỗi khi tìm kiếm khóa học: $e');
+      return [];
+    }
+  }
+
+  // Combo Course API Methods
+
+  // Lấy danh sách combo khóa học với phân trang
+  Future<CoursePaginationResponse> getComboCoursesWithPagination({
+    String? title,
+    int? accountId,
+    int page = 0,
+    int size = 10,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'size': size,
+      };
+
+      // Thêm tham số tìm kiếm nếu có
+      if (title != null && title.isNotEmpty) {
+        queryParams['title'] = title;
+      }
+
+      // Thêm ID người dùng nếu có
+      if (accountId != null) {
+        queryParams['accountId'] = accountId;
+      }
+
+      final endpoint = '$apiUrl/course-bundle/public';
+      print('Đang gọi API combo khóa học: $endpoint với tham số: $queryParams');
+
+      final response = await dio.get(
+        endpoint,
+        queryParameters: queryParams,
+        options: Options(
+          validateStatus: (status) => true,
+          headers: {'Accept': 'application/json'},
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+
+        if (responseData != null) {
+          Map<String, dynamic> data;
+
+          // Xử lý cấu trúc response
+          if (responseData is Map && responseData['data'] != null) {
+            data = responseData['data'];
+            print('Đã tìm thấy data trong responseData[data]');
+          } else {
+            data = responseData;
+            print('Sử dụng responseData trực tiếp');
+          }
+
+          print('Cấu trúc data: ${data.keys}');
+
+          // Biến đổi combo course thành course card để phù hợp với CoursePaginationResponse
+          List<CourseCardModel> courses = [];
+          if (data['content'] != null && data['content'] is List) {
+            print(
+                'Tìm thấy ${(data['content'] as List).length} combo courses trong data[content]');
+
+            List<dynamic> contentList = data['content'] as List;
+            for (var comboJson in contentList) {
+              try {
+                // Debug
+                print(
+                    'Đang xử lý combo: ${comboJson['id']} - ${comboJson['name']}');
+
+                // Parse giá
+                double salePrice = 0.0;
+                if (comboJson['price'] != null) {
+                  salePrice = _parseDouble(comboJson['price']) ?? 0.0;
+                }
+
+                double originalPrice = salePrice;
+                if (comboJson['cost'] != null) {
+                  originalPrice = _parseDouble(comboJson['cost']) ?? salePrice;
+                }
+
+                int discount = 0;
+                if (comboJson['discount'] != null) {
+                  discount = _parseInt(comboJson['discount']) ?? 0;
+                }
+
+                // Tính discount nếu không có sẵn
+                if (originalPrice > salePrice && discount == 0) {
+                  discount = ((originalPrice - salePrice) / originalPrice * 100)
+                      .round();
+                }
+
+                // Format image URL
+                String imageUrl = comboJson['imageUrl'] ?? '';
+                if (imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
+                  imageUrl = 'http://103.166.143.198:8080' +
+                      (imageUrl.startsWith('/') ? '' : '/') +
+                      imageUrl;
+                }
+
+                // Tạo CourseCardModel trực tiếp từ JSON
+                CourseCardModel course = CourseCardModel(
+                  id: _parseInt(comboJson['id']) ?? 0,
+                  title: comboJson['name']?.toString() ?? '',
+                  imageUrl: imageUrl,
+                  price: salePrice,
+                  cost: originalPrice,
+                  author: 'TMS Learn Tech',
+                  courseOutput: comboJson['description']?.toString() ?? '',
+                  description: comboJson['description']?.toString() ?? '',
+                  duration: 0,
+                  language: 'Vietnamese',
+                  status: true,
+                  type: 'COMBO',
+                  categoryName: 'Combo Khóa học',
+                  discountPercent: discount,
+                  isCombo: true,
+                );
+
+                courses.add(course);
+                print(
+                    'Đã thêm combo: ${course.title}, price=${course.price}, cost=${course.cost}');
+              } catch (e) {
+                print('Lỗi khi parse combo: $e');
+              }
+            }
+          } else {
+            print('Không tìm thấy mảng content trong data');
+          }
+
+          print('Tổng số combo courses đã parse: ${courses.length}');
+
+          // Tạo response phân trang
+          return CoursePaginationResponse(
+            content: courses,
+            totalElements: data['totalElements'] ?? 0,
+            totalPages: data['totalPages'] ?? 0,
+            currentPage: data['number'] ?? page,
+            pageSize: data['size'] ?? size,
+          );
+        } else {
+          print('Lỗi: API không trả về dữ liệu hợp lệ');
+          return CoursePaginationResponse(
+            content: [],
+            totalElements: 0,
+            totalPages: 0,
+            currentPage: page,
+            pageSize: size,
+          );
+        }
+      } else {
+        print('Lỗi API (${response.statusCode}): ${response.data}');
+        return CoursePaginationResponse(
+          content: [],
+          totalElements: 0,
+          totalPages: 0,
+          currentPage: page,
+          pageSize: size,
+        );
+      }
+    } catch (e) {
+      print('Lỗi khi lấy danh sách combo khóa học: $e');
+      return CoursePaginationResponse(
+        content: [],
+        totalElements: 0,
+        totalPages: 0,
+        currentPage: page,
+        pageSize: size,
+      );
+    }
+  }
+
+  // Helper methods for parsing
+  double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
+  int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  // Lấy thông tin chi tiết về một combo khóa học
+  Future<ComboCourseDetailModel?> getComboDetail(int id) async {
+    try {
+      final endpoint = '$apiUrl/course-bundle/$id';
+      print('Đang gọi API chi tiết combo khóa học: $endpoint');
+
+      final response = await dio.get(
+        endpoint,
+        options: Options(
+          validateStatus: (status) => true,
+          headers: {'Accept': 'application/json'},
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+
+        Map<String, dynamic> comboData;
+        if (responseData != null && responseData['data'] != null) {
+          // Nếu API trả về cấu trúc {status, message, data}
+          comboData = responseData['data'];
+        } else if (responseData != null &&
+            responseData is Map<String, dynamic>) {
+          // Nếu API trả về đối tượng trực tiếp
+          comboData = responseData;
+        } else {
+          print('Lỗi: API không trả về dữ liệu hợp lệ');
+          return null;
+        }
+
+        return ComboCourseDetailModel.fromJson(comboData);
+      } else {
+        print('Lỗi API (${response.statusCode}): ${response.data}');
+        return null;
+      }
+    } catch (e) {
+      print('Lỗi khi lấy chi tiết combo khóa học: $e');
+      return null;
+    }
+  }
+
+  // Tìm kiếm combo khóa học
+  Future<List<CourseCardModel>> searchComboCourses(String query) async {
+    try {
+      final result = await getComboCoursesWithPagination(
+        title: query,
+        size: 20, // Lấy nhiều kết quả hơn cho tìm kiếm
+      );
+
+      return result.content;
+    } catch (e) {
+      print('Lỗi khi tìm kiếm combo khóa học: $e');
       return [];
     }
   }

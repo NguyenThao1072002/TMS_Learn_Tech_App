@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tms_app/data/models/categories/course_category.dart';
 import 'package:tms_app/data/models/course/course_card_model.dart';
+import 'package:tms_app/data/models/course/combo_course/combo_course_detail_model.dart';
 import 'package:tms_app/domain/usecases/category_usecase.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
 
@@ -24,6 +25,12 @@ class CourseController {
     '50-70%': false,
     '70%+': false,
   });
+
+  final ValueNotifier<List<CourseCardModel>> comboCourses = ValueNotifier([]);
+  final ValueNotifier<bool> isLoadingComboCourses = ValueNotifier(false);
+  final ValueNotifier<ComboCourseDetailModel?> selectedCombo =
+      ValueNotifier(null);
+
   final int itemsPerPage = 10; // Mặc định hiển thị 10 khóa học/trang như API
   int? _accountId; // Lưu accountId để sử dụng khi gọi API
 
@@ -415,6 +422,185 @@ class CourseController {
     }
   }
 
+  // Phương thức mới cho combo courses
+
+  // Tải danh sách combo courses - phiên bản đơn giản
+  Future<void> loadComboCourses() async {
+    isLoadingComboCourses.value = true;
+    try {
+      final dynamic response =
+          await courseUseCase.getComboCoursesWithPagination(
+        accountId: _accountId,
+        size: 20,
+      );
+
+      List<CourseCardModel> result = [];
+      print('Response API combo: $response');
+
+      // Trường hợp 1: Response đã là danh sách các CourseCardModel
+      if (response != null &&
+          response.content != null &&
+          response.content is List) {
+        print('Trường hợp 1: Response đã có sẵn danh sách CourseCardModel');
+        if (response.content.isNotEmpty &&
+            response.content.first is CourseCardModel) {
+          result = List.from(response.content);
+          print(
+              'Đã tìm thấy ${result.length} combo courses từ response.content');
+        }
+      }
+
+      // Nếu result vẫn trống, thử phân tích cấu trúc JSON
+      if (result.isEmpty && response != null) {
+        // Trường hợp 2: Cấu trúc API là {data: {content: [...]}}
+        dynamic contentData;
+
+        print('Trường hợp 2: Phân tích cấu trúc JSON');
+        if (response is Map &&
+            response['data'] != null &&
+            response['data'] is Map) {
+          var data = response['data'];
+          if (data['content'] != null && data['content'] is List) {
+            contentData = data['content'];
+            print('Tìm thấy content trong response[data][content]');
+          }
+        } else if (response is Map &&
+            response['content'] != null &&
+            response['content'] is List) {
+          contentData = response['content'];
+          print('Tìm thấy content trong response[content]');
+        }
+
+        if (contentData != null) {
+          print('Phân tích ${contentData.length} mục trong contentData');
+          for (var combo in contentData) {
+            if (combo is Map) {
+              try {
+                // Parse các trường dữ liệu
+                double price = 0.0; // Giá đã giảm
+                if (combo['price'] != null) {
+                  price = _parseDoubleValue(combo['price']);
+                }
+
+                double cost = price; // Giá gốc
+                if (combo['cost'] != null) {
+                  cost = _parseDoubleValue(combo['cost']);
+                }
+
+                int id = _parseIntValue(combo['id']);
+                String name = combo['name']?.toString() ?? '';
+                String description = combo['description']?.toString() ?? '';
+
+                int discount = _parseIntValue(combo['discount']);
+                if (cost > price && discount == 0) {
+                  discount = ((cost - price) / cost * 100).round();
+                }
+
+                // Format imageUrl nếu cần
+                String imageUrl = combo['imageUrl']?.toString() ?? '';
+                if (imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
+                  imageUrl = 'http://103.166.143.198:8080' +
+                      (imageUrl.startsWith('/') ? '' : '/') +
+                      imageUrl;
+                }
+
+                // Debug
+                print(
+                    'Đã parse: ID=$id, title=$name, price=$price, cost=$cost');
+
+                // Tạo CourseCardModel
+                CourseCardModel courseCard = CourseCardModel(
+                  id: id,
+                  title: name,
+                  description: description,
+                  imageUrl: imageUrl,
+                  price: price,
+                  cost: cost,
+                  discountPercent: discount,
+                  author: 'TMS Learn Tech',
+                  courseOutput: '',
+                  duration: 0,
+                  language: 'Vietnamese',
+                  status: true,
+                  type: 'COMBO',
+                  categoryName: '',
+                );
+
+                result.add(courseCard);
+              } catch (e) {
+                print('Error mapping combo course: $e');
+              }
+            }
+          }
+        }
+      }
+
+      // Cập nhật ValueNotifier
+      if (result.isNotEmpty) {
+        print('Cập nhật danh sách combo courses với ${result.length} mục');
+        comboCourses.value = result;
+      } else {
+        print('CẢNH BÁO: Không tìm thấy combo course nào sau khi parse!');
+      }
+
+      print('Đã tải ${result.length} combo khóa học');
+    } catch (e) {
+      print('Lỗi khi tải combo khóa học: $e');
+      print('Stack trace: ${e is Error ? e.stackTrace : ""}');
+      comboCourses.value = [];
+    } finally {
+      isLoadingComboCourses.value = false;
+    }
+  }
+
+  // Helper methods for parsing
+  double _parseDoubleValue(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
+
+  int _parseIntValue(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  // Tìm kiếm combo courses
+  Future<void> searchComboCourses(String query) async {
+    isLoadingComboCourses.value = true;
+    try {
+      final result = await courseUseCase.searchComboCourses(query);
+      comboCourses.value = result;
+      print('Tìm thấy ${result.length} combo khóa học với từ khóa "$query"');
+    } catch (e) {
+      print('Lỗi khi tìm kiếm combo khóa học: $e');
+      comboCourses.value = [];
+    } finally {
+      isLoadingComboCourses.value = false;
+    }
+  }
+
+  // Lấy chi tiết một combo course
+  Future<ComboCourseDetailModel?> getComboDetail(int comboId) async {
+    isLoadingComboCourses.value = true;
+    try {
+      final combo = await courseUseCase.getComboDetail(comboId);
+      if (combo != null) {
+        selectedCombo.value = combo;
+        return combo;
+      }
+    } catch (e) {
+      print('Lỗi khi lấy chi tiết combo khóa học: $e');
+    } finally {
+      isLoadingComboCourses.value = false;
+    }
+    return null;
+  }
+
   void dispose() {
     filteredCourses.dispose();
     allCourses.dispose();
@@ -426,5 +612,9 @@ class CourseController {
     selectedCategoryIds.dispose();
     isLoading.dispose();
     discountRanges.dispose();
+
+    comboCourses.dispose();
+    isLoadingComboCourses.dispose();
+    selectedCombo.dispose();
   }
 }

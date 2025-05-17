@@ -4,6 +4,7 @@ import 'package:tms_app/data/models/course/course_detail/structure_course_model.
 import 'package:tms_app/data/models/course/course_detail/review_course_model.dart';
 import 'package:tms_app/data/services/course/course_service.dart';
 import 'package:tms_app/domain/repositories/course_repository.dart';
+import 'package:tms_app/data/models/course/combo_course/combo_course_detail_model.dart';
 
 class CourseUseCase {
   final CourseRepository courseRepository;
@@ -137,5 +138,32 @@ class CourseUseCase {
 
   Future<List<CourseCardModel>> getRelatedCourse(int categoryId) async {
     return await courseRepository.getRelatedCourse(categoryId);
+  }
+
+  // Các phương thức cho combo courses
+
+  /// Lấy danh sách combo khóa học với phân trang
+  Future<CoursePaginationResponse> getComboCoursesWithPagination({
+    String? title,
+    int? accountId,
+    int page = 0,
+    int size = 10,
+  }) async {
+    return await courseRepository.getComboCoursesWithPagination(
+      title: title,
+      accountId: accountId,
+      page: page,
+      size: size,
+    );
+  }
+
+  /// Lấy thông tin chi tiết về một combo khóa học
+  Future<ComboCourseDetailModel?> getComboDetail(int id) async {
+    return await courseRepository.getComboDetail(id);
+  }
+
+  /// Tìm kiếm combo khóa học theo tiêu đề
+  Future<List<CourseCardModel>> searchComboCourses(String query) async {
+    return await courseRepository.searchComboCourses(query);
   }
 }

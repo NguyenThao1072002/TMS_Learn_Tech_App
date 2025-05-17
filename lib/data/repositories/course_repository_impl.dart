@@ -4,6 +4,7 @@ import 'package:tms_app/data/models/course/course_detail/structure_course_model.
 import 'package:tms_app/data/models/course/course_detail/review_course_model.dart';
 import 'package:tms_app/data/services/course/course_service.dart';
 import 'package:tms_app/domain/repositories/course_repository.dart';
+import 'package:tms_app/data/models/course/combo_course/combo_course_detail_model.dart';
 
 class CourseRepositoryImpl implements CourseRepository {
   final CourseService courseService;
@@ -84,5 +85,32 @@ class CourseRepositoryImpl implements CourseRepository {
   @override
   Future<List<CourseCardModel>> getRelatedCourse(int categoryId) async {
     return await courseService.getRelatedCourse(categoryId);
+  }
+
+  // Triển khai các phương thức cho combo courses
+
+  @override
+  Future<CoursePaginationResponse> getComboCoursesWithPagination({
+    String? title,
+    int? accountId,
+    int page = 0,
+    int size = 10,
+  }) async {
+    return await courseService.getComboCoursesWithPagination(
+      title: title,
+      accountId: accountId,
+      page: page,
+      size: size,
+    );
+  }
+
+  @override
+  Future<ComboCourseDetailModel?> getComboDetail(int id) async {
+    return await courseService.getComboDetail(id);
+  }
+
+  @override
+  Future<List<CourseCardModel>> searchComboCourses(String query) async {
+    return await courseService.searchComboCourses(query);
   }
 }

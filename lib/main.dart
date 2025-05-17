@@ -16,7 +16,14 @@ import 'package:tms_app/presentation/controller/unified_search_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  setupLocator();
+
+  // Đảm bảo Service Locator được thiết lập đúng cách
+  try {
+    setupLocator();
+    print('Service Locator đã được thiết lập thành công');
+  } catch (e) {
+    print('Lỗi khi thiết lập Service Locator: $e');
+  }
 
   // Disable debug paint size
   debugPaintSizeEnabled = false;
