@@ -833,9 +833,1060 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
+  // Widget hiển thị phần mã giảm giá
+  Widget _buildPromoCodeSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            spreadRadius: 1,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(color: Colors.blue.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Tiêu đề phần mã giảm giá
+          Container(
+            padding: const EdgeInsets.fromLTRB(15, 15, 15, 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.blue.withOpacity(0.08),
+                  Colors.blue.withOpacity(0.03)
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.discount_outlined,
+                      color: Colors.blue, size: 20),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  'Mã giảm giá',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.blue,
+                  ),
+                ),
+                const Spacer(),
+                if (_promoApplied)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.check_circle_outline,
+                            size: 14, color: Colors.green),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Đã áp dụng',
+                          style: TextStyle(
+                            color: Colors.green[700],
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // Phần nhập mã giảm giá
+          Padding(
+            padding: const EdgeInsets.all(15),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.07),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Center(
+                          child: TextField(
+                            onChanged: (value) {
+                              setState(() {
+                                _promoCode = value.trim().toUpperCase();
+                                if (_promoApplied) {
+                                  _promoApplied = false;
+                                  _discountPercent = 0;
+                                }
+                              });
+                            },
+                            decoration: InputDecoration(
+                              hintText: 'Nhập mã giảm giá',
+                              hintStyle: TextStyle(
+                                  color: Colors.grey[400], fontSize: 14),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
+                              isDense: true,
+                              prefixIcon: const Padding(
+                                padding: EdgeInsets.only(left: 12, right: 8),
+                                child: Icon(Icons.confirmation_number_outlined,
+                                    size: 20, color: Colors.grey),
+                              ),
+                              prefixIconConstraints: const BoxConstraints(
+                                  minWidth: 0, minHeight: 0),
+                            ),
+                            style: const TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _promoCode.isEmpty ||
+                                _isApplyingPromo ||
+                                _promoApplied
+                            ? null
+                            : _applyPromoCode,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          disabledBackgroundColor: Colors.grey.shade300,
+                          padding: const EdgeInsets.symmetric(horizontal: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: _isApplyingPromo
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                _promoApplied ? 'Đã áp dụng' : 'Áp dụng',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 15),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (_promoApplied)
+                  Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle,
+                            color: Colors.green, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Áp dụng thành công: Giảm $_discountPercent%',
+                          style: TextStyle(
+                            color: Colors.green[700],
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget hiển thị tổng tiền
+  Widget _buildOrderSummary() {
+    return Container(
+      margin: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            spreadRadius: 1,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(color: Colors.blue.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Tiêu đề phần tổng tiền
+          Container(
+            padding: const EdgeInsets.fromLTRB(15, 15, 15, 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.blue.withOpacity(0.08),
+                  Colors.blue.withOpacity(0.03)
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.receipt_long,
+                      color: Colors.blue, size: 20),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  'Thông tin đơn hàng',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.blue,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${_selectedItems.values.where((selected) => selected).length} sản phẩm',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Chi tiết đơn hàng
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+            ),
+            child: Column(
+              children: [
+                _buildOrderRow(
+                  'Tổng tiền:',
+                  '${_formatCurrency(_totalSelectedAmount)} đ',
+                  isTotal: true,
+                ),
+                if (_discountAmount > 0) ...[
+                  const SizedBox(height: 12),
+                  _buildOrderRow(
+                    'Giảm giá (${_discountPercent.toInt()}%):',
+                    '-${_formatCurrency(_discountAmount)} đ',
+                    isDiscount: true,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDashedDivider(),
+                  const SizedBox(height: 12),
+                ],
+                _buildFinalPrice('${_formatCurrency(_finalAmount)} đ'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Phương thức xử lý áp dụng mã giảm giá
+  void _applyPromoCode() {
+    setState(() {
+      _isApplyingPromo = true;
+    });
+
+    // Giả lập API call với delay
+    Future.delayed(const Duration(seconds: 1), () {
+      if (!mounted) return;
+
+      // Giả định kiểm tra mã khuyến mãi (trong thực tế sẽ gọi API)
+      final validPromos = {
+        'WELCOME': 10,
+        'TET2024': 20,
+        'SUMMER': 15,
+        'TMS50': 50,
+      };
+
+      setState(() {
+        _isApplyingPromo = false;
+
+        if (validPromos.containsKey(_promoCode)) {
+          _discountPercent = validPromos[_promoCode]!.toDouble();
+          _promoApplied = true;
+          _showSnackBar('Áp dụng mã giảm giá thành công!', Colors.green);
+        } else {
+          _promoApplied = false;
+          _discountPercent = 0;
+          _showSnackBar('Mã giảm giá không hợp lệ hoặc đã hết hạn', Colors.red);
+        }
+      });
+    });
+  }
+
+  // Widget hiển thị dòng thông tin đơn hàng
+  Widget _buildOrderRow(String label, String value, {bool isTotal = false, bool isDiscount = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: isTotal ? 16 : 15,
+            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+            color: isTotal ? Colors.black87 : Colors.grey[700],
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: isTotal ? 16 : 15,
+            fontWeight: FontWeight.bold,
+            color: isDiscount ? Colors.green : Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Widget hiển thị giá cuối cùng
+  Widget _buildFinalPrice(String price) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+          'Thành tiền:',
+            style: TextStyle(
+            fontSize: 18,
+              fontWeight: FontWeight.bold,
+            color: Colors.blue,
+            ),
+          ),
+          Text(
+            price,
+            style: const TextStyle(
+            fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
+            ),
+          ),
+        ],
+    );
+  }
+
+  // Widget hiển thị đường kẻ ngang đứt đoạn
+  Widget _buildDashedDivider() {
+    return Container(
+      height: 1,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          const dashWidth = 5.0;
+          const dashSpace = 3.0;
+          final dashCount = (width / (dashWidth + dashSpace)).floor();
+
+        return Flex(
+            direction: Axis.horizontal,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: List.generate(dashCount, (_) {
+              return Container(
+              width: dashWidth,
+                height: 1,
+                color: Colors.grey.withOpacity(0.3),
+            );
+          }),
+          );
+        },
+      ),
+    );
+  }
+
   // Các widget stub cho các phần còn lại
   Widget _buildComboSuggestion() => const SizedBox.shrink();
-  Widget _buildPromoCodeSection() => const SizedBox.shrink();
-  Widget _buildOrderSummary() => const SizedBox.shrink();
-  Widget _buildCheckoutBottomSheet() => Container();
+  Widget _buildCheckoutBottomSheet() {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header với nút đóng
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                ),
+              ],
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Text(
+                  'Xác nhận thanh toán',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+          ),
+
+          // Phần còn lại cuộn được
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Thông tin khách hàng
+                  _buildCustomerInfoSection(),
+
+                  const SizedBox(height: 20),
+
+                  // Danh sách sản phẩm đã chọn
+                  _buildSelectedItemsSection(),
+
+                  const SizedBox(height: 20),
+
+                  // Phương thức thanh toán
+                  _buildPaymentMethodsSection(),
+
+                  const SizedBox(height: 20),
+
+                  // Tổng tiền
+                  _buildTotalSection(),
+                ],
+              ),
+            ),
+          ),
+
+          // Nút thanh toán
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  offset: const Offset(0, -2),
+                  blurRadius: 5,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _processPayment,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text(
+                  'Thanh toán ngay',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget hiển thị thông tin khách hàng
+  Widget _buildCustomerInfoSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            spreadRadius: 1,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(color: Colors.blue.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Tiêu đề phần thông tin khách hàng
+          Container(
+            padding: const EdgeInsets.fromLTRB(15, 15, 15, 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.blue.withOpacity(0.08),
+                  Colors.blue.withOpacity(0.03)
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.person_outline,
+                      color: Colors.blue, size: 20),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  'Thông tin khách hàng',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.blue,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Thông tin khách hàng
+          Padding(
+            padding: const EdgeInsets.all(15),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildInfoRow(Icons.account_circle_outlined, 'Họ và tên:',
+                    'Nguyễn Văn A'),
+                const SizedBox(height: 10),
+                _buildInfoRow(
+                    Icons.email_outlined, 'Email:', 'nguyenvana@gmail.com'),
+                const SizedBox(height: 10),
+                _buildInfoRow(
+                    Icons.phone_outlined, 'Số điện thoại:', '0987654321'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget hiển thị danh sách sản phẩm đã chọn
+  Widget _buildSelectedItemsSection() {
+    final selectedItems = _cartController.cartItems.value
+        .where((item) => _selectedItems[item.cartItemId] == true)
+        .toList();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            spreadRadius: 1,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(color: Colors.blue.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Tiêu đề phần sản phẩm
+          Container(
+            padding: const EdgeInsets.fromLTRB(15, 15, 15, 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.blue.withOpacity(0.08),
+                  Colors.blue.withOpacity(0.03)
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.shopping_cart_outlined,
+                      color: Colors.blue, size: 20),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  'Sản phẩm đã chọn',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.blue,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${selectedItems.length} sản phẩm',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Danh sách sản phẩm đã chọn
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: selectedItems.length,
+            itemBuilder: (context, index) {
+              final item = selectedItems[index];
+              return Padding(
+                padding: const EdgeInsets.all(15),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Hình ảnh sản phẩm
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        item.image,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 60,
+                            height: 60,
+                            color: Colors.grey[200],
+                            child: Icon(_getIconForType(item.type),
+                                color: Colors.grey[500], size: 30),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 15),
+                    // Thông tin sản phẩm
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 5),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _getColorForType(item.type).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              _getDisplayTextForType(item.type),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _getColorForType(item.type),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Giá sản phẩm
+                    Text(
+                      '${_formatCurrency(item.price)} đ',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget hiển thị phương thức thanh toán
+  Widget _buildPaymentMethodsSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            spreadRadius: 1,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(color: Colors.blue.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Tiêu đề phần phương thức thanh toán
+          Container(
+            padding: const EdgeInsets.fromLTRB(15, 15, 15, 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.blue.withOpacity(0.08),
+                  Colors.blue.withOpacity(0.03)
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.payment_outlined,
+                      color: Colors.blue, size: 20),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  'Phương thức thanh toán',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.blue,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Danh sách phương thức thanh toán
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _paymentMethods.length,
+            itemBuilder: (context, index) {
+              final method = _paymentMethods[index];
+              final isSelected = _selectedPaymentMethodId == method.id;
+
+              return InkWell(
+                onTap: () {
+                  setState(() {
+                    _selectedPaymentMethodId = method.id;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 15, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Colors.blue.withOpacity(0.05)
+                        : Colors.white,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.grey.withOpacity(0.2),
+                        width: index < _paymentMethods.length - 1 ? 1 : 0,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: method.color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          method.icon,
+                          color: method.color,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 15),
+                      Text(
+                        method.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const Spacer(),
+                      Radio<String>(
+                        value: method.id,
+                        groupValue: _selectedPaymentMethodId,
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _selectedPaymentMethodId = value;
+                            });
+                          }
+                        },
+                        activeColor: Colors.blue,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget hiển thị tổng tiền trong bottom sheet
+  Widget _buildTotalSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            spreadRadius: 1,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(color: Colors.blue.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Tiêu đề phần tổng tiền
+          Container(
+            padding: const EdgeInsets.fromLTRB(15, 15, 15, 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.blue.withOpacity(0.08),
+                  Colors.blue.withOpacity(0.03)
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.receipt_long,
+                      color: Colors.blue, size: 20),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  'Tổng thanh toán',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.blue,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Chi tiết tổng tiền
+          Padding(
+            padding: const EdgeInsets.all(15),
+            child: Column(
+              children: [
+                _buildOrderRow(
+                  'Tổng tiền:',
+                  '${_formatCurrency(_totalSelectedAmount)} đ',
+                  isTotal: true,
+                ),
+                if (_discountAmount > 0) ...[
+                  const SizedBox(height: 12),
+                  _buildOrderRow(
+                    'Giảm giá (${_discountPercent.toInt()}%):',
+                    '-${_formatCurrency(_discountAmount)} đ',
+                    isDiscount: true,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDashedDivider(),
+                  const SizedBox(height: 12),
+                ],
+                _buildFinalPrice('${_formatCurrency(_finalAmount)} đ'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget hiển thị dòng thông tin
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: Colors.grey[600]),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 100,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[700],
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
