@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tms_app/domain/usecases/login_usecase.dart';
-import 'package:tms_app/presentation/controller/login_controller.dart';
+import 'package:tms_app/presentation/controller/login/login_controller.dart';
 import 'package:tms_app/presentation/screens/my_account/setting/change_password.dart';
 import 'package:tms_app/presentation/screens/my_account/setting/notification.dart';
 import 'package:tms_app/presentation/screens/my_account/setting/update_account.dart';

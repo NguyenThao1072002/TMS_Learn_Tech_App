@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
-import 'package:tms_app/presentation/controller/register_controller.dart';
+import 'package:tms_app/presentation/controller/login/register_controller.dart';
 import 'package:tms_app/presentation/widgets/component/bottom_wave_clipper.dart';
 import 'package:tms_app/core/utils/toast_helper.dart';
 import 'dart:async';

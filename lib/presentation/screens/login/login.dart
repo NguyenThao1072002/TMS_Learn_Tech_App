@@ -8,7 +8,7 @@ import 'package:tms_app/core/theme/app_styles.dart';
 import 'package:tms_app/domain/usecases/login_usecase.dart';
 import 'package:tms_app/presentation/screens/homePage/home.dart';
 import 'package:tms_app/presentation/screens/login/register_screen.dart';
-import '../../controller/login_controller.dart';
+import '../../controller/login/login_controller.dart';
 import 'package:tms_app/core/utils/toast_helper.dart';
 
 class LoginScreen extends StatefulWidget {

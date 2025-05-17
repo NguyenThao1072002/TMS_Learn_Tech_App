@@ -4,7 +4,7 @@ import 'package:tms_app/data/models/account/change_password.dart';
 import 'package:tms_app/domain/usecases/change_password_usecase.dart';
 import 'package:tms_app/core/DI/service_locator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tms_app/presentation/controller/login_controller.dart';
+import 'package:tms_app/presentation/controller/login/login_controller.dart';
 import 'package:tms_app/presentation/screens/login/login.dart';
 
 class ChangePasswordScreen extends StatefulWidget {

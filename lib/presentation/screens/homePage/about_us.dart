@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:tms_app/core/theme/app_styles.dart';
 import 'package:tms_app/core/theme/app_dimensions.dart';
+import 'package:tms_app/presentation/controller/home_controller.dart';
+import 'package:tms_app/presentation/screens/homePage/home.dart';
+import 'package:tms_app/presentation/screens/course/course_screen.dart';
+import 'package:tms_app/presentation/widgets/navbar/bottom_navbar_widget.dart';
 
 class AboutUsScreen extends StatelessWidget {
   const AboutUsScreen({Key? key}) : super(key: key);
@@ -20,12 +24,13 @@ class AboutUsScreen extends StatelessWidget {
               title: const Text(
                 'Về TMS Learn Tech',
                 style: TextStyle(
+                  color: Colors.white,
                   fontWeight: FontWeight.bold,
                   shadows: [
                     Shadow(
                       offset: Offset(1, 1),
                       blurRadius: 3.0,
-                      color: Color.fromARGB(100, 0, 0, 0),
+                      color: Color.fromARGB(150, 100, 100, 100),
                     ),
                   ],
                 ),
@@ -34,7 +39,7 @@ class AboutUsScreen extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   Image.network(
-                    'https://img.freepik.com/free-vector/gradient-technology-background_23-2149116941.jpg',
+                    'https://ik.imagekit.io/76opd0fob/z6611804157565_a213d96178919998c03fb1506072069c.jpg?updatedAt=1747487709926',
                     fit: BoxFit.cover,
                   ),
                   // Gradient overlay
@@ -44,7 +49,7 @@ class AboutUsScreen extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.transparent,
+                          Color.fromARGB(255, 255, 255, 255),
                           Colors.black45,
                         ],
                       ),
@@ -369,9 +374,12 @@ class AboutUsScreen extends StatelessWidget {
                       SizedBox(height: AppDimensions.blockSpacing),
                       ElevatedButton(
                         onPressed: () {
-                          // Điều hướng đến trang Home
-                          Navigator.pop(
-                              context); // Quay về trang trước đó (Home)
+                          // Chuyển về màn hình trang chủ
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const HomeScreen()),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           padding: EdgeInsets.symmetric(
@@ -425,6 +433,33 @@ class AboutUsScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+      bottomNavigationBar: BottomNavBar(
+        selectedIndex: 0, // Home tab is selected by default
+        onTap: (index) {
+          if (index == 0) {
+            // Navigate to Home
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const HomeScreen()),
+            );
+          } else if (index == 2) {
+            // Navigate to Course
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const CourseScreen()),
+            );
+          } else if (index == 3) {
+            // Navigate to Practice Test
+            Navigator.pushReplacementNamed(context, '/practice_test');
+          } else if (index == 4) {
+            // Navigate to Account
+            Navigator.pushReplacementNamed(context, '/account');
+          } else if (index == 1) {
+            // Navigate to Documents
+            Navigator.pushReplacementNamed(context, '/documents');
+          }
+        },
       ),
     );
   }

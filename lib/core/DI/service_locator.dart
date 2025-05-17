@@ -26,9 +26,9 @@ import 'package:tms_app/domain/usecases/login_usecase.dart';
 import 'package:tms_app/domain/usecases/register_usecase.dart';
 import 'package:tms_app/domain/usecases/update_account_usecase.dart';
 import 'package:tms_app/domain/usecases/overview_my_account_usecase.dart';
-import 'package:tms_app/presentation/controller/forgot_password_controller.dart';
+import 'package:tms_app/presentation/controller/login/forgot_password_controller.dart';
 import 'package:tms_app/presentation/controller/my_account/setting/update_account_controller.dart';
-import 'package:tms_app/presentation/controller/verify_otp_controller.dart'; // Import LoginUseCase// Import BlogDataSource
+import 'package:tms_app/presentation/controller/login/verify_otp_controller.dart'; // Import LoginUseCase// Import BlogDataSource
 import 'package:tms_app/data/services/banner_service.dart'; // Import BannerService
 import 'package:tms_app/data/repositories/banner_repository_impl.dart'; // Import BannerRepositoryImpl
 import 'package:tms_app/domain/repositories/banner_repository.dart'; // Import BannerRepository
@@ -191,7 +191,7 @@ void _registerUseCases() {
 
   sl.registerLazySingleton(
       () => ChangePasswordUseCase(sl<AccountRepository>()));
-      
+
   // Đăng ký OverviewMyAccountUseCase
   sl.registerFactory(() => OverviewMyAccountUseCase(sl<AccountRepository>()));
 }

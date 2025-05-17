@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:tms_app/core/utils/toast_helper.dart';
-import 'package:tms_app/presentation/controller/forgot_password_controller.dart';
+import 'package:tms_app/presentation/controller/login/forgot_password_controller.dart';
 import 'package:tms_app/presentation/widgets/component/bottom_wave_clipper.dart';
 import 'package:tms_app/presentation/screens/login/reset_password_screen.dart';
 

@@ -4,7 +4,7 @@ import 'package:tms_app/core/di/service_locator.dart';
 import 'package:tms_app/core/theme/app_dimensions.dart';
 import 'package:tms_app/core/theme/app_styles.dart';
 import 'package:tms_app/presentation/screens/login/login.dart';
-import '../../controller/register_controller.dart';
+import '../../controller/login/register_controller.dart';
 import 'package:tms_app/core/constants/messages.dart'; // Import AppMessages
 
 class RegisterScreen extends StatefulWidget {

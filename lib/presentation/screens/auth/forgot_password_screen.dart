@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tms_app/core/DI/service_locator.dart';
-import 'package:tms_app/presentation/controller/forgot_password_controller.dart';
+import 'package:tms_app/presentation/controller/login/forgot_password_controller.dart';
 import 'package:tms_app/presentation/screens/login/verify_otp_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tms_app/presentation/controller/forgot_password_controller.dart';
+import 'package:tms_app/presentation/controller/login/forgot_password_controller.dart';
 import 'package:tms_app/core/di/service_locator.dart';
 import 'package:tms_app/presentation/widgets/component/bottom_wave_clipper.dart';
 import 'package:tms_app/presentation/screens/login/verify_otp_screen.dart';
