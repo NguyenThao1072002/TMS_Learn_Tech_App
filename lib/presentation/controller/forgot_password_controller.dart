@@ -19,7 +19,7 @@ class ForgotPasswordController extends GetxController {
     required this.accountRepository,
   }) : _forgotPasswordUseCase = ForgotPasswordUseCase(accountRepository);
 
-  // Lấy thông tin người dùng
+  // Lấy thông tin người dùng để hiển thị trên màn hình
   Future<Map<String, String?>> getUserData() async {
     try {
       isLoading.value = true;
@@ -32,7 +32,7 @@ class ForgotPasswordController extends GetxController {
     }
   }
 
-  // Gửi OTP qua email
+  // Gửi mã OTP đến email người dùng đã cung cấp
   Future<bool> sendOtpToEmail(String email) async {
     try {
       isLoading.value = true;
@@ -45,7 +45,7 @@ class ForgotPasswordController extends GetxController {
     }
   }
 
-  // Xác thực OTP
+  // Xác thực mã OTP người dùng đã nhập
   Future<bool> verifyOtp(String otp, String email) async {
     try {
       isLoading.value = true;
@@ -58,7 +58,7 @@ class ForgotPasswordController extends GetxController {
     }
   }
 
-  // Cập nhật mật khẩu
+  // Cập nhật mật khẩu mới sau khi xác thực OTP thành công
   Future<bool> updatePassword(String newPassword,
       {required String email, required String otp}) async {
     try {
@@ -73,7 +73,7 @@ class ForgotPasswordController extends GetxController {
     }
   }
 
-  // Gửi yêu cầu quên mật khẩu
+  // Gửi yêu cầu quên mật khẩu và nhận OTP
   Future<bool> requestForgotPasswordOtp(String userEmail) async {
     try {
       isLoading.value = true;
@@ -92,6 +92,7 @@ class ForgotPasswordController extends GetxController {
     }
   }
 
+  // Hiển thị thông báo toast
   void showToast(String message, bool isError) {
     Fluttertoast.showToast(
       msg: message,

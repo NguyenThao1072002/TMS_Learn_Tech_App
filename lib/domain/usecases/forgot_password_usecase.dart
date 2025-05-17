@@ -5,7 +5,7 @@ class ForgotPasswordUseCase {
 
   ForgotPasswordUseCase(this.accountRepository);
 
-  // Lấy thông tin người dùng
+  // Lấy thông tin người dùng từ repository
   Future<Map<String, String?>> getUserData() async {
     try {
       final userData = await accountRepository.getUserData();
@@ -19,12 +19,11 @@ class ForgotPasswordUseCase {
 
       return userData;
     } catch (e) {
-      // Xử lý lỗi khi không thể lấy dữ liệu người dùng
       throw Exception('Lỗi khi lấy dữ liệu người dùng: $e');
     }
   }
 
-  // Gửi yêu cầu quên mật khẩu
+  // Gửi yêu cầu quên mật khẩu và nhận OTP
   Future<bool> requestForgotPasswordOtp(String email) async {
     try {
       return await accountRepository.forgotPassword(email);
@@ -33,7 +32,7 @@ class ForgotPasswordUseCase {
     }
   }
 
-  // Gửi OTP qua email
+  // Gửi OTP qua email để xác thực
   Future<bool> sendOtpToEmail(String email) async {
     try {
       return await accountRepository.sendOtpToEmail({'email': email});
@@ -42,27 +41,22 @@ class ForgotPasswordUseCase {
     }
   }
 
-  // Xác thực mã OTP
+  // Xác thực mã OTP đã nhập
   Future<bool> verifyOtp(String otp, String email) async {
     try {
-      print('ForgotPasswordUseCase: Đang gửi yêu cầu xác thực OTP...');
-      print('OTP: $otp, Email: $email');
-
       final result = await accountRepository.verifyOtp({
         'otp': otp,
         'email': email,
         'type': 'FORGOT',
       });
 
-      print('ForgotPasswordUseCase: Kết quả xác thực OTP: $result');
       return result;
     } catch (e) {
-      print('ForgotPasswordUseCase: Lỗi xác thực OTP: $e');
       throw Exception('Lỗi khi xác thực mã OTP: $e');
     }
   }
 
-  // Cập nhật mật khẩu mới
+  // Cập nhật mật khẩu mới sau khi xác thực OTP
   Future<bool> updatePassword(String newPassword,
       {required String email, required String otp}) async {
     try {

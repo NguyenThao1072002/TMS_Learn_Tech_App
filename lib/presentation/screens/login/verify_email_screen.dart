@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:tms_app/presentation/controller/forgot_password_controller.dart'; // Import controller thích hợp
-import 'package:tms_app/core/di/service_locator.dart'; // Đảm bảo DI (Dependency Injection) cho ForgotPasswordController
+import 'package:tms_app/presentation/controller/forgot_password_controller.dart';
+import 'package:tms_app/core/di/service_locator.dart';
 import 'package:tms_app/presentation/widgets/component/bottom_wave_clipper.dart';
-import 'package:tms_app/presentation/screens/login/verify_otp_screen.dart'; // Thêm import cho VerifyOtpScreen
+import 'package:tms_app/presentation/screens/login/verify_otp_screen.dart';
+import 'package:tms_app/core/utils/toast_helper.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
@@ -10,7 +11,7 @@ class VerifyEmailScreen extends StatefulWidget {
 
   const VerifyEmailScreen({
     Key? key,
-    required this.email, // Thêm tham số email ở đây
+    required this.email,
     required this.controller,
   }) : super(key: key);
 
@@ -26,25 +27,25 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   @override
   void initState() {
     super.initState();
+    // Khởi tạo email từ tham số nếu có
     if (widget.email.isNotEmpty) {
-      _emailController.text =
-          widget.email; // Đưa email đã nhập vào trường email
+      _emailController.text = widget.email;
     }
   }
 
+  // Kiểm tra định dạng email hợp lệ
   bool isValidEmail(String email) {
     final RegExp emailRegex = RegExp(r"^[^\s@]+@[^\s@]+\.[^\s@]+$");
     return emailRegex.hasMatch(email);
   }
 
+  // Xử lý gửi OTP khi người dùng nhấn nút
   Future<void> _handleSendOtp() async {
     if (_formKey.currentState!.validate()) {
-      // Đặt trạng thái loading
       setState(() {
         _isLoading = true;
       });
 
-      // Đảm bảo UI được cập nhật trước khi thực hiện API call
       await Future.delayed(const Duration(milliseconds: 50));
 
       try {
@@ -52,6 +53,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
         final result = await widget.controller.sendOtpToEmail(email);
 
         if (result) {
+          // Chuyển đến màn hình xác thực OTP
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -62,7 +64,6 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
             ),
           );
 
-          // Tắt loading sau khi chuyển màn hình
           setState(() {
             _isLoading = false;
           });
@@ -71,19 +72,14 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
             _isLoading = false;
           });
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Không thể gửi OTP, vui lòng thử lại!')),
-          );
+          ToastHelper.showErrorToast('Không thể gửi OTP, vui lòng thử lại!');
         }
       } catch (e) {
         setState(() {
           _isLoading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ToastHelper.showErrorToast(e.toString());
       }
     }
   }
@@ -111,7 +107,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       ),
       body: Stack(
         children: [
-          // Wave effect background
+          // Nền với hiệu ứng sóng
           Positioned(
             bottom: -20,
             left: 0,
@@ -137,6 +133,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
+                            // Tiêu đề và hướng dẫn
                             const Text(
                               'Tìm tài khoản',
                               style: TextStyle(
@@ -153,6 +150,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                                   TextStyle(fontSize: 14, color: Colors.grey),
                             ),
                             const SizedBox(height: 60),
+
+                            // Ô nhập email
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.all(24),
@@ -210,6 +209,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 24),
+
+                                  // Nút gửi mã
                                   SizedBox(
                                     width: double.infinity,
                                     height: 50,

@@ -6,12 +6,12 @@ class ChangePasswordUseCase {
 
   ChangePasswordUseCase(this.repository);
 
+  // Thực hiện đổi mật khẩu cho người dùng đã đăng nhập
   Future<bool> execute(ChangePasswordModel model) async {
     try {
       final result = await repository.changePassword(model.toJson());
       return result;
     } catch (e) {
-      print('Error in ChangePasswordUseCase: $e');
       return false;
     }
   }

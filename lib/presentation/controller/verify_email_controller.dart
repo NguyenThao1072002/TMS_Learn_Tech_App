@@ -9,17 +9,17 @@ class VerifyEmailController extends GetxController {
   VerifyEmailController({required AccountRepository accountRepository})
       : _accountRepository = accountRepository;
 
-  // Kiểm tra email hợp lệ
+  // Kiểm tra định dạng email có hợp lệ không
   bool isValidEmail(String email) {
     final RegExp emailRegex = RegExp(r"^[^\s@]+@[^\s@]+\.[^\s@]+$");
     return emailRegex.hasMatch(email);
   }
 
-  // Xác thực OTP với email
+  // Xác thực mã OTP đã nhập với email
   Future<bool> verifyOtp(String email, String otp) async {
     try {
       isLoading.value = true;
-      errorMessage.value = ''; // Clear previous error message
+      errorMessage.value = ''; // Xóa thông báo lỗi trước đó
 
       final result = await _accountRepository.verifyOtp({
         'email': email,
@@ -40,11 +40,11 @@ class VerifyEmailController extends GetxController {
     }
   }
 
-  // Gửi OTP lại qua email
+  // Gửi lại mã OTP qua email
   Future<bool> resendOtp(String email) async {
     try {
       isLoading.value = true;
-      errorMessage.value = ''; // Clear previous error message
+      errorMessage.value = ''; // Xóa thông báo lỗi trước đó
 
       final result = await _accountRepository.sendOtpToEmail({
         'email': email,
