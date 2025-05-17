@@ -387,6 +387,7 @@ class _CartScreenState extends State<CartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white, 
       appBar: AppBar(
         title: const Text(
           'Giỏ hàng',
@@ -807,12 +808,13 @@ class _CartScreenState extends State<CartScreen> {
               Navigator.of(context).pop();
             },
             style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text('Tìm kiếm khóa học'),
+            child: const Text('Khám phá khóa học'),
           ),
           // Thêm nút thử lại
           const SizedBox(height: 20),
@@ -824,7 +826,11 @@ class _CartScreenState extends State<CartScreen> {
               });
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
+              backgroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: const Text('Tải lại giỏ hàng'),
           ),
