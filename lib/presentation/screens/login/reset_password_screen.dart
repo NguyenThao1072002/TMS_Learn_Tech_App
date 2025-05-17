@@ -32,6 +32,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -51,12 +52,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         centerTitle: true,
       ),
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // Wave effect background như các màn hình khác
-          Positioned(
-            bottom: -20,
-            left: 0,
-            right: 0,
+          Align(
+            alignment: Alignment.bottomCenter,
             child: ClipPath(
               clipper: BottomWaveClipper(),
               child: Container(
@@ -65,10 +64,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               ),
             ),
           ),
-
-          // Nội dung chính
           SafeArea(
             child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
                 child: Form(
@@ -91,8 +89,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         style: TextStyle(fontSize: 14, color: Colors.grey),
                       ),
                       const SizedBox(height: 24),
-
-                      // Container chứa form với shadow
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(24),
@@ -239,14 +235,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       });
 
       try {
-        print('Đang gửi yêu cầu cập nhật mật khẩu...');
-        print(
-            'Email: ${widget.email}, Mật khẩu mới: ${_passwordController.text}');
-
-        // Thông báo cho người dùng biết đang xử lý
         ToastHelper.showInfoToast('Đang cập nhật mật khẩu, vui lòng đợi...');
 
-        // Cập nhật password với đầy đủ tham số
         final result = await _controller.updatePassword(
           _passwordController.text,
           email: widget.email,
@@ -258,16 +248,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         });
 
         if (result) {
-          // Hiển thị thông báo thành công
           ToastHelper.showSuccessToast('Mật khẩu đã được cập nhật thành công');
 
-          // Chuyển về màn hình đăng nhập ngay lập tức và xóa tất cả màn hình trong stack
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (context) => const LoginScreen()),
             (Route<dynamic> route) => false,
           );
         } else {
-          // Hiển thị thông báo lỗi khi API trả về result = false
           ToastHelper.showErrorToast(
               'Có lỗi khi cập nhật mật khẩu. Vui lòng liên hệ quản trị viên hoặc thử lại sau.');
         }
@@ -275,12 +262,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         setState(() {
           _isLoading = false;
         });
-        // Hiển thị thông báo lỗi chi tiết
         ToastHelper.showErrorToast(
             'Lỗi: ${e.toString().replaceAll('Exception: ', '')}');
-
-        // Log lỗi để dễ debug
-        print('Chi tiết lỗi: $e');
       }
     }
   }

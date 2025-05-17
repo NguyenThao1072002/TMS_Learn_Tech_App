@@ -87,6 +87,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Đặt resizeToAvoidBottomInset: false để ngăn bàn phím đẩy nội dung lên
+      resizeToAvoidBottomInset: false,
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -106,157 +108,148 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
         centerTitle: true,
       ),
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // Nền với hiệu ứng sóng
-          Positioned(
-            bottom: -20,
-            left: 0,
-            right: 0,
+          // Nền với hiệu ứng sóng - cố định ở dưới cùng
+          Align(
+            alignment: Alignment.bottomCenter,
             child: ClipPath(
               clipper: BottomWaveClipper(),
               child: Container(
-                height: 150,
+                height: 180,
                 color: Colors.blue.withOpacity(0.1),
               ),
             ),
           ),
-          Column(
-            children: [
-              Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            // Tiêu đề và hướng dẫn
-                            const Text(
-                              'Tìm tài khoản',
-                              style: TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Chúng tôi sẽ gửi mã OTP xác thực qua email của bạn.',
-                              textAlign: TextAlign.center,
-                              style:
-                                  TextStyle(fontSize: 14, color: Colors.grey),
-                            ),
-                            const SizedBox(height: 60),
 
-                            // Ô nhập email
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Nhập email của bạn!',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Container(
-                                    width: double.infinity,
-                                    child: TextFormField(
-                                      controller: _emailController,
-                                      textAlign: TextAlign.start,
-                                      decoration: InputDecoration(
-                                        hintText: 'VD: example@email.com',
-                                        border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                        ),
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 12,
-                                        ),
-                                        alignLabelWithHint: true,
-                                      ),
-                                      validator: (value) {
-                                        if (value == null ||
-                                            value.trim().isEmpty) {
-                                          return "Email không được để trống!";
-                                        }
-                                        if (!isValidEmail(value)) {
-                                          return "Email không hợp lệ! Vui lòng nhập đúng định dạng.";
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(height: 24),
-
-                                  // Nút gửi mã
-                                  SizedBox(
-                                    width: double.infinity,
-                                    height: 50,
-                                    child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.blue,
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 14),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                        ),
-                                      ),
-                                      onPressed:
-                                          _isLoading ? null : _handleSendOtp,
-                                      child: _isLoading
-                                          ? const SizedBox(
-                                              width: 24,
-                                              height: 24,
-                                              child: CircularProgressIndicator(
-                                                color: Colors.white,
-                                                strokeWidth: 3,
-                                              ),
-                                            )
-                                          : const Text(
-                                              'Gửi mã',
-                                              style: TextStyle(
-                                                fontSize: 18,
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 100),
-                          ],
+          // Nội dung chính - có thể cuộn
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 40),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Tiêu đề và hướng dẫn
+                        const Text(
+                          'Tìm tài khoản',
+                          style: TextStyle(
+                            fontSize: 36,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Chúng tôi sẽ gửi mã OTP xác thực qua email của bạn.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 30),
+
+                        // Ô nhập email
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Nhập email của bạn!',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Container(
+                                width: double.infinity,
+                                child: TextFormField(
+                                  controller: _emailController,
+                                  textAlign: TextAlign.start,
+                                  decoration: InputDecoration(
+                                    hintText: 'VD: example@email.com',
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                    alignLabelWithHint: true,
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.trim().isEmpty) {
+                                      return "Email không được để trống!";
+                                    }
+                                    if (!isValidEmail(value)) {
+                                      return "Email không hợp lệ! Vui lòng nhập đúng định dạng.";
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+
+                              // Nút gửi mã
+                              SizedBox(
+                                width: double.infinity,
+                                height: 50,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  onPressed: _isLoading ? null : _handleSendOtp,
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 3,
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Gửi mã',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
                     ),
                   ),
                 ),
               ),
-            ],
+            ),
           ),
         ],
       ),
