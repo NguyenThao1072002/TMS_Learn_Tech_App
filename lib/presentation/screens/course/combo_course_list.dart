@@ -191,30 +191,6 @@ class _ComboCourseListScreenState extends State<ComboCourseListScreen> {
                   ? _buildEmptyState()
                   : _buildComboCourseList(_comboCourses),
             ),
-      bottomNavigationBar: BottomNavBar(
-        selectedIndex: 2, // Course tab is selected
-        onTap: (index) {
-          if (index == 0) {
-            // Navigate to Home
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const HomeScreen()),
-            );
-          } else if (index == 2) {
-            // Already on Course screen
-            Navigator.pop(context);
-          } else if (index == 3) {
-            // Navigate to Practice Test
-            Navigator.pushReplacementNamed(context, '/practice_test');
-          } else if (index == 4) {
-            // Navigate to Account
-            Navigator.pushReplacementNamed(context, '/account');
-          } else if (index == 1) {
-            // Navigate to Documents
-            Navigator.pushReplacementNamed(context, '/documents');
-          }
-        },
-      ),
     );
   }
 
