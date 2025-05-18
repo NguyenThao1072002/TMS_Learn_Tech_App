@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:tms_app/core/DI/service_locator.dart'; // Import sl từ service_locator
+import 'package:tms_app/domain/usecases/my_course/course_lesson_usecase.dart';
+import 'package:tms_app/data/models/my_course/learn_lesson_model.dart';
 import 'package:tms_app/presentation/screens/my_account/my_course/take_test.dart';
 import 'package:tms_app/presentation/screens/my_account/my_course/test_instruction.dart';
+import 'package:dio/dio.dart';
+import 'package:tms_app/data/services/my_course/course_lesson_service.dart';
+import 'package:tms_app/data/repositories/my_course/course_lesson_repository_impl.dart';
 
 // Enum for lesson types
 enum LessonType { video, test }
@@ -52,6 +59,9 @@ class Lesson {
   final LessonType type;
   bool isUnlocked;
   final int? questionCount;
+  final String? videoUrl; // URL video từ API
+  final String? documentUrl; // URL tài liệu từ API
+  final String? testType; // Loại bài kiểm tra (Test Bài/Test Chương)
 
   Lesson({
     required this.id,
@@ -60,6 +70,9 @@ class Lesson {
     required this.type,
     required this.isUnlocked,
     this.questionCount,
+    this.videoUrl,
+    this.documentUrl,
+    this.testType,
   });
 }
 
@@ -549,41 +562,25 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
   final bool _isCompletingLesson = false;
   late TabController _tabController;
 
+  // Khai báo useCase sử dụng DI chính thống
+  late CourseLessonUseCase _courseLessonUseCase;
+
+  // Add course data from API response
+  CourseLessonResponse? _courseLessonResponse;
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _loadCourseData();
 
-    // Hiển thị popup tiếp tục học sau khi build hoàn tất,
-    // nếu không có các tham số đặc biệt
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Xử lý các tham số đặc biệt
-      if (widget.startOver) {
-        _resetCourseProgress();
-      } else if (widget.viewAllLessons) {
-        _expandAllChapters();
-      } else if (widget.startVideo) {
-        // Bắt đầu xem video ngay lập tức
-        setState(() {
-          _isWatchingVideo = true;
-        });
-      } else if (widget.showMaterials) {
-        // Chuyển đến tab tài liệu sau một khoảng thời gian ngắn
-        Future.delayed(const Duration(milliseconds: 300), () {
-          final tabController = DefaultTabController.of(context);
-          tabController.animateTo(1); // Chuyển đến tab tài liệu (index 1)
-        });
-      } else if (widget.showLessonContent) {
-        // Hiển thị tab nội dung bài học
-        setState(() {
-          _showSidebarInMobile = false;
-        });
-      } else {
-        // Chỉ hiển thị hộp thoại nếu không có tham số đặc biệt
-        _showContinueLearningPopup();
-      }
-    });
+    // Khởi tạo TabController
+    _tabController = TabController(length: 3, vsync: this);
+
+    // Khởi tạo useCase từ DI
+    _courseLessonUseCase = sl<CourseLessonUseCase>();
+    print('Đã lấy CourseLessonUseCase từ DI thành công');
+
+    // Tải dữ liệu khóa học
+    _loadCourseData();
   }
 
   // Đặt lại tiến độ khóa học từ đầu
@@ -698,137 +695,240 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
     }
   }
 
-  // Tải dữ liệu khóa học (mô phỏng từ API)
+  // Tải dữ liệu khóa học từ API
   Future<void> _loadCourseData() async {
-    // Mô phỏng delay khi tải dữ liệu
-    await Future.delayed(const Duration(seconds: 1));
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      print('Bắt đầu gọi API lấy dữ liệu khóa học ${widget.courseId}');
+
+      // Gọi API để lấy dữ liệu khóa học
+      final courseLessonResponse =
+          await _courseLessonUseCase.getCourseLessons(widget.courseId);
+
+      print(
+          'Đã nhận dữ liệu từ API, có ${courseLessonResponse.chapters.length} chương');
+
+      // Lưu dữ liệu API để sử dụng sau này
+      _courseLessonResponse = courseLessonResponse;
+
+      // Chuyển đổi dữ liệu từ API sang định dạng cục bộ
+      _courseData = _convertApiDataToLocalFormat(courseLessonResponse);
+
+      print(
+          'Đã chuyển đổi dữ liệu API thành định dạng cục bộ: ${_courseData.length} chương');
+
+      // Nếu không có dữ liệu, hiển thị thông báo
+      if (_courseData.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Khóa học này chưa có nội dung'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+
+      // Khởi tạo trạng thái mở rộng cho các chương
+      _expandedChapters =
+          List.generate(_courseData.length, (index) => index == 0);
+
+      // Khởi tạo trạng thái hoàn thành bài học
+      _completedLessons = {};
+
+      print('Đã tải xong dữ liệu API');
+    } catch (e) {
+      print('Lỗi khi tải dữ liệu khóa học: $e');
+
+      // Hiển thị thông báo lỗi
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Không thể tải dữ liệu khóa học: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      // Khởi tạo mảng rỗng để tránh lỗi null
+      _courseData = [];
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  // Chuyển đổi dữ liệu API sang định dạng cục bộ
+  List<CourseChapter> _convertApiDataToLocalFormat(
+      CourseLessonResponse apiData) {
+    final List<CourseChapter> chapters = [];
+
+    for (final chapter in apiData.chapters) {
+      final List<Lesson> lessons = [];
+
+      // Chuyển đổi bài học
+      for (final apiLesson in chapter.lessons) {
+        // Xác định kiểu bài học (video hoặc test)
+        final LessonType lessonType =
+            apiLesson.lessonTest != null ? LessonType.test : LessonType.video;
+
+        // Chuyển đổi thời lượng từ giây sang định dạng phút:giây
+        final String duration = _formatDuration(apiLesson.lessonDuration);
+
+        // Tạo đối tượng Lesson
+        final lesson = Lesson(
+          id: apiLesson.lessonId.toString(),
+          title: apiLesson.lessonTitle,
+          duration: duration,
+          type: lessonType,
+          isUnlocked: true, // Giả sử tất cả bài học đều đã mở khóa
+          questionCount: apiLesson.lessonTest != null
+              ? 10
+              : null, // Giả sử mỗi bài kiểm tra có 10 câu hỏi
+          videoUrl: apiLesson.video != null ? apiLesson.video!.videoUrl : null,
+          documentUrl:
+              apiLesson.video != null ? apiLesson.video!.documentUrl : null,
+          testType: apiLesson.lessonTest != null
+              ? apiLesson.lessonTest!.testType
+              : null,
+        );
+
+        lessons.add(lesson);
+      }
+
+      // Thêm bài kiểm tra cấp chương nếu có
+      if (chapter.chapterTest != null) {
+        final chapterTest = Lesson(
+          id: "chapter_test_${chapter.chapterId}",
+          title: chapter.chapterTest!.testTitle,
+          duration:
+              "30 phút", // Giả sử thời gian làm bài kiểm tra chương là 30 phút
+          type: LessonType.test,
+          isUnlocked: true,
+          questionCount: 15, // Giả sử mỗi bài kiểm tra chương có 15 câu hỏi
+          videoUrl: null, // Bài kiểm tra chương không có video
+          documentUrl: null, // Bài kiểm tra chương không có tài liệu
+          testType: chapter.chapterTest!.testType,
+        );
+
+        lessons.add(chapterTest);
+      }
+
+      // Tạo đối tượng CourseChapter
+      final courseChapter = CourseChapter(
+        id: chapter.chapterId,
+        title: chapter.chapterTitle,
+        lessons: lessons,
+      );
+
+      chapters.add(courseChapter);
+    }
+
+    return chapters;
+  }
+
+  // Chuyển đổi thời lượng từ giây sang định dạng phút:giây
+  String _formatDuration(int seconds) {
+    final int minutes = seconds ~/ 60;
+    final int remainingSeconds = seconds % 60;
+    return '$minutes:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+
+  // Khởi tạo dữ liệu mẫu trong trường hợp không thể tải dữ liệu từ API
+  void _initializeSampleData() {
+    print('Khởi tạo dữ liệu mẫu tạm thời do không thể kết nối API');
 
     // Dữ liệu giả lập
     _courseData = [
       CourseChapter(
         id: 1,
-        title: "Chương 1: Giới thiệu khóa học",
+        title: "Chương 1: Giới thiệu khóa học (Dữ liệu mẫu)",
         lessons: [
           Lesson(
             id: "1_1",
-            title: "Bài 1: Tổng quan về khóa học",
+            title: "Bài 1: Tổng quan về khóa học (Dữ liệu mẫu)",
             duration: "10:15",
             type: LessonType.video,
             isUnlocked: true,
+            videoUrl: "https://example.com/video1.mp4",
+            documentUrl: "https://example.com/document1.pdf",
+            testType: "Test Bài",
           ),
           Lesson(
             id: "1_2",
-            title: "Bài 2: Cài đặt môi trường",
+            title: "Bài 2: Cài đặt môi trường (Dữ liệu mẫu)",
             duration: "15:30",
             type: LessonType.video,
             isUnlocked: true,
+            videoUrl: "https://example.com/video2.mp4",
+            documentUrl: "https://example.com/document2.docx",
+            testType: "Test Bài",
           ),
           Lesson(
             id: "1_test",
-            title: "Bài kiểm tra chương 1",
+            title: "Bài kiểm tra chương 1 (Dữ liệu mẫu)",
             duration: "15 phút",
             type: LessonType.test,
             isUnlocked: true,
             questionCount: 5,
+            videoUrl: "https://example.com/test_video.mp4",
+            documentUrl: "https://example.com/test_document.pdf",
+            testType: "Test Bài",
           ),
         ],
       ),
       CourseChapter(
         id: 2,
-        title: "Chương 2: Kiến thức nền tảng",
+        title: "Chương 2: Kiến thức nền tảng (Dữ liệu mẫu)",
         lessons: [
           Lesson(
             id: "2_1",
-            title: "Bài 1: Các khái niệm cơ bản",
-            duration: "20:45",
+            title: "Bài 1: Kiến thức cơ bản (Dữ liệu mẫu)",
+            duration: "12:30",
             type: LessonType.video,
             isUnlocked: true,
-          ),
-          Lesson(
-            id: "2_2",
-            title: "Bài 2: Ứng dụng thực tế",
-            duration: "18:30",
-            type: LessonType.video,
-            isUnlocked: false,
+            videoUrl: "https://example.com/video3.mp4",
+            documentUrl: "https://example.com/document3.pptx",
+            testType: "Test Bài",
           ),
           Lesson(
             id: "2_test",
-            title: "Bài kiểm tra chương 2",
+            title: "Bài kiểm tra chương 2 (Dữ liệu mẫu)",
             duration: "20 phút",
             type: LessonType.test,
-            isUnlocked: false,
+            isUnlocked: true,
             questionCount: 8,
-          ),
-        ],
-      ),
-      CourseChapter(
-        id: 3,
-        title: "Chương 3: Kỹ thuật nâng cao",
-        lessons: [
-          Lesson(
-            id: "3_1",
-            title: "Bài 1: Phương pháp tiên tiến",
-            duration: "22:10",
-            type: LessonType.video,
-            isUnlocked: false,
-          ),
-          Lesson(
-            id: "3_2",
-            title: "Bài 2: Nghiên cứu điển hình",
-            duration: "25:45",
-            type: LessonType.video,
-            isUnlocked: false,
-          ),
-          Lesson(
-            id: "3_3",
-            title: "Bài 3: Thực hành",
-            duration: "15:20",
-            type: LessonType.video,
-            isUnlocked: false,
-          ),
-          Lesson(
-            id: "3_test",
-            title: "Bài kiểm tra chương 3",
-            duration: "30 phút",
-            type: LessonType.test,
-            isUnlocked: false,
-            questionCount: 10,
-          ),
-        ],
-      ),
-      CourseChapter(
-        id: 4,
-        title: "Chương 4: Bài tập tổng hợp",
-        lessons: [
-          Lesson(
-            id: "4_1",
-            title: "Bài 1: Dự án thực tế",
-            duration: "30:00",
-            type: LessonType.video,
-            isUnlocked: false,
-          ),
-          Lesson(
-            id: "4_test",
-            title: "Bài kiểm tra cuối khóa",
-            duration: "45 phút",
-            type: LessonType.test,
-            isUnlocked: false,
-            questionCount: 15,
+            videoUrl: "https://example.com/test_video2.mp4",
+            documentUrl: "https://example.com/test_document2.docx",
+            testType: "Test Chương",
           ),
         ],
       ),
     ];
 
-    // Khởi tạo trạng thái mở rộng: chỉ mở chương đầu tiên
+    // Hiển thị thông báo cho người dùng
+    Future.delayed(Duration.zero, () {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('Đang sử dụng dữ liệu mẫu. Kết nối máy chủ thất bại.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 5),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    });
+
+    // Khởi tạo trạng thái mở rộng cho các chương
     _expandedChapters =
         List.generate(_courseData.length, (index) => index == 0);
 
-    // Khởi tạo trạng thái hoàn thành các bài học (mặc định chưa hoàn thành)
+    // Khởi tạo trạng thái hoàn thành bài học (giả lập)
     _completedLessons = {};
-
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   // Xử lý khi bài học được hoàn thành
@@ -1554,6 +1654,9 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
 
   // Widget xây dựng nội dung bài học video - cải thiện UI
   Widget _buildVideoLessonContent(Lesson lesson) {
+    // Get video URL from API data if available
+    String videoUrl = _getVideoUrlForLesson(lesson);
+
     return Container(
       color: Colors.white,
       child: Stack(
@@ -1577,23 +1680,34 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
                         alignment: Alignment.center,
                         children: [
                           // Video placeholder (replace with actual video player in real app)
-                          Image.network(
-                            'https://img.youtube.com/vi/${widget.videoUrl}/hqdefault.jpg',
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey[800],
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.video_library,
-                                    size: 64,
-                                    color: Colors.white54,
+                          videoUrl.isNotEmpty
+                              ? Image.network(
+                                  'https://img.youtube.com/vi/default/maxresdefault.jpg', // Fallback thumbnail
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: Colors.grey[800],
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.video_library,
+                                          size: 64,
+                                          color: Colors.white54,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                )
+                              : Container(
+                                  color: Colors.grey[800],
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.video_library,
+                                      size: 64,
+                                      color: Colors.white54,
+                                    ),
                                   ),
                                 ),
-                              );
-                            },
-                          ),
 
                           // Play button overlay
                           if (!_isVideoPlaying)
@@ -1615,6 +1729,47 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
                     ),
                   ),
                 ),
+
+                // Hiển thị URL video thực tế (để dễ kiểm tra, có thể xóa sau)
+                if (videoUrl.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    color: Colors.grey[100],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Video URL từ API:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          videoUrl,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            // Tạo intent để mở video trong trình phát bên ngoài
+                            // hoặc triển khai trình phát video trực tiếp
+                            _openVideoInExternalPlayer(videoUrl);
+                          },
+                          icon: const Icon(Icons.play_circle),
+                          label: const Text('Xem video'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
                 // Comment section
                 Padding(
@@ -1755,6 +1910,82 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
         ],
       ),
     );
+  }
+
+  // Lấy URL video từ dữ liệu API dựa trên ID bài học
+  String _getVideoUrlForLesson(Lesson lesson) {
+    if (_courseLessonResponse == null) {
+      return '';
+    }
+
+    // Chuyển đổi ID bài học thành int
+    int lessonId;
+    try {
+      lessonId = int.parse(lesson.id);
+    } catch (e) {
+      // Xử lý trường hợp ID không phải số (ví dụ: "1_1", "chapter_test_1")
+      if (lesson.id.startsWith('chapter_test_')) {
+        // Đây là bài kiểm tra cấp chương, không có video
+        return '';
+      }
+
+      // Thử trích xuất ID từ định dạng "chapter_lesson" (ví dụ: "1_1" -> 1)
+      final parts = lesson.id.split('_');
+      if (parts.length >= 2) {
+        try {
+          lessonId = int.parse(parts[1]);
+        } catch (e) {
+          print('Không thể phân tích ID bài học: ${lesson.id}');
+          return '';
+        }
+      } else {
+        return '';
+      }
+    }
+
+    // Tìm chương và bài học trong dữ liệu API
+    for (final chapter in _courseLessonResponse!.chapters) {
+      for (final apiLesson in chapter.lessons) {
+        if (apiLesson.lessonId == lessonId) {
+          // Tìm thấy bài học, kiểm tra xem có video không
+          if (apiLesson.video != null) {
+            return apiLesson.video!.videoUrl;
+          }
+        }
+      }
+    }
+
+    return '';
+  }
+
+  // Mở video trong trình phát bên ngoài
+  void _openVideoInExternalPlayer(String videoUrl) {
+    if (videoUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không có URL video khả dụng'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Trong ứng dụng thực tế, bạn sẽ sử dụng url_launcher hoặc intent để mở video
+    // Tạm thời chỉ hiển thị thông báo
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Đang mở video trong trình phát ngoài...'),
+        action: SnackBarAction(
+          label: 'OK',
+          onPressed: () {},
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    // TODO: Triển khai mở video trong trình phát thực tế
+    // Ví dụ:
+    // url_launcher.launch(videoUrl);
   }
 
   // Widget xây dựng nội dung bài kiểm tra
@@ -2759,39 +2990,28 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
 
   // Widget xây dựng nội dung tài liệu bài học
   Widget _buildLessonMaterials(Lesson lesson) {
-    // Sample material data - in a real app, this would come from your API or database
-    final List<MaterialItem> sampleMaterials = [
-      const MaterialItem(
-        title: 'Tài liệu giới thiệu khóa học',
-        description: 'Tổng quan về các nội dung và mục tiêu của khóa học',
-        type: MaterialType.pdf,
-        url: 'https://example.com/intro.pdf',
-      ),
-      const MaterialItem(
-        title: 'Hướng dẫn thực hành',
-        description: 'Các bước thực hành chi tiết cho bài học này',
-        type: MaterialType.document,
-        url: 'https://example.com/guide.docx',
-      ),
-      const MaterialItem(
-        title: 'Slide bài giảng',
-        description: 'Slide trình bày các khái niệm chính trong bài học',
-        type: MaterialType.presentation,
-        url: 'https://example.com/slides.pptx',
-      ),
-      const MaterialItem(
-        title: 'Mã nguồn mẫu',
-        description: 'Code mẫu đã được giảng viên thực hiện',
-        type: MaterialType.code,
-        url: 'https://example.com/example.zip',
-      ),
-      const MaterialItem(
-        title: 'Hình ảnh minh họa',
-        description: 'Các hình ảnh và sơ đồ minh họa cho bài học',
-        type: MaterialType.image,
-        url: 'https://example.com/diagrams.zip',
-      ),
-    ];
+    // Get materials from API data
+    List<MaterialItem> materials = _getMaterialsForLesson(lesson);
+
+    // If no materials found in API, use sample data
+    if (materials.isEmpty) {
+      // Sample material data as fallback
+      materials = [
+        const MaterialItem(
+          title: 'Tài liệu giới thiệu khóa học',
+          description: 'Tổng quan về các nội dung và mục tiêu của khóa học',
+          type: MaterialType.pdf,
+          url: 'https://example.com/intro.pdf',
+        ),
+        const MaterialItem(
+          title: 'Hướng dẫn thực hành',
+          description: 'Các bước thực hành chi tiết cho bài học này',
+          type: MaterialType.document,
+          url: 'https://example.com/guide.docx',
+        ),
+        // ... existing sample materials
+      ];
+    }
 
     return Container(
       color: Colors.grey.shade50,
@@ -2823,7 +3043,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
                   _buildMaterialCategoryCard(
                     icon: Icons.menu_book,
                     title: "Tài liệu bài học",
-                    subtitle: "${sampleMaterials.length} tài liệu",
+                    subtitle: "${materials.length} tài liệu",
                     color: Colors.blue,
                   ),
                   _buildMaterialCategoryCard(
@@ -3109,10 +3329,163 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
             ),
 
             const SizedBox(height: 48),
+
+            // Section 2: List of Materials
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Tài liệu của bài học này',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blueGrey[800],
+                    ),
+                  ),
+                  // Sort button (if needed)
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Materials list
+            if (materials.isEmpty)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.folder_open,
+                        size: 64,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Không có tài liệu nào cho bài học này',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: materials.length,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemBuilder: (context, index) {
+                  final material = materials[index];
+                  return _buildMaterialCard(material);
+                },
+              ),
           ],
         ),
       ),
     );
+  }
+
+  // Lấy tài liệu từ dữ liệu API dựa trên ID bài học
+  List<MaterialItem> _getMaterialsForLesson(Lesson lesson) {
+    if (_courseLessonResponse == null) {
+      return [];
+    }
+
+    List<MaterialItem> materials = [];
+
+    // Chuyển đổi ID bài học thành int
+    int lessonId;
+    try {
+      lessonId = int.parse(lesson.id);
+    } catch (e) {
+      // Xử lý ID không phải số như trong _getVideoUrlForLesson
+      if (lesson.id.startsWith('chapter_test_')) {
+        return [];
+      }
+
+      final parts = lesson.id.split('_');
+      if (parts.length >= 2) {
+        try {
+          lessonId = int.parse(parts[1]);
+        } catch (e) {
+          print('Không thể phân tích ID bài học: ${lesson.id}');
+          return [];
+        }
+      } else {
+        return [];
+      }
+    }
+
+    // Tìm bài học trong dữ liệu API
+    for (final chapter in _courseLessonResponse!.chapters) {
+      for (final apiLesson in chapter.lessons) {
+        if (apiLesson.lessonId == lessonId) {
+          // Tìm thấy bài học, kiểm tra xem có tài liệu không
+          if (apiLesson.video != null && apiLesson.video!.documentUrl != null) {
+            // Lấy URL tài liệu
+            final String documentUrl = apiLesson.video!.documentUrl!;
+
+            // Xác định loại tài liệu dựa trên phần mở rộng
+            MaterialType materialType = _getMaterialTypeFromUrl(documentUrl);
+
+            // Tạo tiêu đề và mô tả tự động
+            String title = 'Tài liệu của ${apiLesson.lessonTitle}';
+            String description = 'Tài liệu bổ sung cho bài học này';
+
+            if (apiLesson.video!.documentShort != null &&
+                apiLesson.video!.documentShort!.isNotEmpty) {
+              description = apiLesson.video!.documentShort!;
+            }
+
+            // Tạo đối tượng MaterialItem
+            MaterialItem material = MaterialItem(
+              title: title,
+              description: description,
+              type: materialType,
+              url: documentUrl,
+            );
+
+            materials.add(material);
+          }
+        }
+      }
+    }
+
+    return materials;
+  }
+
+  // Xác định loại tài liệu dựa trên URL
+  MaterialType _getMaterialTypeFromUrl(String url) {
+    final String lowercaseUrl = url.toLowerCase();
+
+    if (lowercaseUrl.endsWith('.pdf')) {
+      return MaterialType.pdf;
+    } else if (lowercaseUrl.endsWith('.doc') ||
+        lowercaseUrl.endsWith('.docx')) {
+      return MaterialType.document;
+    } else if (lowercaseUrl.endsWith('.ppt') ||
+        lowercaseUrl.endsWith('.pptx')) {
+      return MaterialType.presentation;
+    } else if (lowercaseUrl.endsWith('.xls') ||
+        lowercaseUrl.endsWith('.xlsx')) {
+      return MaterialType.spreadsheet;
+    } else if (lowercaseUrl.endsWith('.jpg') ||
+        lowercaseUrl.endsWith('.jpeg') ||
+        lowercaseUrl.endsWith('.png') ||
+        lowercaseUrl.endsWith('.gif')) {
+      return MaterialType.image;
+    } else if (lowercaseUrl.endsWith('.zip') || lowercaseUrl.endsWith('.rar')) {
+      return MaterialType.code;
+    } else {
+      return MaterialType.other;
+    }
   }
 
   // Helper widget for material category cards
@@ -4687,5 +5060,97 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
         _showTestResults(lesson);
       }
     });
+  }
+
+  // Method to build a material item card
+  Widget _buildMaterialItem(MaterialItem material) {
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Downloading: ${material.title}'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Material icon
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: _getMaterialColor(material.type).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Icon(
+                    _getMaterialIcon(material.type),
+                    size: 28,
+                    color: _getMaterialColor(material.type),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // Material details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      material.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      material.description,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Action buttons
+                    Row(
+                      children: [
+                        _buildMaterialActionButton(
+                          icon: Icons.visibility,
+                          label: 'Xem',
+                          color: Colors.blue,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildMaterialActionButton(
+                          icon: Icons.download,
+                          label: 'Tải về',
+                          color: Colors.green,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -5,11 +5,15 @@ import 'package:tms_app/data/repositories/cart_repository_impl.dart';
 
 import 'package:tms_app/data/repositories/course_repository_impl.dart';
 import 'package:tms_app/data/repositories/document_repository_impl.dart';
+import 'package:tms_app/data/repositories/my_course/my_course_list_repository_impl.dart';
+import 'package:tms_app/data/repositories/my_course/course_lesson_repository_impl.dart'; // Import course lesson repository
 import 'package:tms_app/data/services/auth_service.dart'; // Import AuthService
 import 'package:tms_app/data/services/blog_service.dart';
 import 'package:tms_app/data/services/cart/cart_service.dart';
 import 'package:tms_app/data/services/course/course_service.dart';
 import 'package:tms_app/data/services/document/document_service.dart';
+import 'package:tms_app/data/services/my_course/my_course_list_service.dart';
+import 'package:tms_app/data/services/my_course/course_lesson_service.dart'; // Import course lesson service
 import 'package:tms_app/data/services/user_service.dart'; // Import UserService
 import 'package:tms_app/data/repositories/account_repository_impl.dart';
 import 'package:tms_app/domain/repositories/account_repository.dart';
@@ -17,12 +21,16 @@ import 'package:tms_app/domain/repositories/blog_repository.dart';
 import 'package:tms_app/domain/repositories/cart_repository.dart';
 import 'package:tms_app/domain/repositories/course_repository.dart';
 import 'package:tms_app/domain/repositories/document_repository.dart';
+import 'package:tms_app/domain/repositories/my_course/my_course_list_repository.dart';
+import 'package:tms_app/domain/repositories/my_course/course_lesson_repository.dart'; // Import course lesson repository interface
 import 'package:tms_app/domain/usecases/blog_usecase.dart';
 import 'package:tms_app/domain/usecases/cart_usecase.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
 import 'package:tms_app/domain/usecases/documents_usecase.dart';
 import 'package:tms_app/domain/usecases/forgot_password_usecase.dart';
 import 'package:tms_app/domain/usecases/login_usecase.dart';
+import 'package:tms_app/domain/usecases/my_course/my_course_list_usecase.dart';
+import 'package:tms_app/domain/usecases/my_course/course_lesson_usecase.dart'; // Import course lesson usecase
 import 'package:tms_app/domain/usecases/register_usecase.dart';
 import 'package:tms_app/domain/usecases/update_account_usecase.dart';
 import 'package:tms_app/domain/usecases/overview_my_account_usecase.dart';
@@ -45,6 +53,9 @@ import 'package:tms_app/domain/usecases/practice_test_usecase.dart';
 import 'package:tms_app/presentation/controller/unified_search_controller.dart';
 import 'package:tms_app/domain/usecases/change_password_usecase.dart';
 import 'package:tms_app/presentation/controller/course_controller.dart';
+import 'package:tms_app/core/interceptors/token_interceptor.dart';
+import 'package:tms_app/core/network/dio_client.dart';
+import 'package:tms_app/core/auth/auth_manager.dart';
 
 // Đảm bảo các import không bị xóa bởi công cụ IDE
 // ignore: unused_element
@@ -72,6 +83,9 @@ void _keepImports() {
 final sl = GetIt.instance;
 
 void setupLocator() {
+  // Đăng ký AuthManager first to avoid circular dependencies
+  sl.registerLazySingleton(() => AuthManager());
+
   // Đăng ký Dio cho các yêu cầu HTTP
   sl.registerLazySingleton<Dio>(() {
     final dio = Dio(
@@ -112,6 +126,27 @@ void setupLocator() {
 
   // Đăng ký các Controller
   _registerControllers();
+
+  // Đăng ký DioClient trước khi thiết lập TokenInterceptor
+  _registerDioClient();
+
+  // Thiết lập TokenInterceptor sau khi các service đã được đăng ký
+  _setupTokenInterceptor();
+}
+
+// Hàm mới để thiết lập interceptor cho Dio
+void _setupTokenInterceptor() {
+  // Lấy instance của Dio và AuthService đã đăng ký
+  final dio = sl<Dio>();
+  final authService = sl<AuthService>();
+
+  // Tạo và đăng ký TokenInterceptor
+  final tokenInterceptor = TokenInterceptor(dio: dio, authService: authService);
+
+  // Thêm interceptor vào Dio
+  dio.interceptors.add(tokenInterceptor);
+
+  print('Đã thiết lập TokenInterceptor');
 }
 
 // Đăng ký tất cả các Service
@@ -127,6 +162,10 @@ void _registerServices() {
   sl.registerLazySingleton(() => PracticeTestService(sl()));
   sl.registerLazySingleton(() => DocumentService(sl()));
   sl.registerLazySingleton(() => CartService(sl()));
+  // Đăng ký MyCourseListService
+  sl.registerLazySingleton(() => MyCourseListService(sl()));
+  // Đăng ký CourseLessonService
+  sl.registerLazySingleton(() => CourseLessonService(sl()));
 }
 
 // Đăng ký tất cả các Repository
@@ -160,41 +199,46 @@ void _registerRepositories() {
 
   sl.registerLazySingleton<CartRepository>(
       () => CartRepositoryImpl(cartService: sl<CartService>()));
+
+  // Đăng ký MyCourseListRepository
+  sl.registerLazySingleton<MyCourseListRepository>(
+      () => MyCourseListRepositoryImpl(sl<MyCourseListService>()));
+
+  // Đăng ký CourseLessonRepository
+  sl.registerLazySingleton<CourseLessonRepository>(
+      () => CourseLessonRepositoryImpl(sl<CourseLessonService>()));
 }
 
 // Đăng ký tất cả các UseCase
 void _registerUseCases() {
-  sl.registerFactory(() => LoginUseCase(sl()));
-
-  sl.registerFactory(() => CourseUseCase(sl()));
-
-  sl.registerFactory(() => RegisterUseCase(accountRepository: sl()));
-
-  sl.registerFactory(() => ForgotPasswordUseCase(sl()));
-
-  sl.registerFactory(() => BannerUseCase(sl()));
-
-  sl.registerLazySingleton(() => BlogUsecase(sl()));
-
-  sl.registerLazySingleton(() => DocumentUseCase(sl()));
-
-  sl.registerLazySingleton(() {
-    final repo = sl<CategoryRepository>();
-    return CategoryUseCase(repo);
-  });
-
-  sl.registerFactory(() => PracticeTestUseCase(sl()));
-  // Thêm dòng này để đăng ký UpdateAccountUseCase
-  sl.registerFactory(() => UpdateAccountUseCase(sl()));
-
-  // Đăng ký CartUseCase
-  sl.registerFactory(() => CartUseCase(sl()));
-
+  // Login & Registration
+  sl.registerLazySingleton(() => LoginUseCase(sl<AccountRepository>()));
+  sl.registerLazySingleton(
+      () => RegisterUseCase(accountRepository: sl<AccountRepository>()));
+  sl.registerLazySingleton(
+      () => ForgotPasswordUseCase(sl<AccountRepository>()));
   sl.registerLazySingleton(
       () => ChangePasswordUseCase(sl<AccountRepository>()));
+  sl.registerLazySingleton(() => UpdateAccountUseCase(sl<AccountRepository>()));
+  sl.registerLazySingleton(
+      () => OverviewMyAccountUseCase(sl<AccountRepository>()));
 
-  // Đăng ký OverviewMyAccountUseCase
-  sl.registerFactory(() => OverviewMyAccountUseCase(sl<AccountRepository>()));
+  // Courses & Content
+  sl.registerLazySingleton(() => CourseUseCase(sl<CourseRepository>()));
+  sl.registerLazySingleton(() => BannerUseCase(sl<BannerRepository>()));
+  sl.registerLazySingleton(() => CategoryUseCase(sl<CategoryRepository>()));
+  sl.registerLazySingleton(() => BlogUsecase(sl<BlogRepository>()));
+  sl.registerLazySingleton(
+      () => PracticeTestUseCase(sl<PracticeTestRepository>()));
+  sl.registerLazySingleton(() => DocumentUseCase(sl<DocumentRepository>()));
+  sl.registerLazySingleton(() => CartUseCase(sl<CartRepository>()));
+
+  // My Courses
+  sl.registerLazySingleton(
+      () => MyCourseListUseCase(sl<MyCourseListRepository>()));
+  // Course Lessons
+  sl.registerLazySingleton(
+      () => CourseLessonUseCase(sl<CourseLessonRepository>()));
 }
 
 // Thêm một phương thức mới riêng để đăng ký controllers
@@ -232,4 +276,16 @@ void _registerControllers() {
           categoryUseCase: sl<CategoryUseCase>(),
         ));
   }
+}
+
+// Thêm hàm để đăng ký DioClient
+void _registerDioClient() {
+  // Đảm bảo Dio và AuthService đã được đăng ký
+  final dio = sl<Dio>();
+  final authService = sl<AuthService>();
+
+  // Đăng ký DioClient
+  sl.registerLazySingleton<DioClient>(() => DioClient(dio, authService));
+
+  print('Đã đăng ký DioClient');
 }

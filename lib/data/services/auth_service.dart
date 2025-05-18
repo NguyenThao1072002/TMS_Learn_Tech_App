@@ -53,6 +53,80 @@ class AuthService {
     }
   }
 
+  // Thêm phương thức refresh token
+  Future<bool> refreshToken() async {
+    try {
+      // Lấy refresh token từ SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final refreshToken = prefs.getString(SharedPrefs.KEY_REFRESH_TOKEN);
+
+      if (refreshToken == null || refreshToken.isEmpty) {
+        print('Không có refresh token');
+        return false;
+      }
+
+      // Gọi API refresh token bằng GET
+      final response = await dio.get(
+        '$baseUrl/refresh-token',
+        queryParameters: {'refreshToken': refreshToken},
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+          validateStatus: (status) => true, 
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        final newToken = data['jwt'];
+        final newRefreshToken = data['refreshToken'] ?? refreshToken;
+
+        if (newToken != null && newToken.isNotEmpty) {
+          // Lưu token mới
+          await SharedPrefs.saveJwtToken(newToken);
+          await prefs.setString(SharedPrefs.KEY_REFRESH_TOKEN, newRefreshToken);
+          print('Đã làm mới token thành công');
+          return true;
+        }
+      }
+
+      print('Làm mới token thất bại: ${response.statusCode}');
+      return false;
+    } catch (e) {
+      print('Lỗi khi làm mới token: $e');
+      return false;
+    }
+  }
+
+  // Phương thức kiểm tra token còn hạn hay không
+  bool isTokenExpired(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) {
+        return true; // Token không hợp lệ, coi như đã hết hạn
+      }
+
+      // Giải mã phần payload của token
+      final payload = parts[1];
+      String normalized = base64Url.normalize(payload);
+      final payloadMap = json.decode(utf8.decode(base64Url.decode(normalized)));
+
+      // Lấy thời gian hết hạn
+      final exp = payloadMap['exp'];
+      if (exp == null) {
+        return true; // Không có thời hạn, coi như đã hết hạn
+      }
+
+      // Chuyển đổi thời gian hết hạn thành DateTime
+      final expDate = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
+
+      // So sánh với thời gian hiện tại
+      return DateTime.now().isAfter(expDate);
+    } catch (e) {
+      print('Lỗi khi kiểm tra token: $e');
+      return true; // Nếu có lỗi, coi như token đã hết hạn
+    }
+  }
+
   // Xử lý URL ảnh đại diện người dùng
   String _processImageUrl(
       Map<String, dynamic> userInfo, Map<String, dynamic> data) {

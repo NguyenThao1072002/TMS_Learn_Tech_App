@@ -13,6 +13,8 @@ import 'package:tms_app/presentation/screens/onboarding/onboarding_screen.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 import 'package:tms_app/presentation/controller/unified_search_controller.dart';
+import 'package:tms_app/core/auth/auth_manager.dart';
+import 'package:get_it/get_it.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +23,10 @@ void main() async {
   try {
     setupLocator();
     print('Service Locator đã được thiết lập thành công');
+
+    // Verify AuthManager is registered properly
+    final authManager = GetIt.instance<AuthManager>();
+    print('AuthManager successfully retrieved: ${authManager != null}');
   } catch (e) {
     print('Lỗi khi thiết lập Service Locator: $e');
   }
@@ -62,6 +68,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Lấy AuthManager từ service locator
+    AuthManager? authManager;
+    try {
+      authManager = GetIt.instance<AuthManager>();
+    } catch (e) {
+      print('Lỗi khi lấy AuthManager từ GetIt: $e');
+      // Fallback to a new instance if retrieval fails
+      authManager = AuthManager();
+    }
+
     return MultiProvider(
       providers: [
         // Cung cấp UnifiedSearchController thông qua Provider
@@ -84,7 +100,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
         debugShowCheckedModeBanner: false,
-        navigatorKey: GlobalKey<NavigatorState>(),
+        navigatorKey: authManager.navigatorKey,
         routes: {
           '/teaching_staff': (context) => const TeachingStaffScreen(),
           '/about_us': (context) => const AboutUsScreen(),
