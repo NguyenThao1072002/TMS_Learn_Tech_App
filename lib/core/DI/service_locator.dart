@@ -56,6 +56,7 @@ import 'package:tms_app/presentation/controller/course_controller.dart';
 import 'package:tms_app/core/interceptors/token_interceptor.dart';
 import 'package:tms_app/core/network/dio_client.dart';
 import 'package:tms_app/core/auth/auth_manager.dart';
+import 'package:tms_app/presentation/controller/my_course/my_course_controller.dart';
 
 // Đảm bảo các import không bị xóa bởi công cụ IDE
 // ignore: unused_element
@@ -253,6 +254,11 @@ void _registerControllers() {
   sl.registerLazySingleton<UnifiedSearchController>(
     () => UnifiedSearchController(),
   );
+
+  // Đăng ký MyCourseController
+  sl.registerLazySingleton(() => MyCourseController(
+        courseLessonUseCase: sl<CourseLessonUseCase>(),
+      ));
 
   // Đảm bảo ForgotPasswordController được đăng ký trước khi đăng ký các controller khác phụ thuộc vào nó
   if (!sl.isRegistered<ForgotPasswordController>()) {

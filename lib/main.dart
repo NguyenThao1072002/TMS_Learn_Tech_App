@@ -15,6 +15,7 @@ import 'package:provider/provider.dart';
 import 'package:tms_app/presentation/controller/unified_search_controller.dart';
 import 'package:tms_app/core/auth/auth_manager.dart';
 import 'package:get_it/get_it.dart';
+import 'package:tms_app/presentation/controller/my_course/my_course_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -84,6 +85,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<UnifiedSearchController>(
           create: (_) => sl<UnifiedSearchController>(),
         ),
+        ChangeNotifierProvider(create: (_) => MyCourseController()),
         // Thêm các provider khác nếu cần
       ],
       child: MaterialApp(
@@ -112,6 +114,20 @@ class MyApp extends StatelessWidget {
         home: showOnboarding
             ? const OnboardingScreen()
             : (isLoggedIn ? HomeScreen() : LoginScreen()),
+      ),
+    );
+  }
+}
+
+// Placeholder home screen, replace with your actual home screen
+class HomePlaceholder extends StatelessWidget {
+  const HomePlaceholder({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Text('TMS App Home Screen'),
       ),
     );
   }
