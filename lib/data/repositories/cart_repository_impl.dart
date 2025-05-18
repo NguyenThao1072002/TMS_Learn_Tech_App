@@ -1,4 +1,5 @@
 import 'package:tms_app/data/models/cart/cart_model.dart';
+import 'package:tms_app/data/models/combo/course_bundle_model.dart';
 import 'package:tms_app/data/services/cart/cart_service.dart';
 import 'package:tms_app/domain/repositories/cart_repository.dart';
 
@@ -28,5 +29,10 @@ class CartRepositoryImpl implements CartRepository {
       type: type,
       price: price,
     );
+  }
+  
+  @override
+  Future<List<CourseBundle>> getCourseBundles(int courseId) async {
+    return await cartService.getCourseBundles(courseId);
   }
 }

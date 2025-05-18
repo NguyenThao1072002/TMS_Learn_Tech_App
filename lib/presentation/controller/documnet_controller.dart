@@ -16,6 +16,7 @@ class DocumentController {
   final ValueNotifier<List<DocumentCategory>> categories = ValueNotifier([]);
   final ValueNotifier<bool> isLoading = ValueNotifier(false);
   final ValueNotifier<String> searchQuery = ValueNotifier('');
+  final ValueNotifier<List<DocumentModel>> relatedDocuments = ValueNotifier([]);
   final int itemsPerPage = 10;
 
   DocumentController(this.documentUseCase, {this.categoryUseCase});
@@ -30,6 +31,18 @@ class DocumentController {
       filteredDocuments.value = [];
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  // Phương thức để tải tài liệu liên quan
+  Future<void> loadRelatedDocuments(int categoryId) async {
+    try {
+      final documents = await documentUseCase.getRelatedDocuments(categoryId);
+      relatedDocuments.value = documents;
+      print('Đã tải ${documents.length} tài liệu liên quan từ danh mục $categoryId');
+    } catch (e) {
+      print('Lỗi khi tải tài liệu liên quan: $e');
+      relatedDocuments.value = [];
     }
   }
 
@@ -171,6 +184,12 @@ class DocumentController {
     isLoading.value = true;
     try {
       final document = await documentUseCase.getDocumentDetail(id);
+      
+      // Nếu lấy được chi tiết tài liệu thành công, tải tài liệu liên quan
+      if (document != null && document.categoryId != null) {
+        await loadRelatedDocuments(document.categoryId!);
+      }
+      
       return document;
     } catch (e) {
       print('Error getting document detail: $e');
@@ -299,5 +318,6 @@ class DocumentController {
     selectedFilter.dispose();
     isLoading.dispose();
     searchQuery.dispose();
+    relatedDocuments.dispose();
   }
 }

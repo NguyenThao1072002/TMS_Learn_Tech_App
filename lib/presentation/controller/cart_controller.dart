@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tms_app/data/models/cart/cart_model.dart';
+import 'package:tms_app/data/models/combo/course_bundle_model.dart';
 import 'package:tms_app/domain/usecases/cart_usecase.dart';
 
 class CartController {
@@ -9,6 +10,10 @@ class CartController {
   final ValueNotifier<String?> errorMessage = ValueNotifier(null);
   final ValueNotifier<double> cartTotal = ValueNotifier(0.0);
   final ValueNotifier<bool> isRefreshing = ValueNotifier(false);
+  
+  // Thêm ValueNotifier cho danh sách combo đề xuất
+  final ValueNotifier<List<CourseBundle>> suggestedBundles = ValueNotifier([]);
+  final ValueNotifier<bool> isLoadingBundles = ValueNotifier(false);
 
   CartController({required this.cartUseCase}) {
     _initializeData();
@@ -29,8 +34,7 @@ class CartController {
 
 // Trong CartController
   Future<void> loadCartItems() async {
-    print(
-        "Starting to load cart items, current loading state: ${isLoading.value}");
+    print("Starting to load cart items, current loading state: ${isLoading.value}");
     if (isLoading.value) {
       print("Already loading, returning early");
       return;
@@ -43,6 +47,14 @@ class CartController {
     try {
       final items = await cartUseCase.getCartItems();
       print("Successfully loaded ${items.length} items");
+      
+      // Log thông tin chi tiết về các mục trong giỏ hàng
+      for (var item in items) {
+        print("Cart item: ID=${item.cartItemId}, Name=${item.name}, Type=${item.type}, Image=${item.image}");
+        if (item.type.toUpperCase() == 'COMBO') {
+          print("Found COMBO in cart: ${item.name}, ID: ${item.cartItemId}, BundleId: ${item.courseBundleId}");
+        }
+      }
 
       cartItems.value = items;
       print("Updated cartItems.value with ${cartItems.value.length} items");
@@ -85,7 +97,6 @@ class CartController {
       final success = await cartUseCase.addToCart(
         itemId: itemId,
         type: type,
- 
         price: price,
       );
 
@@ -137,11 +148,31 @@ class CartController {
     }
   }
 
+  Future<void> loadCourseBundles(int courseId) async {
+    isLoadingBundles.value = true;
+    errorMessage.value = null;
+    
+    try {
+      final bundles = await cartUseCase.getCourseBundles(courseId);
+      suggestedBundles.value = bundles;
+      print("Loaded ${bundles.length} course bundles for courseId: $courseId");
+    } catch (e, stackTrace) {
+      print("Error loading course bundles: $e");
+      _logError('Không thể tải gói combo', e, stackTrace);
+    } finally {
+      isLoadingBundles.value = false;
+    }
+  }
+  
+ 
+
   void dispose() {
     cartItems.dispose();
     isLoading.dispose();
     errorMessage.dispose();
     cartTotal.dispose();
     isRefreshing.dispose();
+    suggestedBundles.dispose();
+    isLoadingBundles.dispose();
   }
 }

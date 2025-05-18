@@ -7,6 +7,8 @@ abstract class DocumentRepository {
 
   Future<List<DocumentModel>> getDocumentsByCategory(int categoryId);
 
+  Future<List<DocumentModel>> getRelatedDocuments(int categoryId);
+
   Future<List<DocumentModel>> searchDocuments(String keyword);
 
   Future<DocumentModel?> getDocumentDetail(int id);

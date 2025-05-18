@@ -23,6 +23,11 @@ class DocumentRepositoryImpl implements DocumentRepository {
   }
 
   @override
+  Future<List<DocumentModel>> getRelatedDocuments(int categoryId) async {
+    return await documentService.getRelatedDocuments(categoryId);
+  }
+
+  @override
   Future<List<DocumentModel>> searchDocuments(String keyword) async {
     return await documentService.searchDocuments(keyword);
   }

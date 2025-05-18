@@ -102,7 +102,7 @@ class _DocumentItemState extends State<DocumentItem>
 
   Widget _buildImage() {
     return Container(
-      height: 150,
+      height: 180,
       decoration: BoxDecoration(
         color: Colors.grey[200],
         borderRadius: const BorderRadius.only(
@@ -293,19 +293,6 @@ class _DocumentItemState extends State<DocumentItem>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            Icon(Icons.description, size: 14, color: Colors.grey[500]),
-            const SizedBox(width: 4),
-            Text(
-              '${widget.document.size} ',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[500],
-              ),
-            ),
-          ],
-        ),
         Row(
           children: [
             Icon(Icons.download, size: 14, color: Colors.grey[500]),

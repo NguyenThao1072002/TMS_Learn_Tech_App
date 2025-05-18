@@ -5,6 +5,7 @@ import 'package:tms_app/data/models/cart/cart_model.dart';
 
 import 'package:get_it/get_it.dart';
 import 'package:tms_app/core/utils/api_response_helper.dart';
+import 'package:tms_app/data/models/combo/course_bundle_model.dart';
 
 class CartService {
   final String baseUrl = Constants.BASE_URL;
@@ -49,7 +50,7 @@ class CartService {
   }
 
   // Hàm 2: Xóa một item khỏi giỏ hàng (đã cập nhật theo format API mới)
-Future<bool> removeCartItem(int cartItemId) async {
+  Future<bool> removeCartItem(int cartItemId) async {
   try {
     // Lấy token từ SharedPreferences
     final prefs = await SharedPreferences.getInstance();
@@ -81,7 +82,7 @@ Future<bool> removeCartItem(int cartItemId) async {
     print('Lỗi khi xóa item khỏi giỏ hàng: $e');
     return false;
   }
-}
+  }
   // Thêm item vào giỏ hàng (khóa học, bài thi, combo)
   Future<bool> addToCart({
     required int itemId,
@@ -154,6 +155,36 @@ Future<bool> removeCartItem(int cartItemId) async {
         print('Chi tiết lỗi: ${e.response?.data}');
       }
       return false;
+    }
+  }
+
+  // Lấy danh sách combo cho một khóa học cụ thể
+  Future<List<CourseBundle>> getCourseBundles(int courseId) async {
+    try {
+      // Lấy token từ SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt');
+
+      final response = await dio.get(
+        '$baseUrl/api/cart/course/$courseId/bundles',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token != null ? 'Bearer $token' : null,
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        // Xử lý phản hồi dữ liệu
+        return ApiResponseHelper.processList(response.data, CourseBundle.fromJson);
+      } else {
+        print('Lỗi khi lấy combo: ${response.statusCode}');
+        throw Exception('Failed to load course bundles: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Lỗi khi lấy danh sách combo: $e');
+      return [];
     }
   }
 }

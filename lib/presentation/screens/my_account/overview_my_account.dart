@@ -22,6 +22,7 @@ import 'package:tms_app/domain/usecases/overview_my_account_usecase.dart';
 import 'package:tms_app/data/models/account/overview_my_account_model.dart';
 import 'package:tms_app/core/lifecycle_observer.dart';
 import 'package:intl/intl.dart';
+import 'package:tms_app/data/services/cart/cart_service.dart';
 // import 'package:tms_app/core/app_export.dart';
 
 class StatCard extends StatefulWidget {
@@ -209,7 +210,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
   double _balanceWallet = 0.0;
 
   // Số lượng cho badges
-  final int _cartItemCount = 3;
+  int _cartItemCount = 0;
   final int _unreadMessageCount = 5;
 
   @override
@@ -226,6 +227,9 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
 
     // Tải account overview
     _loadAccountOverview();
+
+    // Tải số lượng item trong giỏ hàng
+    _loadCartItemCount();
 
     // Khởi tạo timer cho hiệu ứng màu chạy
     _colorTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
@@ -354,6 +358,22 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
     });
   }
 
+  // Tải số lượng item trong giỏ hàng
+  Future<void> _loadCartItemCount() async {
+    try {
+      final cartService = GetIt.instance<CartService>();
+      final cartItems = await cartService.getCartItems();
+      
+      setState(() {
+        _cartItemCount = cartItems.length;
+      });
+      
+      debugPrint('Số lượng item trong giỏ hàng: $_cartItemCount');
+    } catch (e) {
+      debugPrint('Lỗi khi tải số lượng item trong giỏ hàng: $e');
+    }
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -410,7 +430,10 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
                     MaterialPageRoute(
                       builder: (context) => const CartScreen(),
                     ),
-                  );
+                  ).then((_) {
+                    // Cập nhật số lượng giỏ hàng khi quay lại từ màn hình giỏ hàng
+                    _loadCartItemCount();
+                  });
                 },
               ),
               if (_cartItemCount > 0)
@@ -1153,6 +1176,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
         // Force reload
         await _loadUserInfo();
         await _loadAccountOverview();
+        await _loadCartItemCount();
         return;
       }
 
@@ -1166,6 +1190,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
         // Reload dữ liệu nếu userId thay đổi
         await _loadUserInfo();
         await _loadAccountOverview();
+        await _loadCartItemCount();
       }
     } catch (e) {
       debugPrint('Lỗi khi kiểm tra cập nhật dữ liệu: $e');
@@ -1196,6 +1221,9 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
           _accountOverview = null;
         });
       }
+      
+      // Tải lại số lượng giỏ hàng
+      _loadCartItemCount();
     } catch (e) {
       debugPrint('Lỗi khi xóa cache: $e');
     }
