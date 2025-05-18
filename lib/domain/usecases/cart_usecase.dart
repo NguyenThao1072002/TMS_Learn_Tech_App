@@ -1,4 +1,5 @@
 import 'package:tms_app/data/models/cart/cart_model.dart';
+import 'package:tms_app/data/models/combo/course_bundle_model.dart';
 import 'package:tms_app/domain/repositories/cart_repository.dart';
 
 class CartUseCase {
@@ -26,6 +27,11 @@ class CartUseCase {
     );
   }
 
+  // Lấy danh sách combo được đề xuất cho khóa học
+  Future<List<CourseBundle>> getCourseBundles(int courseId) async {
+    return await cartRepository.getCourseBundles(courseId);
+  }
+
   // Tính tổng giá trị giỏ hàng
   Future<double> calculateCartTotal() async {
     final cartItems = await getCartItems();
@@ -34,8 +40,8 @@ class CartUseCase {
     for (var item in cartItems) {
       // Tính giá sau khi áp dụng giảm giá (nếu có)
       double itemPrice = item.price;
-      if (item.discount > 0) {
-        itemPrice = itemPrice - (itemPrice * item.discount / 100);
+      if (item.discount != null && item.discount! > 0) {
+        itemPrice = itemPrice - (itemPrice * item.discount! / 100);
       }
       total += itemPrice;
     }

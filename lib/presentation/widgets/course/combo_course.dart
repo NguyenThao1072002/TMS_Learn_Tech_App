@@ -6,6 +6,9 @@ import 'package:tms_app/presentation/controller/course_controller.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
 import 'package:tms_app/presentation/widgets/course/course_card.dart';
+import 'package:tms_app/presentation/controller/cart_controller.dart';
+import 'package:tms_app/domain/usecases/cart_usecase.dart';
+import 'package:tms_app/presentation/screens/my_account/checkout/cart.dart';
 
 class ComboCourseScreen extends StatefulWidget {
   final int? comboId;
@@ -18,7 +21,9 @@ class ComboCourseScreen extends StatefulWidget {
 
 class _ComboCourseScreenState extends State<ComboCourseScreen> {
   late final CourseController _controller;
+  late final CartController _cartController;
   bool _isLoading = true;
+  bool _isAddingToCart = false;
   ComboCourseDetailModel? _combo;
   final _currencyFormat =
       NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0);
@@ -27,7 +32,14 @@ class _ComboCourseScreenState extends State<ComboCourseScreen> {
   void initState() {
     super.initState();
     _controller = GetIt.instance<CourseController>();
+    _cartController = CartController(cartUseCase: GetIt.instance<CartUseCase>());
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _cartController.dispose();
   }
 
   Future<void> _loadData() async {
@@ -59,6 +71,99 @@ class _ComboCourseScreenState extends State<ComboCourseScreen> {
         });
       }
     }
+  }
+
+  // Thêm combo vào giỏ hàng
+  Future<void> _addToCart() async {
+    if (_isAddingToCart || _combo == null) return; // Tránh nhấn nhiều lần liên tiếp
+    
+    setState(() {
+      _isAddingToCart = true;
+    });
+    
+    try {
+      final success = await _cartController.addToCart(
+        itemId: _combo!.id,
+        type: "COMBO",
+        price: _combo!.price,
+      );
+      
+      if (success) {
+        _showAddToCartFeedback();
+      } else {
+        if (_cartController.errorMessage.value?.contains('đã có trong giỏ hàng') ?? false) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Combo đã có trong giỏ hàng'),
+              backgroundColor: Colors.orange,
+            )
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Không thể thêm vào giỏ hàng. Vui lòng thử lại sau.'),
+              backgroundColor: Colors.red,
+            )
+          );
+        }
+      }
+    } catch (e) {
+      print('Lỗi khi thêm combo vào giỏ hàng: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đã xảy ra lỗi: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        )
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAddingToCart = false;
+        });
+      }
+    }
+  }
+
+  // Hiển thị thông báo đã thêm vào giỏ hàng
+  void _showAddToCartFeedback() {
+    final snackBar = SnackBar(
+      content: Row(
+        children: [
+          Icon(Icons.check_circle, color: Colors.white),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Đã thêm combo vào giỏ hàng',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+      backgroundColor: Colors.green,
+      duration: Duration(seconds: 2),
+      action: SnackBarAction(
+        label: 'XEM GIỎ',
+        textColor: Colors.white,
+        onPressed: _navigateToCart,
+      ),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
+  // Chuyển đến màn hình giỏ hàng
+  void _navigateToCart() {
+    if (_combo == null) return;
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CartScreen(
+          preSelectedItemId: _combo!.id.toString(),
+          preSelectedItemType: "COMBO",
+        ),
+      ),
+    );
   }
 
   @override
@@ -550,21 +655,23 @@ class _ComboCourseScreenState extends State<ComboCourseScreen> {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Đã thêm combo khóa học vào giỏ hàng'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              },
+              onTap: _isAddingToCart ? null : _addToCart,
               borderRadius: BorderRadius.circular(28),
-              child: const Center(
-                child: Icon(
-                  Icons.shopping_cart,
-                  color: Color(0xFF3498DB),
-                  size: 24,
-                ),
+              child: Center(
+                child: _isAddingToCart
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3498DB)),
+                        ),
+                      )
+                    : const Icon(
+                        Icons.shopping_cart,
+                        color: Color(0xFF3498DB),
+                        size: 24,
+                      ),
               ),
             ),
           ),
@@ -598,14 +705,7 @@ class _ComboCourseScreenState extends State<ComboCourseScreen> {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Đăng ký khóa học thành công'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                },
+                onTap: _navigateToCart,
                 borderRadius: BorderRadius.circular(28),
                 child: const Center(
                   child: Text(

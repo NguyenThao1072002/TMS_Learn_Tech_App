@@ -6,12 +6,20 @@ import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:url_launcher/url_launcher.dart'; // Add this package for launching URLs
+import 'package:tms_app/presentation/controller/documnet_controller.dart';
+import 'package:get_it/get_it.dart';
+import 'package:tms_app/domain/usecases/documents_usecase.dart';
+import 'package:path_provider/path_provider.dart' show getApplicationDocumentsDirectory, getExternalStorageDirectory, getDownloadsDirectory;
 
 class DocumentDetailScreen extends StatefulWidget {
   final DocumentModel document;
+  final DocumentController? controller;
 
-  const DocumentDetailScreen({Key? key, required this.document})
-      : super(key: key);
+  const DocumentDetailScreen({
+    Key? key, 
+    required this.document,
+    this.controller,
+  }) : super(key: key);
 
   @override
   State<DocumentDetailScreen> createState() => _DocumentDetailScreenState();
@@ -21,8 +29,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   int _currentPage = 1;
   final PageController _pageController = PageController();
   bool _isLoggedIn = false; // Trạng thái đăng nhập
-  int _downloadCount = 0; // Số lần đã tải
-  final int _maxDownloads = 3; // Số lần tối đa cho người dùng chưa đăng nhập
 
   // Các biến để xử lý tài liệu từ URL
   File? _localFile;
@@ -38,13 +44,22 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   // Thêm biến để lưu tổng số trang thực tế của tài liệu
   int _totalPages = 3; // Mặc định là 3 nhưng sẽ được cập nhật khi tải tài liệu
 
+  late DocumentController _documentController;
+
   @override
   void initState() {
     super.initState();
-    _loadDownloadCount();
     _checkLoginStatus();
     // Tải và lưu tài liệu để xem trước
     _loadDocumentForPreview();
+    
+    // Khởi tạo controller hoặc sử dụng controller được truyền vào
+    _documentController = widget.controller ?? DocumentController(GetIt.instance<DocumentUseCase>());
+    
+    // Nếu tài liệu có categoryId, tải tài liệu liên quan
+    if (widget.document.categoryId != null) {
+      _loadRelatedDocuments(widget.document.categoryId!);
+    }
   }
 
   // Kiểm tra trạng thái đăng nhập
@@ -53,20 +68,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     setState(() {
       _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
     });
-  }
-
-  // Lấy số lần tải xuống từ local storage
-  Future<void> _loadDownloadCount() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _downloadCount = prefs.getInt('downloadCount') ?? 0;
-    });
-  }
-
-  // Lưu số lần tải xuống vào local storage
-  Future<void> _saveDownloadCount() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('downloadCount', _downloadCount);
   }
 
   // Hàm mới để tải tài liệu từ URL và lưu vào bộ nhớ tạm
@@ -139,7 +140,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   void _openWebsiteToView() async {
     // Thay URL này bằng URL thực của trang web xem tài liệu
     final websiteUrl =
-        'https://yourwebsite.com/documents/${widget.document.id}';
+        'http://tmslearntech.io.vn/documents/${widget.document.id}';
 
     if (await canLaunch(websiteUrl)) {
       await launch(websiteUrl);
@@ -172,68 +173,77 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
 
   // Xử lý sự kiện tải xuống
   void _handleDownload() async {
-    if (_isLoggedIn) {
-      _downloadDocument();
-    } else {
-      if (_downloadCount < _maxDownloads) {
-        setState(() {
-          _downloadCount++;
-        });
-        await _saveDownloadCount();
-        _downloadDocument();
-      } else {
-        _showLoginRequiredDialog();
-      }
-    }
+    // Luôn cho phép tải xuống, không quan tâm đến trạng thái đăng nhập
+    _downloadDocument();
   }
 
   // Tải tài liệu
-  void _downloadDocument() {
-    // Ghi chú: Không thể tăng downloads trong model vì nó là final
-    // Trong thực tế, chúng ta sẽ cần gọi API để cập nhật số lượt tải
-
-    // Thay vì cập nhật trực tiếp, hiển thị thông báo
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đang tải xuống tài liệu...'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-
-    // TODO: Thêm logic để thực sự tải tài liệu và lưu vào thiết bị
-  }
-
-  // Hiển thị hộp thoại yêu cầu đăng nhập
-  void _showLoginRequiredDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Yêu cầu đăng nhập'),
-        content: const Text(
-          'Bạn đã vượt quá giới hạn tải xuống cho người dùng chưa đăng nhập. Vui lòng đăng nhập để tiếp tục tải xuống.',
+  void _downloadDocument() async {
+    try {
+      // Hiển thị thông báo đang tải xuống
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đang tải xuống tài liệu...'),
+          duration: Duration(seconds: 2),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
+      );
+
+      // Lấy URL từ document model
+      final url = widget.document.fileUrl;
+      final fileName = '${widget.document.title}_${widget.document.id}.${_getFileExtension()}';
+
+      // Lấy thư mục Downloads hoặc Documents để lưu file
+      Directory? directory;
+      if (Platform.isAndroid) {
+        directory = await getExternalStorageDirectory();
+      } else if (Platform.isIOS) {
+        directory = await getApplicationDocumentsDirectory();
+      } else {
+        directory = await getDownloadsDirectory();
+      }
+
+      if (directory == null) {
+        _showDownloadError('Không thể tìm thấy thư mục lưu trữ.');
+        return;
+      }
+
+      final filePath = '${directory.path}/$fileName';
+      final file = File(filePath);
+
+      // Bắt đầu tải xuống
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        // Lưu nội dung tải xuống vào file
+        await file.writeAsBytes(response.bodyBytes);
+        
+        // Hiển thị thông báo thành công
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Tải xuống thành công. Lưu tại: $filePath'),
+            duration: const Duration(seconds: 3),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _navigateToLogin();
-            },
-            child: const Text('Đăng nhập'),
-          ),
-        ],
+        );
+        
+        // Tăng số lượt tải (nếu có API để cập nhật)
+        _documentController.incrementDownload(widget.document.id);
+      } else {
+        _showDownloadError('Lỗi khi tải xuống: ${response.statusCode}');
+      }
+    } catch (e) {
+      _showDownloadError('Lỗi khi tải xuống: $e');
+    }
+  }
+  
+  void _showDownloadError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
       ),
     );
   }
 
-  // Điều hướng đến trang đăng nhập
-  void _navigateToLogin() {
-    // TODO: Điều hướng đến trang đăng nhập
-    // Navigator.push(context, MaterialPageRoute(builder: (context) => LoginScreen()));
-  }
 
   @override
   void dispose() {
@@ -896,7 +906,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                   ),
                   const SizedBox(height: 12),
                   _buildButton(
-                    'TẢI XUỐNG${!_isLoggedIn ? " (${_maxDownloads - _downloadCount}/${_maxDownloads} lần)" : ""}',
+                    'TẢI XUỐNG',
                     const Color.fromARGB(255, 255, 157, 10),
                     _handleDownload,
                   ),
@@ -961,6 +971,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
             ),
 
             const SizedBox(height: 24),
+            
+            // Thêm phần tài liệu liên quan
+            _buildRelatedDocumentsSection(),
           ],
         ),
       ),
@@ -1018,9 +1031,59 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
       },
       children: [
         _buildTableRow('Định dạng', _buildFileTypeRow()),
-        _buildTableRow('Dung lượng', Text(widget.document.size)),
+        _buildTableRow('Dung lượng', Text(_formatFileSize(widget.document.size))),
       ],
     );
+  }
+
+  // Hàm định dạng dung lượng từ chuỗi thành MB, KB
+  String _formatFileSize(String sizeString) {
+    // Trích xuất số từ chuỗi
+    RegExp regExp = RegExp(r'[0-9.]+');
+    final match = regExp.firstMatch(sizeString);
+    if (match == null) return sizeString;
+    
+    String numberStr = match.group(0) ?? '';
+    double size;
+    try {
+      size = double.parse(numberStr);
+    } catch (e) {
+      return sizeString;
+    }
+    
+    // Xác định đơn vị
+    if (sizeString.toLowerCase().contains('mb')) {
+      return '${size.toStringAsFixed(2)} MB';
+    } else if (sizeString.toLowerCase().contains('kb')) {
+      return '${size.toStringAsFixed(2)} KB';
+    } else if (size > 1024 * 1024) {
+      return '${(size / (1024 * 1024)).toStringAsFixed(2)} MB';
+    } else if (size > 1024) {
+      return '${(size / 1024).toStringAsFixed(2)} KB';
+    } else {
+      return '$size Bytes';
+    }
+  }
+
+  Color _getColorForDocType(String type) {
+    switch (type.toLowerCase()) {
+      case 'pdf':
+        return Colors.red;
+      case 'word':
+      case 'doc':
+      case 'docx':
+        return Colors.blue;
+      case 'excel':
+      case 'xls':
+      case 'xlsx':
+        return Colors.green;
+      case 'ppt':
+      case 'pptx':
+      case 'powerpoint':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
   }
 
   TableRow _buildTableRow(String label, Widget content) {
@@ -1113,6 +1176,140 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // Tải tài liệu liên quan
+  Future<void> _loadRelatedDocuments(int categoryId) async {
+    await _documentController.loadRelatedDocuments(categoryId);
+  }
+
+  // Tạo section tài liệu liên quan
+  Widget _buildRelatedDocumentsSection() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'TÀI LIỆU LIÊN QUAN',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ValueListenableBuilder<List<DocumentModel>>(
+            valueListenable: _documentController.relatedDocuments,
+            builder: (context, relatedDocs, child) {
+              // Lọc bỏ tài liệu đang xem khỏi danh sách tài liệu liên quan
+              final filteredDocs = relatedDocs
+                  .where((doc) => doc.id != widget.document.id)
+                  .toList();
+                  
+              if (filteredDocs.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16.0),
+                    child: Text(
+                      'Không có tài liệu liên quan',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                );
+              }
+              
+              return ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filteredDocs.length > 5 ? 5 : filteredDocs.length,
+                separatorBuilder: (context, index) => const Divider(),
+                itemBuilder: (context, index) {
+                  final document = filteredDocs[index];
+                  return InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DocumentDetailScreen(
+                            document: document,
+                            controller: _documentController,
+                          ),
+                        ),
+                      );
+                    },
+                    child: _buildRelatedDocument(
+                      document.title,
+                      document.format,
+                      document.view,
+                      document.downloads,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRelatedDocument(
+    String title,
+    String type,
+    int views,
+    int downloads,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: _getColorForDocType(type),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              type.toUpperCase(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _buildInfoItem(Icons.remove_red_eye, '$views'),
+                    const SizedBox(width: 16),
+                    _buildInfoItem(Icons.download, '$downloads'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

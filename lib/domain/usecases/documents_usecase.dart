@@ -18,6 +18,10 @@ class DocumentUseCase {
     return await repository.getDocumentsByCategory(categoryId);
   }
 
+  Future<List<DocumentModel>> getRelatedDocuments(int categoryId) async {
+    return await repository.getRelatedDocuments(categoryId);
+  }
+
   Future<List<DocumentModel>> searchDocuments(String keyword) async {
     return await repository.searchDocuments(keyword);
   }

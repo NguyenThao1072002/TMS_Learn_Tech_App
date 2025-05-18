@@ -94,6 +94,36 @@ class DocumentService {
     }
   }
 
+  Future<List<DocumentModel>> getRelatedDocuments(int categoryId) async {
+    try {
+      final endpoint = '$apiUrl/general_documents/public?categoryId=$categoryId';
+      
+      try {
+        final response = await dio.get(
+          endpoint,
+          options: Options(
+            validateStatus: (status) => true,
+            headers: {'Accept': 'application/json'},
+          )
+        );
+        
+        if (response.statusCode == 200) {
+          return ApiResponseHelper.processList(
+            response.data, DocumentModel.fromJson);
+        } else {
+          print('Lỗi khi lấy tài liệu liên quan: ${response.statusCode}');
+          return [];
+        }
+      } on DioException catch (e) {
+        print('DioException khi lấy tài liệu liên quan: ${e.message}');
+        return [];
+      }
+    } catch (e) {
+      print('Exception khi lấy tài liệu liên quan: $e');
+      return [];
+    }
+  }
+
   Future<List<DocumentModel>> searchDocuments(String keyword) async {
     try {
       final endpoint = '$apiUrl/general_documents/public?keyword=$keyword';
@@ -186,10 +216,10 @@ class DocumentService {
 
   Future<bool> incrementView(int documentId) async {
     try {
-      final endpoint = '$apiUrl/general_documents/$documentId/view';
+      final endpoint = '$apiUrl/general_documents/$documentId/increment-view';
 
       try {
-        final response = await dio.post(
+        final response = await dio.put(
           endpoint,
           options: Options(
             validateStatus: (status) => true,
