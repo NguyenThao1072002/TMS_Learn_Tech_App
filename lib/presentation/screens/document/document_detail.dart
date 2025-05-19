@@ -10,6 +10,7 @@ import 'package:tms_app/presentation/controller/documnet_controller.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tms_app/domain/usecases/documents_usecase.dart';
 import 'package:path_provider/path_provider.dart' show getApplicationDocumentsDirectory, getExternalStorageDirectory, getDownloadsDirectory;
+import 'package:tms_app/presentation/widgets/document/header.dart'; // Import DocumentHeader
 
 class DocumentDetailScreen extends StatefulWidget {
   final DocumentModel document;
@@ -727,35 +728,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'Chi tiết',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Color.fromARGB(255, 0, 0, 0),
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.bookmark_border, color: Colors.black),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.share, color: Colors.black),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.black),
-            onPressed: () {},
-          ),
-        ],
+      appBar: DocumentHeader(
+        document: widget.document,
+        onBackPressed: () => Navigator.of(context).pop(),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -1114,6 +1089,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     Color wordColor = Colors.grey.shade400;
     Color pdfColor = Colors.grey.shade400;
     Color xlsColor = Colors.grey.shade400;
+    Color pptxColor = Colors.grey.shade400; // Thêm màu cho PPTX
 
     // Determine which badge should be highlighted based on the document format
     if (format == 'word' || format == 'doc' || format == 'docx') {
@@ -1123,8 +1099,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     } else if (format == 'excel' || format == 'xls' || format == 'xlsx') {
       xlsColor = Colors.green;
     } else if (format == 'ppt' || format == 'pptx' || format == 'powerpoint') {
-      // If PowerPoint, we could either add a new badge or keep all gray
-      // For now, all will stay gray for PowerPoint as it's not in the original UI
+      pptxColor = Colors.orange;
     }
 
     return Row(
@@ -1168,6 +1143,22 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           ),
           child: const Text(
             'XLS',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: pptxColor,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: const Text(
+            'PPTX',
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
