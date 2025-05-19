@@ -4,7 +4,7 @@ import 'package:tms_app/core/DI/service_locator.dart'; // Import sl từ service
 import 'package:tms_app/domain/usecases/my_course/course_lesson_usecase.dart';
 import 'package:tms_app/data/models/my_course/learn_lesson_model.dart';
 import 'package:tms_app/presentation/screens/my_account/my_course/take_test.dart';
-import 'package:tms_app/presentation/screens/my_account/my_course/test_instruction.dart';
+import 'package:tms_app/presentation/widgets/my_course/test_instruction.dart';
 import 'package:dio/dio.dart';
 import 'package:tms_app/data/services/my_course/course_lesson_service.dart';
 import 'package:tms_app/data/repositories/my_course/course_lesson_repository_impl.dart';

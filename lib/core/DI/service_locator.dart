@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tms_app/data/repositories/blog_repository_impl.dart';
 import 'package:tms_app/data/repositories/cart_repository_impl.dart';
-
 import 'package:tms_app/data/repositories/course_repository_impl.dart';
 import 'package:tms_app/data/repositories/document_repository_impl.dart';
 import 'package:tms_app/data/repositories/my_course/my_course_list_repository_impl.dart';

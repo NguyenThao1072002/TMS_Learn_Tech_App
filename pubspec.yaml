@@ -49,6 +49,7 @@ dependencies:
   path_provider: ^2.1.5
   open_file: ^3.5.10
   app_settings: ^6.1.1
+  connectivity_plus: ^5.0.2
 
   #cupertino_icons: ^1.0.8
 
