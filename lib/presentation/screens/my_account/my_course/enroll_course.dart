@@ -408,9 +408,14 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
 
       // Chuyển đổi bài học
       for (final apiLesson in chapter.lessons) {
-        // Xác định kiểu bài học (video hoặc test)
-        final LessonType lessonType =
-            apiLesson.lessonTest != null ? LessonType.test : LessonType.video;
+        // Xác định kiểu bài học - ưu tiên nội dung video nếu có
+        final LessonType lessonType = (apiLesson.video != null &&
+                apiLesson.video!.videoUrl != null &&
+                apiLesson.video!.videoUrl.isNotEmpty)
+            ? LessonType.video
+            : (apiLesson.lessonTest != null
+                ? LessonType.test
+                : LessonType.video);
 
         // Chuyển đổi thời lượng từ giây sang định dạng phút:giây
         final String duration = _formatDuration(apiLesson.lessonDuration);
@@ -576,6 +581,30 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
 
       // Tìm và mở khóa bài học tiếp theo
       _unlockNextLesson(lessonId);
+
+      // Kiểm tra bài học vừa hoàn thành có bài kiểm tra không
+      Lesson? completedLesson;
+
+      // Tìm bài học vừa được đánh dấu hoàn thành
+      for (final chapter in _courseData) {
+        for (final lesson in chapter.lessons) {
+          if (lesson.id == lessonId) {
+            completedLesson = lesson;
+            break;
+          }
+        }
+        if (completedLesson != null) break;
+      }
+
+      // Nếu bài học có bài kiểm tra, chuyển đến bài kiểm tra
+      if (completedLesson != null && completedLesson.testType != null) {
+        // Tự động chuyển sang màn hình bài kiểm tra sau một khoảng thời gian ngắn
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            _startTest(completedLesson!);
+          }
+        });
+      }
     });
   }
 

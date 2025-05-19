@@ -20,6 +20,7 @@ class MyCourseController with ChangeNotifier {
   int _selectedLessonIndex = 0;
   bool _showSidebarInMobile = false;
   double _testResult = 0.0;
+  Function(Lesson)? _onStartTestCallback;
 
   // Getters
   bool get isLoading => _isLoading;
@@ -102,9 +103,14 @@ class MyCourseController with ChangeNotifier {
 
       // Convert lessons
       for (final apiLesson in chapter.lessons) {
-        // Determine lesson type
-        final LessonType lessonType =
-            apiLesson.lessonTest != null ? LessonType.test : LessonType.video;
+        // Determine lesson type - prioritize video content if available
+        final LessonType lessonType = (apiLesson.video != null &&
+                apiLesson.video!.videoUrl != null &&
+                apiLesson.video!.videoUrl.isNotEmpty)
+            ? LessonType.video
+            : (apiLesson.lessonTest != null
+                ? LessonType.test
+                : LessonType.video);
 
         // Format duration from seconds to minutes:seconds
         final String duration = _formatDuration(apiLesson.lessonDuration);
@@ -386,36 +392,40 @@ class MyCourseController with ChangeNotifier {
 
   // Navigate to previous lesson
   void navigateToPreviousLesson() {
-    if (_selectedLessonIndex > 0) {
-      // Go to previous lesson in same chapter
-      _selectedLessonIndex--;
-    } else if (_selectedChapterIndex > 0) {
-      // Go to last lesson of previous chapter
-      _selectedChapterIndex--;
-      _selectedLessonIndex =
-          _courseData[_selectedChapterIndex].lessons.length - 1;
+    if (canNavigateToPreviousLesson()) {
+      if (_selectedLessonIndex > 0) {
+        // Go to previous lesson in same chapter
+        _selectedLessonIndex--;
+      } else if (_selectedChapterIndex > 0) {
+        // Go to last lesson of previous chapter
+        _selectedChapterIndex--;
+        _selectedLessonIndex =
+            _courseData[_selectedChapterIndex].lessons.length - 1;
 
-      // Ensure chapter is expanded
-      _expandedChapters[_selectedChapterIndex] = true;
+        // Ensure chapter is expanded
+        _expandedChapters[_selectedChapterIndex] = true;
+      }
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   // Navigate to next lesson
   void navigateToNextLesson() {
-    if (_selectedLessonIndex <
-        _courseData[_selectedChapterIndex].lessons.length - 1) {
-      // Go to next lesson in same chapter
-      _selectedLessonIndex++;
-    } else if (_selectedChapterIndex < _courseData.length - 1) {
-      // Go to first lesson of next chapter
-      _selectedChapterIndex++;
-      _selectedLessonIndex = 0;
+    if (canNavigateToNextLesson()) {
+      if (_selectedLessonIndex <
+          _courseData[_selectedChapterIndex].lessons.length - 1) {
+        // Go to next lesson in same chapter
+        _selectedLessonIndex++;
+      } else if (_selectedChapterIndex < _courseData.length - 1) {
+        // Go to first lesson of next chapter
+        _selectedChapterIndex++;
+        _selectedLessonIndex = 0;
 
-      // Ensure chapter is expanded
-      _expandedChapters[_selectedChapterIndex] = true;
+        // Ensure chapter is expanded
+        _expandedChapters[_selectedChapterIndex] = true;
+      }
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   // LESSON COMPLETION METHODS
@@ -426,6 +436,28 @@ class MyCourseController with ChangeNotifier {
 
     // Unlock next lesson
     _unlockNextLesson(lessonId);
+
+    // Kiểm tra có bài kiểm tra tương ứng không
+    Lesson? completedLesson;
+    for (final chapter in _courseData) {
+      for (final lesson in chapter.lessons) {
+        if (lesson.id == lessonId) {
+          completedLesson = lesson;
+          break;
+        }
+      }
+      if (completedLesson != null) break;
+    }
+
+    // Nếu có callback và bài học có bài kiểm tra, gọi callback
+    if (_onStartTestCallback != null &&
+        completedLesson != null &&
+        completedLesson.testType != null) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _onStartTestCallback!(completedLesson!);
+      });
+    }
+
     notifyListeners();
   }
 
@@ -468,7 +500,7 @@ class MyCourseController with ChangeNotifier {
 
   // Calculate if test is passed
   bool isTestPassed() {
-    return _testResult >= 5.0;
+    return _testResult >= 7.0;
   }
 
   // Get current chapter and lesson
@@ -508,5 +540,10 @@ class MyCourseController with ChangeNotifier {
       // Mặc định
       return lesson.type == LessonType.video ? Icons.play_arrow : Icons.quiz;
     }
+  }
+
+  // Setter cho callback bài kiểm tra
+  set onStartTest(Function(Lesson) callback) {
+    _onStartTestCallback = callback;
   }
 }

@@ -488,6 +488,10 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
               isCompleted:
                   widget.completedLessons[widget.currentLesson.id] == true,
               onComplete: widget.onCompleteLesson,
+              hasTest: widget.currentLesson.testType != null,
+              onStartTest: widget.currentLesson.testType != null
+                  ? () => widget.startTest()
+                  : null,
             ),
         ],
       ),
@@ -588,6 +592,11 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
 
   // Widget nội dung bài kiểm tra
   Widget _buildTestLessonContent(BuildContext context) {
+    // Make sure to dispose any video player when showing test content
+    if (_videoPlayerController != null) {
+      _disposeVideoPlayer();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
