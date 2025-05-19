@@ -969,9 +969,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
                                 isCompleted
                                     ? Icons.check
                                     : lesson.isUnlocked
-                                        ? lesson.type == LessonType.video
-                                            ? Icons.play_arrow
-                                            : Icons.quiz
+                                        ? _getLessonIcon(lesson)
                                         : Icons.lock,
                                 size: 14,
                                 color: isCompleted
@@ -1002,13 +1000,18 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    Icon(
-                                      lesson.type == LessonType.video
-                                          ? Icons.videocam
-                                          : Icons.assignment,
-                                      size: 12,
-                                      color: Colors.grey[600],
-                                    ),
+                                    // Content type indicators
+                                    if (lesson.videoUrl != null &&
+                                        lesson.videoUrl!.isNotEmpty)
+                                      _buildContentTypeIndicator(
+                                          Icons.videocam, Colors.blue),
+                                    if (lesson.documentUrl != null &&
+                                        lesson.documentUrl!.isNotEmpty)
+                                      _buildContentTypeIndicator(
+                                          Icons.description, Colors.green),
+                                    if (lesson.testType != null)
+                                      _buildContentTypeIndicator(
+                                          Icons.quiz, Colors.orange),
                                     const SizedBox(width: 4),
                                     Text(
                                       lesson.duration,
@@ -3312,6 +3315,108 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // Phương thức để lấy icon phù hợp cho bài học dựa vào loại bài học
+  IconData _getLessonIcon(Lesson lesson) {
+    return _controller.getLessonIcon(lesson);
+  }
+
+  // Phương thức để tạo widget chỉ báo loại nội dung (video, tài liệu, bài kiểm tra)
+  Widget _buildContentTypeIndicator(IconData icon, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 4),
+      child: Icon(
+        icon,
+        size: 12,
+        color: color,
+      ),
+    );
+  }
+
+  // Hiển thị thông tin chi tiết về bài học trong phần nội dung
+  Widget _buildLessonDetailInfo(Lesson lesson) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Nội dung bài học:',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Thông tin về video
+          if (lesson.videoUrl != null && lesson.videoUrl!.isNotEmpty)
+            ListTile(
+              leading: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Icon(Icons.videocam, color: Colors.blue, size: 20),
+              ),
+              title:
+                  const Text('Video bài giảng', style: TextStyle(fontSize: 14)),
+              dense: true,
+              visualDensity: VisualDensity.compact,
+              contentPadding: EdgeInsets.zero,
+            ),
+
+          // Thông tin về tài liệu
+          if (lesson.documentUrl != null && lesson.documentUrl!.isNotEmpty)
+            ListTile(
+              leading: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Icon(Icons.description,
+                    color: Colors.green, size: 20),
+              ),
+              title: const Text('Tài liệu kèm theo',
+                  style: TextStyle(fontSize: 14)),
+              dense: true,
+              visualDensity: VisualDensity.compact,
+              contentPadding: EdgeInsets.zero,
+            ),
+
+          // Thông tin về bài kiểm tra
+          if (lesson.testType != null)
+            ListTile(
+              leading: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Icon(Icons.quiz, color: Colors.orange, size: 20),
+              ),
+              title: Text(
+                  'Bài kiểm tra ${lesson.testType == "Test Bài" ? "bài học" : "chương"}',
+                  style: const TextStyle(fontSize: 14)),
+              dense: true,
+              visualDensity: VisualDensity.compact,
+              contentPadding: EdgeInsets.zero,
+            ),
+        ],
       ),
     );
   }

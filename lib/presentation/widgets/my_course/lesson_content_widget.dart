@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:tms_app/data/models/my_course/learn_lesson_model.dart'
-    hide Lesson;
 import 'package:tms_app/presentation/screens/my_account/my_course/enroll_course.dart';
-import 'package:tms_app/presentation/widgets/my_course/lesson_summary_widget.dart';
-import 'package:tms_app/presentation/widgets/my_course/lesson_materials_widget.dart';
-import 'package:tms_app/presentation/widgets/my_course/comment_section_widget.dart';
+import 'package:tms_app/presentation/widgets/my_course/comment_section_widget.dart'
+    as comment_section;
 import 'package:tms_app/presentation/widgets/my_course/complete_lesson_button.dart';
+import 'package:tms_app/presentation/widgets/my_course/lesson_materials_widget.dart';
+import 'package:tms_app/presentation/widgets/my_course/lesson_summary_widget.dart';
+import 'package:video_player/video_player.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:chewie/chewie.dart';
+import 'package:tms_app/core/services/video_player_service.dart';
 
-class LessonContentWidget extends StatelessWidget {
+class LessonContentWidget extends StatefulWidget {
   final CourseChapter currentChapter;
   final Lesson currentLesson;
   final Map<String, bool> completedLessons;
@@ -24,6 +27,9 @@ class LessonContentWidget extends StatelessWidget {
   final Function() showTestResults;
   final Function() startTest;
   final Function(String) openVideoInExternalPlayer;
+
+  // Function to build lesson detail info
+  final Widget Function(Lesson lesson)? buildLessonDetailInfo;
 
   const LessonContentWidget({
     Key? key,
@@ -43,7 +49,153 @@ class LessonContentWidget extends StatelessWidget {
     required this.showTestResults,
     required this.startTest,
     required this.openVideoInExternalPlayer,
+    this.buildLessonDetailInfo,
   }) : super(key: key);
+
+  @override
+  State<LessonContentWidget> createState() => _LessonContentWidgetState();
+}
+
+class _LessonContentWidgetState extends State<LessonContentWidget> {
+  // Controller cho video player
+  VideoPlayerController? _videoPlayerController;
+  ChewieController? _chewieController;
+  bool _isVideoInitialized = false;
+  bool _isPlaying = false;
+  bool _isFullScreen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Khởi tạo video player nếu có URL video
+    if (widget.videoUrl != null && widget.videoUrl!.isNotEmpty) {
+      // Tự động khởi tạo video ngay lập tức không cần delay
+      _initializeVideoPlayer();
+    }
+  }
+
+  @override
+  void didUpdateWidget(LessonContentWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Khởi tạo lại video player nếu URL video thay đổi
+    if (widget.videoUrl != oldWidget.videoUrl) {
+      _disposeVideoPlayer();
+      if (widget.videoUrl != null && widget.videoUrl!.isNotEmpty) {
+        _initializeVideoPlayer();
+      }
+    }
+  }
+
+  // Khởi tạo video player
+  Future<void> _initializeVideoPlayer() async {
+    try {
+      setState(() {
+        _isVideoInitialized = false;
+      });
+
+      // Xử lý URL qua service
+      String cleanUrl = VideoPlayerService.processVideoUrl(widget.videoUrl!);
+
+      // Sử dụng service để tạo ChewieController
+      _chewieController = await VideoPlayerService.initializeChewieController(
+        videoUrl: cleanUrl,
+        autoPlay: true, // Tự động phát ngay khi tải xong
+        looping: false,
+        allowFullScreen: true,
+        allowMuting: true,
+        showControls: true,
+      );
+
+      // Lấy và thiết lập controller từ Chewie
+      if (_chewieController != null) {
+        _videoPlayerController = _chewieController!.videoPlayerController;
+
+        // Lắng nghe sự kiện kết thúc video để đánh dấu hoàn thành bài học
+        _videoPlayerController!.addListener(_videoPlayerListener);
+
+        // Cập nhật UI
+        if (mounted) {
+          setState(() {
+            _isVideoInitialized = true;
+            _isPlaying = true;
+          });
+        }
+      } else {
+        throw Exception("Không thể tạo Chewie Controller");
+      }
+    } catch (e) {
+      print("Lỗi khi khởi tạo video player: $e");
+      if (mounted) {
+        setState(() {});
+      }
+    }
+  }
+
+  void _videoPlayerListener() {
+    // Kiểm tra nếu video đã kết thúc
+    if (_videoPlayerController != null &&
+        _videoPlayerController!.value.isInitialized &&
+        _videoPlayerController!.value.position >=
+            _videoPlayerController!.value.duration) {
+      // Video đã kết thúc, đánh dấu hoàn thành bài học
+      if (mounted && widget.completedLessons[widget.currentLesson.id] != true) {
+        print("🏁 Video đã kết thúc, đánh dấu hoàn thành bài học");
+        widget.onCompleteLesson(); // Đánh dấu hoàn thành bài học
+      }
+    }
+  }
+
+  // Giải phóng controller khi widget bị hủy
+  void _disposeVideoPlayer() {
+    try {
+      if (_chewieController != null) {
+        _chewieController!.dispose();
+        _chewieController = null;
+      }
+
+      if (_videoPlayerController != null) {
+        _videoPlayerController!.removeListener(_videoPlayerListener);
+        _videoPlayerController!.dispose();
+        _videoPlayerController = null;
+      }
+
+      _isVideoInitialized = false;
+      _isPlaying = false;
+    } catch (e) {
+      print('Lỗi khi dispose video controller: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposeVideoPlayer();
+    super.dispose();
+  }
+
+  // Phương thức để chuyển đổi trạng thái play/pause
+  void _togglePlayPause() {
+    if (_videoPlayerController == null || !_isVideoInitialized) return;
+
+    setState(() {
+      if (_videoPlayerController!.value.isPlaying) {
+        _videoPlayerController!.pause();
+        _isPlaying = false;
+      } else {
+        _videoPlayerController!.play();
+        _isPlaying = true;
+      }
+    });
+  }
+
+  // Phương thức để chuyển đổi chế độ toàn màn hình
+  void _toggleFullScreen() {
+    if (_chewieController == null) return;
+
+    _chewieController!.toggleFullScreen();
+    setState(() {
+      _isFullScreen = !_isFullScreen;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,397 +204,381 @@ class LessonContentWidget extends StatelessWidget {
       child: Column(
         children: [
           // Tiêu đề bài học
-          Container(
-            padding:
-                const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  offset: const Offset(0, 2),
-                  blurRadius: 4,
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Row chứa tiêu đề và nút điều hướng
-                Row(
-                  children: [
-                    // Nút bài trước
-                    IconButton(
-                      onPressed:
-                          canNavigateToPrevious ? onPreviousLesson : null,
-                      icon: const Icon(Icons.arrow_back_ios, size: 16),
-                      tooltip: 'Bài trước',
-                      constraints: const BoxConstraints(),
-                      padding: const EdgeInsets.all(8),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.grey[100],
-                        foregroundColor: Colors.grey[800],
-                        disabledBackgroundColor: Colors.grey[100],
-                        disabledForegroundColor: Colors.grey[400],
-                      ),
-                    ),
-
-                    const SizedBox(width: 8),
-
-                    // Tiêu đề bài học và chương
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Chương
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  'Chương ${currentChapter.id}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.orange,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  currentChapter.title.split(':').length > 1
-                                      ? currentChapter.title
-                                          .split(':')[1]
-                                          .trim()
-                                      : currentChapter.title,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[700],
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 4),
-
-                          // Tên bài học
-                          Text(
-                            currentLesson.title,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(width: 8),
-
-                    // Nút bài tiếp
-                    IconButton(
-                      onPressed: canNavigateToNext ? onNextLesson : null,
-                      icon: const Icon(Icons.arrow_forward_ios, size: 16),
-                      tooltip: 'Bài tiếp',
-                      constraints: const BoxConstraints(),
-                      padding: const EdgeInsets.all(8),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: Colors.grey[300],
-                        disabledForegroundColor: Colors.grey[400],
-                      ),
-                    ),
-                  ],
-                ),
-
-                // Thời lượng và thông tin khác
-                Padding(
-                  padding: const EdgeInsets.only(top: 8, bottom: 4, left: 2),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          if (!_isFullScreen)
+            Container(
+              padding: const EdgeInsets.only(
+                  left: 16, right: 16, top: 16, bottom: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    offset: const Offset(0, 2),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Row chứa tiêu đề và nút điều hướng
+                  Row(
                     children: [
-                      // Thông tin bài học
-                      Row(
-                        children: [
-                          Icon(
-                            currentLesson.type == LessonType.video
-                                ? Icons.videocam
-                                : Icons.assignment,
-                            size: 14,
-                            color: Colors.grey[700],
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            currentLesson.duration,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                        ],
+                      // Nút bài trước
+                      IconButton(
+                        onPressed: widget.canNavigateToPrevious
+                            ? widget.onPreviousLesson
+                            : null,
+                        icon: const Icon(Icons.arrow_back_ios, size: 16),
+                        tooltip: 'Bài trước',
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(8),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.grey[100],
+                          foregroundColor: Colors.grey[800],
+                          disabledBackgroundColor: Colors.grey[100],
+                          disabledForegroundColor: Colors.grey[400],
+                        ),
                       ),
 
-                      // Trạng thái bài học
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: completedLessons[currentLesson.id] == true
-                              ? Colors.green.withOpacity(0.1)
-                              : Colors.grey[100],
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      const SizedBox(width: 8),
+
+                      // Tiêu đề bài học và chương
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              completedLessons[currentLesson.id] == true
-                                  ? Icons.check_circle
-                                  : Icons.circle_outlined,
-                              size: 12,
-                              color: completedLessons[currentLesson.id] == true
-                                  ? Colors.green
-                                  : Colors.grey[700],
+                            // Chương
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'Chương ${widget.currentChapter.id}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.orange,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    widget.currentChapter.title
+                                                .split(':')
+                                                .length >
+                                            1
+                                        ? widget.currentChapter.title
+                                            .split(':')[1]
+                                            .trim()
+                                        : widget.currentChapter.title,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[700],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 4),
+
+                            const SizedBox(height: 4),
+
+                            // Tên bài học
                             Text(
-                              completedLessons[currentLesson.id] == true
-                                  ? 'Đã hoàn thành'
-                                  : 'Chưa hoàn thành',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color:
-                                    completedLessons[currentLesson.id] == true
-                                        ? Colors.green
-                                        : Colors.grey[700],
-                                fontWeight: FontWeight.w500,
+                              widget.currentLesson.title,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
+
+                      const SizedBox(width: 8),
+
+                      // Nút bài tiếp
+                      IconButton(
+                        onPressed: widget.canNavigateToNext
+                            ? widget.onNextLesson
+                            : null,
+                        icon: const Icon(Icons.arrow_forward_ios, size: 16),
+                        tooltip: 'Bài tiếp',
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(8),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: Colors.grey[300],
+                          disabledForegroundColor: Colors.grey[400],
+                        ),
+                      ),
                     ],
                   ),
-                ),
-              ],
-            ),
-          ),
 
-          // TabBar cho nội dung bài học
-          SizedBox(
-            height: 56,
-            child: Material(
-              color: Colors.white,
-              child: TabBar(
-                controller: tabController,
-                labelColor: Colors.orange,
-                unselectedLabelColor: Colors.grey[600],
-                indicatorColor: Colors.orange,
-                indicatorWeight: 3,
-                dividerHeight: 1,
-                labelStyle:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                unselectedLabelStyle: const TextStyle(fontSize: 14),
-                tabs: const [
-                  Tab(
-                    icon: Icon(Icons.play_circle_filled),
-                    text: 'Video',
-                    iconMargin: EdgeInsets.only(bottom: 4),
-                  ),
-                  Tab(
-                    icon: Icon(Icons.menu_book),
-                    text: 'Tài liệu',
-                    iconMargin: EdgeInsets.only(bottom: 4),
-                  ),
-                  Tab(
-                    icon: Icon(Icons.summarize),
-                    text: 'Tóm tắt',
-                    iconMargin: EdgeInsets.only(bottom: 4),
+                  // Thời lượng và thông tin khác
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, bottom: 4, left: 2),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Thông tin bài học
+                        Row(
+                          children: [
+                            Icon(
+                              widget.currentLesson.type == LessonType.video
+                                  ? Icons.videocam
+                                  : Icons.assignment,
+                              size: 14,
+                              color: Colors.grey[700],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              widget.currentLesson.duration,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Trạng thái bài học
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: widget.completedLessons[
+                                        widget.currentLesson.id] ==
+                                    true
+                                ? Colors.green.withOpacity(0.1)
+                                : Colors.grey[100],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                widget.completedLessons[
+                                            widget.currentLesson.id] ==
+                                        true
+                                    ? Icons.check_circle
+                                    : Icons.circle_outlined,
+                                size: 12,
+                                color: widget.completedLessons[
+                                            widget.currentLesson.id] ==
+                                        true
+                                    ? Colors.green
+                                    : Colors.grey[700],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                widget.completedLessons[
+                                            widget.currentLesson.id] ==
+                                        true
+                                    ? 'Đã hoàn thành'
+                                    : 'Chưa hoàn thành',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: widget.completedLessons[
+                                              widget.currentLesson.id] ==
+                                          true
+                                      ? Colors.green
+                                      : Colors.grey[700],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-          ),
+
+          // TabBar cho nội dung bài học - chỉ hiển thị khi không ở chế độ toàn màn hình
+          if (!_isFullScreen)
+            SizedBox(
+              height: 56,
+              child: Material(
+                color: Colors.white,
+                child: TabBar(
+                  controller: widget.tabController,
+                  labelColor: Colors.orange,
+                  unselectedLabelColor: Colors.grey[600],
+                  indicatorColor: Colors.orange,
+                  indicatorWeight: 3,
+                  dividerHeight: 1,
+                  labelStyle: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 14),
+                  unselectedLabelStyle: const TextStyle(fontSize: 14),
+                  tabs: const [
+                    Tab(
+                      icon: Icon(Icons.play_circle_filled),
+                      text: 'Video',
+                      iconMargin: EdgeInsets.only(bottom: 4),
+                    ),
+                    Tab(
+                      icon: Icon(Icons.menu_book),
+                      text: 'Tài liệu',
+                      iconMargin: EdgeInsets.only(bottom: 4),
+                    ),
+                    Tab(
+                      icon: Icon(Icons.summarize),
+                      text: 'Tóm tắt',
+                      iconMargin: EdgeInsets.only(bottom: 4),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
           // Nội dung bài học với TabBarView
           Expanded(
-            child: TabBarView(
-              controller: tabController,
-              children: [
-                // Tab 1: Video hoặc Bài kiểm tra
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(0),
-                  child: currentLesson.type == LessonType.video
-                      ? _buildVideoLessonContent(context)
-                      : _buildTestLessonContent(context),
-                ),
+            child: _isFullScreen
+                ? _buildVideoPlayer(isFullScreen: true)
+                : TabBarView(
+                    controller: widget.tabController,
+                    children: [
+                      // Tab 1: Video hoặc Bài kiểm tra
+                      SingleChildScrollView(
+                        padding: const EdgeInsets.all(0),
+                        child: widget.currentLesson.type == LessonType.video
+                            ? _buildVideoLessonContent(context)
+                            : _buildTestLessonContent(context),
+                      ),
 
-                // Tab 2: Tài liệu
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: LessonMaterialsWidget(
-                    materials: materials,
-                    lessonTitle: currentLesson.title,
-                  ),
-                ),
+                      // Tab 2: Tài liệu
+                      SingleChildScrollView(
+                        padding: const EdgeInsets.all(20),
+                        child: LessonMaterialsWidget(
+                          materials: widget.materials,
+                          lessonTitle: widget.currentLesson.title,
+                        ),
+                      ),
 
-                // Tab 3: Tóm tắt
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: LessonSummaryWidget(
-                    lesson: currentLesson,
-                    summary: summary,
+                      // Tab 3: Tóm tắt
+                      SingleChildScrollView(
+                        padding: const EdgeInsets.all(20),
+                        child: LessonSummaryWidget(
+                          lesson: widget.currentLesson,
+                          summary: widget.summary,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
+
+          // Hiển thị nút hoàn thành bài học khi không ở chế độ toàn màn hình
+          if (!_isFullScreen)
+            CompleteLessonButton(
+              isCompleted:
+                  widget.completedLessons[widget.currentLesson.id] == true,
+              onComplete: widget.onCompleteLesson,
+            ),
         ],
       ),
     );
+  }
+
+  // Widget xây dựng trình phát video
+  Widget _buildVideoPlayer({bool isFullScreen = false}) {
+    if (_videoPlayerController == null ||
+        !_isVideoInitialized ||
+        _chewieController == null) {
+      // Chỉ hiển thị hiệu ứng loading đơn giản
+      return Container(
+        width: double.infinity,
+        color: Colors.black,
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: Center(
+            child: CircularProgressIndicator(
+              color: Colors.orange,
+              strokeWidth: 3,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Sử dụng Chewie để phát video
+    return AspectRatio(
+      aspectRatio: isFullScreen
+          ? MediaQuery.of(context).size.width /
+              MediaQuery.of(context).size.height
+          : _videoPlayerController!.value.aspectRatio,
+      child: Chewie(
+        controller: _chewieController!,
+      ),
+    );
+  }
+
+  // Phương thức khởi tạo và phát video
+  Future<void> _initializeAndPlayVideo() async {
+    if (widget.videoUrl == null || widget.videoUrl!.isEmpty) {
+      return;
+    }
+
+    if (!_isVideoInitialized) {
+      // Tải video mà không hiển thị thông báo
+      await _initializeVideoPlayer();
+    }
+
+    // Nếu đã khởi tạo thành công, tự động phát
+    if (_isVideoInitialized && _chewieController != null) {
+      _chewieController!.play();
+      setState(() {
+        _isPlaying = true;
+      });
+    }
+  }
+
+  // Định dạng thời gian từ giây sang MM:SS
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 
   // Widget nội dung bài học video
   Widget _buildVideoLessonContent(BuildContext context) {
     return Container(
       color: Colors.white,
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Video player
-                AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: GestureDetector(
-                    onTap: () {
-                      // Handle video tap
-                    },
-                    child: Container(
-                      color: Colors.black,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Video placeholder
-                          videoUrl != null && videoUrl!.isNotEmpty
-                              ? Image.network(
-                                  'https://img.youtube.com/vi/default/maxresdefault.jpg',
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      color: Colors.grey[800],
-                                      child: const Center(
-                                        child: Icon(
-                                          Icons.video_library,
-                                          size: 64,
-                                          color: Colors.white54,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                )
-                              : Container(
-                                  color: Colors.grey[800],
-                                  child: const Center(
-                                    child: Icon(
-                                      Icons.video_library,
-                                      size: 64,
-                                      color: Colors.white54,
-                                    ),
-                                  ),
-                                ),
-
-                          // Play button overlay
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.5),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.play_arrow,
-                              size: 50,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Video URL info (for debugging)
-                if (videoUrl != null && videoUrl!.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    color: Colors.grey[100],
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Video URL từ API:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          videoUrl!,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        ElevatedButton.icon(
-                          onPressed: () => openVideoInExternalPlayer(videoUrl!),
-                          icon: const Icon(Icons.play_circle),
-                          label: const Text('Xem video'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                // Comment section
-                CommentSectionWidget(
-                  onCommentSubmit: onCommentSubmit,
-                ),
-
-                // Space for the fixed button
-                const SizedBox(height: 80),
-              ],
-            ),
+          // Video player
+          Container(
+            color: Colors.black,
+            child: _buildVideoPlayer(),
           ),
 
-          // Fixed "Complete" button at bottom
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: CompleteLessonButton(
-              isCompleted: completedLessons[currentLesson.id] == true,
-              onComplete: onCompleteLesson,
+          // Thông tin chi tiết về video
+          if (widget.buildLessonDetailInfo != null)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: widget.buildLessonDetailInfo!(widget.currentLesson),
+            ),
+
+          // Comment section
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: comment_section.CommentSectionWidget(
+              onCommentSubmit: widget.onCommentSubmit,
             ),
           ),
         ],
@@ -490,7 +626,7 @@ class LessonContentWidget extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          currentLesson.title,
+                          widget.currentLesson.title,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 20,
@@ -499,7 +635,7 @@ class LessonContentWidget extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Thời gian: ${currentLesson.duration} | ${currentLesson.questionCount} câu hỏi',
+                          'Thời gian: ${widget.currentLesson.duration} | ${widget.currentLesson.questionCount} câu hỏi',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.9),
                             fontSize: 14,
@@ -531,12 +667,14 @@ class LessonContentWidget extends StatelessWidget {
                     const SizedBox(height: 12),
                     _buildTestInstruction(
                       icon: Icons.timer,
-                      text: 'Thời gian làm bài: ${currentLesson.duration}',
+                      text:
+                          'Thời gian làm bài: ${widget.currentLesson.duration}',
                     ),
                     const SizedBox(height: 8),
                     _buildTestInstruction(
                       icon: Icons.question_answer,
-                      text: 'Số câu hỏi: ${currentLesson.questionCount} câu',
+                      text:
+                          'Số câu hỏi: ${widget.currentLesson.questionCount} câu',
                     ),
                     const SizedBox(height: 8),
                     const _buildTestInstruction(
@@ -631,21 +769,22 @@ class LessonContentWidget extends StatelessWidget {
         // Nút bắt đầu làm bài
         Center(
           child: ElevatedButton.icon(
-            onPressed: completedLessons[currentLesson.id] == true
-                ? () => showTestResults()
-                : () => startTest(),
-            icon: Icon(completedLessons[currentLesson.id] == true
+            onPressed: widget.completedLessons[widget.currentLesson.id] == true
+                ? () => widget.showTestResults()
+                : () => widget.startTest(),
+            icon: Icon(widget.completedLessons[widget.currentLesson.id] == true
                 ? Icons.assessment
                 : Icons.play_arrow),
             label: Text(
-              completedLessons[currentLesson.id] == true
+              widget.completedLessons[widget.currentLesson.id] == true
                   ? 'Xem lại kết quả'
                   : 'Bắt đầu làm bài',
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: completedLessons[currentLesson.id] == true
-                  ? Colors.blue
-                  : Colors.orange,
+              backgroundColor:
+                  widget.completedLessons[widget.currentLesson.id] == true
+                      ? Colors.blue
+                      : Colors.orange,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(
                 horizontal: 32,

@@ -495,4 +495,18 @@ class MyCourseController with ChangeNotifier {
 
     return chapter.lessons[_selectedLessonIndex];
   }
+
+  // Phương thức để lấy icon phù hợp cho bài học dựa vào loại bài học
+  IconData getLessonIcon(Lesson lesson) {
+    if (lesson.testType != null) {
+      return Icons.quiz;
+    } else if (lesson.videoUrl != null && lesson.videoUrl!.isNotEmpty) {
+      return Icons.play_arrow;
+    } else if (lesson.documentUrl != null && lesson.documentUrl!.isNotEmpty) {
+      return Icons.description;
+    } else {
+      // Mặc định
+      return lesson.type == LessonType.video ? Icons.play_arrow : Icons.quiz;
+    }
+  }
 }

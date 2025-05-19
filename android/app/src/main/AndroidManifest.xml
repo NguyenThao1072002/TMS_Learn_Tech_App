@@ -1,9 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Thêm quyền internet và quyền đọc/ghi bộ nhớ ngoài -->
+    <!-- Thêm quyền Internet cho phát video và quyền truy cập trạng thái mạng -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     
     <!-- Quyền đặc biệt cho Android 10+ (tùy chọn, nếu cần) -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" 
