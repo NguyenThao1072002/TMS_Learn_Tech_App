@@ -23,3 +23,4 @@ plugins {
 }
 
 include(":app")
+include(":zpdk-release-28052021")

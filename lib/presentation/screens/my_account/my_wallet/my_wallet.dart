@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:tms_app/presentation/screens/my_account/checkout/payment.dart';
 
 class Transaction {
   final String id;
@@ -94,25 +95,11 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
       'name': 'MoMo',
       'icon': Icons.account_balance_wallet,
       'color': Colors.pink,
-      'isLinked': true,
-    },
-    {
-      'name': 'Vietcombank',
-      'icon': Icons.account_balance,
-      'color': Colors.green,
-      'isLinked': true,
-    },
-    {
-      'name': 'PayPal',
-      'icon': Icons.payment,
-      'color': Colors.blue,
-      'isLinked': false,
     },
     {
       'name': 'ZaloPay',
       'icon': Icons.wallet,
       'color': Colors.blue.shade800,
-      'isLinked': false,
     },
   ];
 
@@ -347,13 +334,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
-              ),
-              TextButton(
-                onPressed: () {
-                  // Navigate to payment method management
-                },
-                child: const Text('Thêm mới'),
-              ),
+              )
             ],
           ),
           const SizedBox(height: 12),
@@ -364,11 +345,9 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
             itemBuilder: (context, index) {
               final method = _paymentMethods[index];
               return _buildPaymentMethodItem(
-                name: method['name'],
-                icon: method['icon'],
-                color: method['color'],
-                isLinked: method['isLinked'],
-              );
+                  name: method['name'],
+                  icon: method['icon'],
+                  color: method['color']);
             },
           ),
         ],
@@ -380,7 +359,6 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
     required String name,
     required IconData icon,
     required Color color,
-    required bool isLinked,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -415,52 +393,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const Spacer(),
-          if (isLinked)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.check_circle,
-                    size: 14,
-                    color: Colors.green.shade700,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Đã liên kết',
-                    style: TextStyle(
-                      color: Colors.green.shade700,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            TextButton(
-              onPressed: () {
-                // Link payment method
-              },
-              style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: const Text(
-                'Liên kết',
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 13,
-                ),
-              ),
-            ),
+          const Spacer()
         ],
       ),
     );
@@ -589,85 +522,154 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
 
   void _showDepositDialog() {
     final TextEditingController amountController = TextEditingController();
+    String selectedMethod = 'momo';
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Nạp tiền vào ví'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: amountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Số tiền (VND)',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Chọn phương thức thanh toán:',
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Payment method selection
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.account_balance_wallet,
-                      color: Colors.pink,
-                      size: 20,
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Nạp tiền vào ví'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: amountController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Số tiền (VND)',
+                      border: OutlineInputBorder(),
                     ),
-                    const SizedBox(width: 8),
-                    const Text('MoMo'),
-                    const Spacer(),
-                    const Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 16,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Hủy'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // Process deposit
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Yêu cầu nạp tiền đã được gửi!'),
-                    backgroundColor: Colors.green,
                   ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF3498DB),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Chọn phương thức thanh toán:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Payment method selection
+                  Column(
+                    children: [
+                      InkWell(
+                        onTap: () => setState(() => selectedMethod = 'momo'),
+                        child: Row(
+                          children: [
+                            Radio<String>(
+                              value: 'momo',
+                              groupValue: selectedMethod,
+                              onChanged: (value) {
+                                if (value != null)
+                                  setState(() => selectedMethod = value);
+                              },
+                              activeColor: Colors.pink,
+                            ),
+                            Icon(Icons.account_balance_wallet,
+                                color: Colors.pink, size: 20),
+                            const SizedBox(width: 8),
+                            const Text('MoMo'),
+                          ],
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () => setState(() => selectedMethod = 'zalopay'),
+                        child: Row(
+                          children: [
+                            Radio<String>(
+                              value: 'zalopay',
+                              groupValue: selectedMethod,
+                              onChanged: (value) {
+                                if (value != null)
+                                  setState(() => selectedMethod = value);
+                              },
+                              activeColor: Colors.blue,
+                            ),
+                            Icon(Icons.wallet,
+                                color: Colors.blue.shade800, size: 20),
+                            const SizedBox(width: 8),
+                            const Text('ZaloPay'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              child: const Text('Xác nhận'),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Hủy'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    await handleDepositPayment(
+                      context: context,
+                      amountText: amountController.text,
+                      method: selectedMethod,
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3498DB),
+                  ),
+                  child: const Text('Xác nhận'),
+                ),
+              ],
+            );
+          },
         );
       },
+    );
+  }
+
+  Future<void> handleDepositPayment({
+    required BuildContext context,
+    required String amountText,
+    required String method, // 'momo' hoặc 'zalopay'
+  }) async {
+    // Kiểm tra số tiền
+    final amount = int.tryParse(amountText.replaceAll('.', ''));
+    if (amount == null || amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng nhập số tiền hợp lệ!'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // TODO: Gọi API nạp tiền ở đây, ví dụ:
+    // final result = await WalletService.deposit(amount: amount, method: method);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PaymentScreen(
+          paymentMethod: method,
+          amount: amount.toDouble(), // Truyền tham số với giá tiền đã giảm
+          items: [],
+          promoCode: "",
+          discountpercent: 0,
+          paymentType: "WALLET",
+        ),
+      ),
+    );
+
+    // Giả lập thành công:
+    await Future.delayed(const Duration(seconds: 1));
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+            'Đã gửi yêu cầu nạp $amount VND qua ${method == 'momo' ? 'MoMo' : 'ZaloPay'}!'),
+        backgroundColor: Colors.green,
+      ),
     );
   }
 }

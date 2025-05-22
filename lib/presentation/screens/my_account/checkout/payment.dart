@@ -1,18 +1,38 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:io';
+import 'dart:convert';
+import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
+import 'package:tms_app/data/models/payment/payment_request_model.dart';
+import 'package:tms_app/data/models/payment/payment_response_model.dart';
+import 'package:tms_app/presentation/controller/cart_controller.dart';
+import 'package:tms_app/presentation/controller/login/login_controller.dart';
+import 'package:tms_app/presentation/controller/payment_controller.dart';
+import 'package:tms_app/domain/usecases/payment_usecase.dart';
+import 'package:tms_app/core/utils/toast_helper.dart';
+import 'package:tms_app/core/utils/shared_prefs.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String paymentMethod;
   final double amount;
   final List<Map<String, dynamic>> items;
+  final String promoCode;
+  final double discountpercent;
+  final String paymentType;
 
-  const PaymentScreen({
-    Key? key,
-    required this.paymentMethod,
-    required this.amount,
-    required this.items,
-  }) : super(key: key);
+  const PaymentScreen(
+      {Key? key,
+      required this.paymentMethod,
+      required this.amount,
+      required this.items,
+      required this.promoCode,
+      required this.discountpercent,
+      required this.paymentType})
+      : super(key: key);
 
   @override
   State<PaymentScreen> createState() => _PaymentScreenState();
@@ -22,13 +42,26 @@ class _PaymentScreenState extends State<PaymentScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  late final PaymentController _paymentController;
+  static const EventChannel eventChannel =
+      EventChannel('flutter.native/eventPayOrder');
+  static const MethodChannel platform =
+      MethodChannel('flutter.native/channelPayOrder');
 
+  String email = "";
+  String paymentResult = "";
   bool _isProcessing = true;
   bool _isCompleted = false;
   bool _isFailed = false;
+
   String _transactionId = '';
   Timer? _timer;
-  int _secondsRemaining = 300; // 5 minutes countdown
+  int _secondsRemaining = 300;
+  int returncode = 0;
+  String returnmessage = '';
+  bool _shouldShowRetry = false;
+
+  final PaymentUseCase _paymentUseCase = GetIt.instance<PaymentUseCase>();
 
   @override
   void initState() {
@@ -42,17 +75,20 @@ class _PaymentScreenState extends State<PaymentScreen>
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(parent: _animationController, curve: Curves.easeIn));
 
+    _paymentController = PaymentController(paymentUseCase: _paymentUseCase);
     _animationController.forward();
 
-    // Generate random transaction ID
+    // Generate transaction ID
     _transactionId =
         'TMS${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
 
     // Start countdown timer
     _startTimer();
 
-    // Simulate payment processing
-    _simulatePaymentProcess();
+    // Process payment based on selected method
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _processPayment();
+    });
   }
 
   void _startTimer() {
@@ -67,24 +103,273 @@ class _PaymentScreenState extends State<PaymentScreen>
           setState(() {
             _isFailed = true;
             _isProcessing = false;
+            _shouldShowRetry = true;
+            returnmessage = "Hết thời gian xử lý. Vui lòng thử lại.";
           });
         }
       }
     });
   }
 
-  void _simulatePaymentProcess() {
-    // Simulate payment processing
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() {
-          _isProcessing = false;
-          // 90% chance of success for demo purposes
-          _isCompleted = (DateTime.now().millisecond % 10) < 9;
-          _isFailed = !_isCompleted;
-        });
+  void _processPayment() {
+    if (widget.paymentMethod == 'zalopay') {
+      _processPaymentZaloPay();
+    } else if (widget.paymentMethod == 'momo') {
+      _showPaymentUnavailable("Ví MoMo hiện tại đang bảo trì");
+    } else if (widget.paymentMethod == 'vnpay') {
+      _showPaymentUnavailable("VNPay hiện tại đang bảo trì");
+    } else if (widget.paymentMethod == 'tms_wallet') {
+      _showPaymentUnavailable("Ví TMS hiện tại đang bảo trì");
+    } else {
+      _showPaymentUnavailable("Phương thức thanh toán không hợp lệ");
+    }
+  }
+
+  void _showPaymentUnavailable(String message) {
+    setState(() {
+      _isProcessing = false;
+      _isFailed = true;
+      returnmessage = message;
+      _shouldShowRetry = false;
+    });
+  }
+
+  void _onEvent(dynamic event) {
+    var res = Map<String, dynamic>.from(event);
+    setState(() {
+      if (res["errorCode"] == 1) {
+        _isCompleted = true;
+        _isFailed = false;
+        _isProcessing = false;
+        paymentResult = "Thanh toán thành công";
+      } else if (res["errorCode"] == 4) {
+        _isCompleted = false;
+        _isFailed = true;
+        _isProcessing = false;
+        paymentResult = "Người dùng đã hủy thanh toán";
+      } else {
+        _isCompleted = false;
+        _isFailed = true;
+        _isProcessing = false;
+        paymentResult = "Giao dịch thất bại";
       }
     });
+  }
+
+  void _onError(Object error) {
+    setState(() {
+      _isCompleted = false;
+      _isFailed = true;
+      _isProcessing = false;
+      _shouldShowRetry = true;
+      returnmessage = "Giao dịch thất bại: $error";
+    });
+  }
+
+  Future<Map<String, dynamic>> _payWithZaloPay(String zpToken) async {
+    try {
+      final result =
+          await platform.invokeMethod('payOrder', {'zptoken': zpToken});
+      return Map<String, dynamic>.from(result);
+    } on PlatformException catch (e) {
+      return {
+        'status': 'error',
+        'message': e.message ?? 'Lỗi không xác định từ PlatformException'
+      };
+    } catch (e) {
+      return {'status': 'error', 'message': 'Lỗi không xác định: $e'};
+    }
+  }
+
+  Future<void> _processPaymentZaloPay() async {
+    try {
+      setState(() {
+        _isProcessing = true;
+        _isFailed = false;
+        _isCompleted = false;
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+      final savedEmail = prefs.getString(LoginController.KEY_SAVED_EMAIL) ?? "";
+
+      // Create payload for ZaloPay
+      final paymentRequest = {
+        'appUser': savedEmail,
+        'amount': widget.amount.toInt(),
+        'description': 'Payment $savedEmail',
+        'bankCode': 'zalopayapp',
+        'items': widget.items.isNotEmpty ? widget.items : null,
+        'embedData': {
+          'promotion_code':
+              widget.promoCode.isNotEmpty ? widget.promoCode : 'NONE',
+          'merchant_info': 'TMS Learning',
+          'redirecturl': 'https://tms.com/payment-result'
+        }
+      };
+
+      // Get ZaloPay token
+      final tokenResponse =
+          await _paymentController.getZaloPayToken(paymentRequest);
+
+      // Extract ZaloPay token
+      String zpToken = '';
+      if (tokenResponse.containsKey('zp_trans_token')) {
+        zpToken = tokenResponse['zp_trans_token']?.toString() ?? '';
+      } else if (tokenResponse.containsKey('zptoken')) {
+        zpToken = tokenResponse['zptoken']?.toString() ?? '';
+      } else {
+        // Fallback to search for token in any field
+        for (var entry in tokenResponse.entries) {
+          if (entry.value is String &&
+              entry.value.toString().isNotEmpty &&
+              (entry.key.toLowerCase().contains('token') ||
+                  entry.value.toString().length > 20)) {
+            zpToken = entry.value.toString();
+            break;
+          }
+        }
+      }
+
+      if (zpToken.isEmpty) {
+        throw Exception("Không thể lấy được token thanh toán");
+      }
+
+      // Process payment with ZaloPay
+      final result = await _payWithZaloPay(zpToken);
+
+      if (result['status'] == 'success') {
+        // Check payment status
+        final checkStatus =
+            await _paymentController.getQueryPayment(result['appTransID']);
+
+        if (checkStatus["returncode"] == 1) {
+          // Success
+          setState(() {
+            _isProcessing = false;
+            _isCompleted = true;
+            _isFailed = false;
+            _transactionId = checkStatus["apptransid"] ?? result['appTransID'];
+            returncode = checkStatus["returncode"];
+            returnmessage =
+                checkStatus["returnmessage"] ?? "Thanh toán thành công";
+          });
+
+          // Save payment details to backend after successful payment
+          await _savePaymentToBackend();
+        } else {
+          // Failed
+          setState(() {
+            _isProcessing = false;
+            _isCompleted = false;
+            _isFailed = true;
+            _shouldShowRetry = true;
+            returncode = checkStatus["returncode"];
+            returnmessage =
+                checkStatus["returnmessage"] ?? "Thanh toán thất bại";
+          });
+        }
+      } else {
+        // Failed
+        setState(() {
+          _isProcessing = false;
+          _isCompleted = false;
+          _isFailed = true;
+          _shouldShowRetry = true;
+          returnmessage = result['message'] ?? "Thanh toán thất bại";
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isProcessing = false;
+        _isCompleted = false;
+        _isFailed = true;
+        _shouldShowRetry = true;
+        returnmessage = "Lỗi thanh toán: $e";
+      });
+    }
+  }
+
+  // Method to save payment details to backend
+  Future<void> _savePaymentToBackend() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(SharedPrefs.KEY_USER_ID);
+
+      if (userId == null || userId.isEmpty) {
+        print("Error: No user ID found");
+        return;
+      }
+
+      // Chuyển đổi userId từ String sang int
+      final int userIdInt;
+      try {
+        userIdInt = int.parse(userId);
+      } catch (e) {
+        print("Error: Invalid user ID format - $userId");
+        return;
+      }
+      List<PaymentDetailModel> paymentDetails = [];
+      double subtotal = 0.0;
+      double discountValue = 0.0;
+      double discountPercent = 0.0;
+      if (widget.paymentType == "PRODUCT") {
+        // Create payment details array
+        paymentDetails = widget.items.map((item) {
+          return PaymentDetailModel(
+              courseId: item['type'].toString().toUpperCase() == 'COURSE'
+                  ? int.parse(item['id'].toString())
+                  : null,
+              testId: item['type'].toString().toUpperCase() == 'EXAM'
+                  ? int.parse(item['id'].toString())
+                  : null,
+              courseBundleId: item['type'].toString().toUpperCase() == 'COMBO'
+                  ? int.parse(item['id'].toString())
+                  : null,
+              price: double.parse(item['price'].toString()),
+              type: item['type'].toString().toUpperCase());
+        }).toList();
+
+        // Calculate discount
+        subtotal = widget.items.fold(
+            0, (sum, item) => sum + double.parse(item['price'].toString()));
+        discountValue = subtotal - widget.amount;
+        discountPercent =
+            widget.discountpercent > 0.0 ? widget.discountpercent : 0.0;
+      }
+
+      // Create payment payload
+      final PaymentRequestModel paymentRequest = PaymentRequestModel(
+          paymentDate: DateTime.now().toIso8601String(),
+          subTotalPayment: subtotal,
+          totalPayment: widget.amount,
+          totalDiscount: discountValue,
+          discountValue: discountPercent.round(),
+          paymentMethod: widget.paymentMethod,
+          transactionId: _transactionId,
+          accountId: userIdInt,
+          paymentType: widget.paymentType,
+          status: "COMPLETED",
+          note: "Thanh toán thành công qua ZaloPay",
+          paymentDetails: paymentDetails,
+          createdAt: DateTime.now().toIso8601String(),
+          updatedAt: DateTime.now().toIso8601String());
+
+      // Send request to backend using the controller
+      final response =
+          await _paymentController.savePaymentRecord(paymentRequest);
+      print("Payment saved successfully: ${response.data.id}");
+    } catch (e) {
+      print("Error saving payment: $e");
+    }
+  }
+
+  void _handleRetry() {
+    setState(() {
+      _secondsRemaining = 300; // Reset timer
+      _isProcessing = true;
+      _isFailed = false;
+    });
+    _processPayment();
   }
 
   @override
@@ -110,29 +395,7 @@ class _PaymentScreenState extends State<PaymentScreen>
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Hủy thanh toán?'),
-                content: const Text(
-                    'Bạn có chắc muốn hủy quá trình thanh toán này?'),
-                actions: [
-                  TextButton(
-                    child: const Text('Không'),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  TextButton(
-                    child: const Text('Có'),
-                    onPressed: () {
-                      Navigator.pop(context); // Close dialog
-                      Navigator.pop(context); // Return to previous screen
-                    },
-                  ),
-                ],
-              ),
-            );
-          },
+          onPressed: () => _showCancelConfirmation(),
         ),
       ),
       body: FadeTransition(
@@ -149,6 +412,7 @@ class _PaymentScreenState extends State<PaymentScreen>
                       : _buildFailedSection(),
               const SizedBox(height: 20),
               _buildOrderDetailsSection(),
+              const SizedBox(height: 30),
             ],
           ),
         ),
@@ -157,32 +421,32 @@ class _PaymentScreenState extends State<PaymentScreen>
     );
   }
 
-  Widget _buildPaymentHeaderSection() {
-    String methodIcon;
-    Color methodColor;
-    String methodName;
+  void _showCancelConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hủy thanh toán?'),
+        content: const Text('Bạn có chắc muốn hủy quá trình thanh toán này?'),
+        actions: [
+          TextButton(
+            child: const Text('Không'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          TextButton(
+            child: const Text('Có'),
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(context); // Return to previous screen
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
-    switch (widget.paymentMethod) {
-      case 'tms_wallet':
-        methodIcon = 'assets/images/tms_wallet_icon.png';
-        methodColor = Colors.blue;
-        methodName = 'Ví TMS';
-        break;
-      case 'momo':
-        methodIcon = 'assets/images/momo_icon.png';
-        methodColor = Colors.pink;
-        methodName = 'Ví MoMo';
-        break;
-      case 'vnpay':
-        methodIcon = 'assets/images/vnpay_icon.png';
-        methodColor = Colors.red;
-        methodName = 'VN Pay';
-        break;
-      default:
-        methodIcon = 'assets/images/tms_wallet_icon.png';
-        methodColor = Colors.blue;
-        methodName = 'Ví TMS';
-    }
+  Widget _buildPaymentHeaderSection() {
+    // Define payment method details
+    final methodDetails = _getPaymentMethodDetails();
 
     return Container(
       width: double.infinity,
@@ -190,8 +454,8 @@ class _PaymentScreenState extends State<PaymentScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            methodColor.withOpacity(0.7),
-            methodColor,
+            methodDetails.color.withOpacity(0.7),
+            methodDetails.color,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -200,46 +464,12 @@ class _PaymentScreenState extends State<PaymentScreen>
       child: Column(
         children: [
           const SizedBox(height: 20),
-
-          // Image with fallback to icon
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              width: 80,
-              height: 80,
-              color: Colors.white,
-              child: Image.asset(
-                methodIcon,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  IconData iconData;
-                  switch (widget.paymentMethod) {
-                    case 'tms_wallet':
-                      iconData = Icons.account_balance_wallet;
-                      break;
-                    case 'momo':
-                      iconData = Icons.wallet;
-                      break;
-                    case 'vnpay':
-                      iconData = Icons.payment;
-                      break;
-                    default:
-                      iconData = Icons.account_balance_wallet;
-                  }
-
-                  return Icon(
-                    iconData,
-                    size: 50,
-                    color: methodColor,
-                  );
-                },
-              ),
-            ),
-          ),
-
+          // Payment method icon
+          _buildMethodIcon(methodDetails),
           const SizedBox(height: 15),
+          // Payment method name
           Text(
-            methodName,
+            methodDetails.name,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 22,
@@ -247,6 +477,16 @@ class _PaymentScreenState extends State<PaymentScreen>
             ),
           ),
           const SizedBox(height: 10),
+          // Payment method description
+          Text(
+            methodDetails.description,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Transaction ID
           Text(
             'Mã giao dịch: $_transactionId',
             style: const TextStyle(
@@ -255,6 +495,7 @@ class _PaymentScreenState extends State<PaymentScreen>
             ),
           ),
           const SizedBox(height: 25),
+          // Amount
           Text(
             '${_formatCurrency(widget.amount)} đ',
             style: const TextStyle(
@@ -269,21 +510,33 @@ class _PaymentScreenState extends State<PaymentScreen>
     );
   }
 
-  Widget _buildProcessingSection() {
+  Widget _buildMethodIcon(PaymentMethodDetails details) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 10,
-            offset: const Offset(0, 5),
+            spreadRadius: 1,
           ),
         ],
       ),
+      child: Icon(
+        details.icon,
+        size: 40,
+        color: details.color,
+      ),
+    );
+  }
+
+  Widget _buildProcessingSection() {
+    return Container(
+      padding: const EdgeInsets.all(25),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: _buildCardDecoration(),
       child: Column(
         children: [
           const SizedBox(
@@ -294,7 +547,7 @@ class _PaymentScreenState extends State<PaymentScreen>
               valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 25),
           const Text(
             'Đang xử lý thanh toán',
             style: TextStyle(
@@ -302,7 +555,7 @@ class _PaymentScreenState extends State<PaymentScreen>
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 15),
           Text(
             'Vui lòng không tắt ứng dụng',
             style: TextStyle(
@@ -315,7 +568,7 @@ class _PaymentScreenState extends State<PaymentScreen>
             backgroundColor: Colors.grey.shade200,
             valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 25),
 
           // Countdown timer
           Container(
@@ -352,17 +605,7 @@ class _PaymentScreenState extends State<PaymentScreen>
     return Container(
       padding: const EdgeInsets.all(25),
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
+      decoration: _buildCardDecoration(),
       child: Column(
         children: [
           Container(
@@ -378,60 +621,58 @@ class _PaymentScreenState extends State<PaymentScreen>
               size: 60,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 25),
           const Text(
             'Thanh toán thành công',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 15),
           Text(
             'Giao dịch đã được xử lý thành công',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 15,
               color: Colors.grey.shade600,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 25),
           const Divider(),
           const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Thời gian:',
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              Text(
-                DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now()),
-                style: const TextStyle(
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
+          _buildInfoRow('Thời gian:',
+              DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())),
           const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Mã giao dịch:',
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                ),
+          _buildInfoRow('Mã giao dịch:', _transactionId),
+          if (_isCompleted) ...[
+            const SizedBox(height: 25),
+            Container(
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.green.shade200),
               ),
-              Text(
-                _transactionId,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w500,
-                ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.green.shade700,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Các khóa học đã mua sẽ được kích hoạt trong tài khoản của bạn.',
+                      style: TextStyle(
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ],
       ),
     );
@@ -441,17 +682,7 @@ class _PaymentScreenState extends State<PaymentScreen>
     return Container(
       padding: const EdgeInsets.all(25),
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
+      decoration: _buildCardDecoration(),
       child: Column(
         children: [
           Container(
@@ -467,23 +698,24 @@ class _PaymentScreenState extends State<PaymentScreen>
               size: 60,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 25),
           const Text(
             'Thanh toán thất bại',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 15),
           Text(
-            'Đã có lỗi xảy ra trong quá trình thanh toán',
+            returnmessage,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 15,
               color: Colors.grey.shade600,
             ),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 25),
           const Divider(),
           const SizedBox(height: 20),
           Container(
@@ -514,7 +746,9 @@ class _PaymentScreenState extends State<PaymentScreen>
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Vui lòng kiểm tra số dư tài khoản hoặc thử lại sau vài phút.',
+                  _shouldShowRetry
+                      ? 'Vui lòng kiểm tra số dư tài khoản hoặc thử lại sau.'
+                      : 'Phương thức thanh toán này hiện không khả dụng.',
                   style: TextStyle(
                     color: Colors.red.shade700,
                   ),
@@ -530,17 +764,7 @@ class _PaymentScreenState extends State<PaymentScreen>
   Widget _buildOrderDetailsSection() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
+      decoration: _buildCardDecoration(),
       child: Column(
         children: [
           Container(
@@ -548,8 +772,8 @@ class _PaymentScreenState extends State<PaymentScreen>
             decoration: BoxDecoration(
               color: Colors.blue.shade50,
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
               ),
             ),
             child: Row(
@@ -579,7 +803,8 @@ class _PaymentScreenState extends State<PaymentScreen>
             itemBuilder: (context, index) {
               final item = widget.items[index];
               return ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
                 title: Text(
                   item['title'],
                   style: const TextStyle(
@@ -590,7 +815,7 @@ class _PaymentScreenState extends State<PaymentScreen>
                   overflow: TextOverflow.ellipsis,
                 ),
                 subtitle: Text(
-                  item['type'] == 'course' ? 'Khóa học' : 'Đề thi',
+                  _getItemTypeDisplay(item['type']),
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade600,
@@ -606,15 +831,12 @@ class _PaymentScreenState extends State<PaymentScreen>
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: item['type'] == 'course'
-                        ? Colors.blue.shade50
-                        : Colors.orange.shade50,
+                    color: _getItemTypeColor(item['type']).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
-                    item['type'] == 'course' ? Icons.book : Icons.quiz,
-                    color:
-                        item['type'] == 'course' ? Colors.blue : Colors.orange,
+                    _getItemTypeIcon(item['type']),
+                    color: _getItemTypeColor(item['type']),
                     size: 22,
                   ),
                 ),
@@ -628,8 +850,8 @@ class _PaymentScreenState extends State<PaymentScreen>
             decoration: BoxDecoration(
               color: Colors.grey.shade50,
               borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(16),
-                bottomRight: Radius.circular(16),
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
               ),
             ),
             child: Row(
@@ -677,29 +899,7 @@ class _PaymentScreenState extends State<PaymentScreen>
           width: double.infinity,
           height: 50,
           child: ElevatedButton(
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Hủy thanh toán?'),
-                  content: const Text(
-                      'Bạn có chắc muốn hủy quá trình thanh toán này?'),
-                  actions: [
-                    TextButton(
-                      child: const Text('Không'),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    TextButton(
-                      child: const Text('Có'),
-                      onPressed: () {
-                        Navigator.pop(context); // Close dialog
-                        Navigator.pop(context); // Return to previous screen
-                      },
-                    ),
-                  ],
-                ),
-              );
-            },
+            onPressed: () => _showCancelConfirmation(),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.grey,
               shape: RoundedRectangleBorder(
@@ -736,7 +936,7 @@ class _PaymentScreenState extends State<PaymentScreen>
           child: ElevatedButton(
             onPressed: () {
               Navigator.pop(context); // Return to previous screen
-              // You would typically navigate to a receipt or confirmation screen here
+              Navigator.pop(context); // Return to cart screen
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
@@ -755,6 +955,7 @@ class _PaymentScreenState extends State<PaymentScreen>
         ),
       );
     } else {
+      // Failed state
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -793,38 +994,69 @@ class _PaymentScreenState extends State<PaymentScreen>
                 ),
               ),
             ),
-            const SizedBox(width: 15),
-            Expanded(
-              child: SizedBox(
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _isProcessing = true;
-                      _isFailed = false;
-                    });
-                    _simulatePaymentProcess();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+            if (_shouldShowRetry) ...[
+              const SizedBox(width: 15),
+              Expanded(
+                child: SizedBox(
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _handleRetry,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
-                  ),
-                  child: const Text(
-                    'Thử lại',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                    child: const Text(
+                      'Thử lại',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       );
     }
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey.shade600,
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  BoxDecoration _buildCardDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.08),
+          blurRadius: 15,
+          spreadRadius: 1,
+          offset: const Offset(0, 3),
+        ),
+      ],
+    );
   }
 
   String _formatCurrency(double amount) {
@@ -839,4 +1071,97 @@ class _PaymentScreenState extends State<PaymentScreen>
     final remainingSeconds = seconds % 60;
     return '$minutes:${remainingSeconds.toString().padLeft(2, '0')}';
   }
+
+  PaymentMethodDetails _getPaymentMethodDetails() {
+    switch (widget.paymentMethod) {
+      case 'tms_wallet':
+        return PaymentMethodDetails(
+          name: 'Ví TMS',
+          icon: Icons.account_balance_wallet,
+          color: Colors.blue,
+          description: 'Thanh toán bằng số dư Ví TMS',
+        );
+      case 'momo':
+        return PaymentMethodDetails(
+          name: 'Ví MoMo',
+          icon: Icons.wallet,
+          color: Colors.pink,
+          description: 'Thanh toán qua ứng dụng MoMo',
+        );
+      case 'zalopay':
+        return PaymentMethodDetails(
+          name: 'ZaloPay',
+          icon: Icons.wallet,
+          color: Colors.blue.shade700,
+          description: 'Thanh toán qua ứng dụng ZaloPay',
+        );
+      case 'vnpay':
+        return PaymentMethodDetails(
+          name: 'VN Pay',
+          icon: Icons.payment,
+          color: Colors.red,
+          description: 'Thanh toán qua VNPay',
+        );
+      default:
+        return PaymentMethodDetails(
+          name: 'Phương thức thanh toán',
+          icon: Icons.payment,
+          color: Colors.blue,
+          description: 'Thanh toán đơn hàng',
+        );
+    }
+  }
+
+  String _getItemTypeDisplay(String type) {
+    switch (type.toLowerCase()) {
+      case 'course':
+        return 'Khóa học';
+      case 'exam':
+        return 'Đề thi';
+      case 'combo':
+        return 'Combo khóa học';
+      default:
+        return type;
+    }
+  }
+
+  Color _getItemTypeColor(String type) {
+    switch (type.toLowerCase()) {
+      case 'course':
+        return Colors.blue;
+      case 'exam':
+        return Colors.orange;
+      case 'combo':
+        return Colors.purple;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getItemTypeIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'course':
+        return Icons.book;
+      case 'exam':
+        return Icons.quiz;
+      case 'combo':
+        return Icons.card_giftcard;
+      default:
+        return Icons.shopping_bag;
+    }
+  }
+}
+
+class PaymentMethodDetails {
+  final String name;
+  final IconData icon;
+  final Color color;
+  final String description;
+
+  PaymentMethodDetails({
+    required this.name,
+    required this.icon,
+    required this.color,
+    required this.description,
+  });
 }

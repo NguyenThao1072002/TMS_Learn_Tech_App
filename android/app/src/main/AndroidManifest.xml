@@ -1,4 +1,6 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+   package="com.example.tms_app">
+   
     <!-- Thêm quyền internet và quyền đọc/ghi bộ nhớ ngoài -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
@@ -35,6 +37,21 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                        android:scheme="zp2554"  
+                        android:host="app"/>
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="vn.zalopay.sdk.ZaloPayActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
         </activity>
         
         <!-- Cấu hình cho Google Sign-In -->

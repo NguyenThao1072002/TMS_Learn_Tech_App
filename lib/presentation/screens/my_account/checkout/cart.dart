@@ -1,12 +1,22 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
+import 'package:provider/provider.dart';
 import 'package:tms_app/data/models/cart/cart_model.dart';
 import 'package:tms_app/data/models/combo/course_bundle_model.dart';
 import 'package:tms_app/domain/usecases/cart_usecase.dart';
+import 'package:tms_app/domain/usecases/discount_usecase.dart';
+import 'package:tms_app/domain/usecases/payment_usecase.dart';
 import 'package:tms_app/presentation/controller/cart_controller.dart';
+import 'package:tms_app/presentation/controller/payment_controller.dart';
 import 'package:tms_app/presentation/screens/course/course_screen.dart';
 import 'package:tms_app/presentation/screens/my_account/checkout/payment.dart';
 import 'package:tms_app/presentation/widgets/course/combo_course.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tms_app/presentation/controller/discount_controller.dart';
+import 'package:tms_app/core/utils/shared_prefs.dart';
 
 // Định nghĩa lớp CourseCombo
 class CourseCombo {
@@ -59,11 +69,24 @@ class _CartScreenState extends State<CartScreen> {
   // Sử dụng trực tiếp CartController
   late CartController _cartController;
 
+  late final PaymentController _paymentController;
+  late final DiscountController _discountController;
+  static const EventChannel eventChannel =
+      EventChannel('flutter.native/eventPayOrder');
+
+  static const MethodChannel platform =
+      MethodChannel('flutter.native/channelPayOrder');
+
   // Danh sách lưu trữ các mục đã chọn (sử dụng cartItemId)
   final Map<int, bool> _selectedItems = {};
 
+  // Use ValueNotifier for payment method ID to ensure UI updates
+  final ValueNotifier<String> _selectedPaymentMethodIdNotifier =
+      ValueNotifier<String>('tms_wallet');
+
   // Biến để theo dõi nếu đã quá thời gian chờ loading
   bool _loadingTimedOut = false;
+  String paymentResult = "";
 
   // Danh sách combo khóa học
   final List<CourseCombo> _availableCombos = [
@@ -80,13 +103,15 @@ class _CartScreenState extends State<CartScreen> {
       discountPercent: 25,
     ),
   ];
-
+  String payResult = "";
   String? _selectedComboId;
-  String _selectedPaymentMethodId = 'tms_wallet';
   String _promoCode = '';
   double _discountPercent = 0;
   bool _isApplyingPromo = false;
   bool _promoApplied = false;
+
+  final PaymentUseCase _paymentUseCase = GetIt.instance<PaymentUseCase>();
+  final DiscountUseCase _discountUseCase = GetIt.instance<DiscountUseCase>();
 
   // Danh sách phương thức thanh toán
   final List<PaymentMethod> _paymentMethods = [
@@ -103,6 +128,12 @@ class _CartScreenState extends State<CartScreen> {
       color: Colors.pink,
     ),
     PaymentMethod(
+      id: 'zalopay',
+      name: 'ZaloPay',
+      icon: Icons.wallet,
+      color: Colors.pink,
+    ),
+    PaymentMethod(
       id: 'vnpay',
       name: 'VN Pay',
       icon: Icons.payment,
@@ -114,11 +145,19 @@ class _CartScreenState extends State<CartScreen> {
   void initState() {
     super.initState();
 
+    if (Platform.isIOS) {
+      eventChannel.receiveBroadcastStream().listen(_onEvent, onError: _onError);
+    }
     // Khởi tạo CartController
     _cartController = CartController(
       cartUseCase: GetIt.instance<CartUseCase>(),
     );
 
+    // Initialize PaymentController
+    // _paymentController = GetIt.instance<PaymentController>();
+
+    _paymentController = PaymentController(paymentUseCase: _paymentUseCase);
+    _discountController = DiscountController(discountUseCase: _discountUseCase);
     // Thêm cơ chế timeout cho loading
     _setupLoadingTimeout();
 
@@ -218,12 +257,12 @@ class _CartScreenState extends State<CartScreen> {
         _showSnackBar(
             'Đã thêm ${_getDisplayTextForType(item.type).toLowerCase()} vào giỏ hàng',
             Colors.green);
-            
+
         // Nếu là khóa học thì tải gợi ý combo
         if (item.type.toUpperCase() == 'COURSE' && item.courseId != null) {
           _cartController.loadCourseBundles(item.courseId!);
         }
-        
+
         break;
       }
     }
@@ -281,15 +320,17 @@ class _CartScreenState extends State<CartScreen> {
         _selectedItems[item.cartItemId] = value;
       }
     });
-    
+
     if (value) {
       // Nếu chọn tất cả, tìm tất cả các khóa học và tải gợi ý cho khóa học đầu tiên
       var courses = _cartController.cartItems.value
-          .where((item) => item.type.toUpperCase() == 'COURSE' && item.courseId != null)
+          .where((item) =>
+              item.type.toUpperCase() == 'COURSE' && item.courseId != null)
           .toList();
-      
+
       if (courses.isNotEmpty) {
-        print('Tải gợi ý combo cho khóa học đầu tiên ID: ${courses.first.courseId}');
+        print(
+            'Tải gợi ý combo cho khóa học đầu tiên ID: ${courses.first.courseId}');
         _cartController.loadCourseBundles(courses.first.courseId!);
       }
     } else {
@@ -301,7 +342,7 @@ class _CartScreenState extends State<CartScreen> {
   // Phương thức xóa item khỏi giỏ hàng
   void _removeItem(int cartItemId) {
     print('Bắt đầu xóa item có ID: $cartItemId');
-    
+
     _cartController.removeFromCart(cartItemId).then((success) {
       if (success) {
         setState(() {
@@ -360,31 +401,127 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  // Xử lý khi nhấn thanh toán
-  void _processPayment() {
-    Navigator.pop(context); // Đóng bottom sheet
+  void _onEvent(dynamic event) {
+    print("_onEvent: '$event'.");
+    var res = Map<String, dynamic>.from(event);
+    setState(() {
+      if (res["errorCode"] == 1) {
+        payResult = "Thanh toán thành công";
+      } else if (res["errorCode"] == 4) {
+        payResult = "User hủy thanh toán";
+      } else {
+        payResult = "Giao dịch thất bại";
+      }
+    });
+  }
 
-    // Lấy danh sách các sản phẩm đã chọn
-    final selectedItems = _cartController.cartItems.value
-        .where((item) => _selectedItems[item.cartItemId] == true)
-        .map((item) => {
-              'id': _getItemId(item),
-              'title': item.name,
-              'price': item.price,
-              'type': item.type,
-            })
-        .toList();
+  void _onError(Object error) {
+    print("_onError: '$error'.");
+    setState(() {
+      payResult = "Giao dịch thất bại";
+    });
+  }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PaymentScreen(
-          paymentMethod: _selectedPaymentMethodId,
-          amount: _finalAmount,
-          items: selectedItems,
-        ),
-      ),
+  Future<Map<String, dynamic>> _payWithZaloPay(String zpToken) async {
+    try {
+      final result =
+          await platform.invokeMethod('payOrder', {'zptoken': zpToken});
+
+      // print('ZaloPay result: $result');
+
+      // Ép kiểu rõ ràng
+      return Map<String, dynamic>.from(result);
+    } on PlatformException catch (e) {
+      return {
+        'status': 'error',
+        'message': e.message ?? 'Lỗi không xác định từ PlatformException'
+      };
+    } catch (e) {
+      return {'status': 'error', 'message': 'Lỗi không xác định: $e'};
+    }
+  }
+
+  Future<void> subscribe() async {
+    eventChannel.receiveBroadcastStream().listen(
+      (data) {
+        var res = Map<String, dynamic>.from(data);
+        String message;
+        if (res["errorCode"] == 1) {
+          message = "Payment succees";
+        } else if (res["errorCode"] == 4) {
+          message = "User cancelled payment";
+        } else {
+          message = "Payment failed";
+        }
+        setState(() {
+          paymentResult = message;
+        });
+      },
+      onError: (error) {
+        setState(() {
+          paymentResult = error.toString();
+        });
+      },
     );
+  }
+
+  // Xử lý khi nhấn thanh toán
+  void _processPayment() async {
+    try {
+      // Lấy danh sách các sản phẩm đã chọn cho payload
+      final itemsForPayload = _cartController.cartItems.value
+          .where((item) => _selectedItems[item.cartItemId] == true)
+          .map((item) => {
+                'itemid': _getItemId(item),
+                'itemname': item.name,
+                'itemprice': item.price.toInt(),
+                'itemquantity': 1
+              })
+          .toList();
+
+      final selectedMethodId = _selectedPaymentMethodIdNotifier.value;
+      print('Processing payment with method: $selectedMethodId');
+
+      if (selectedMethodId == "zalopay") {
+        // Phần còn lại không thay đổi
+        final selectedItems = _cartController.cartItems.value
+            .where((item) => _selectedItems[item.cartItemId] == true)
+            .map((item) => {
+                  'id': _getItemId(item),
+                  'title': item.name,
+                  'price': item.price,
+                  'type': item.type,
+                })
+            .toList();
+
+        // Chuyển đến trang xác nhận thanh toán
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentScreen(
+              paymentMethod: selectedMethodId,
+              amount: _finalAmount, // Truyền tham số với giá tiền đã giảm
+              items: selectedItems,
+              promoCode: _promoCode,
+              discountpercent: _discountPercent,
+              paymentType: "PRODUCT",
+            ),
+          ),
+        );
+      } else if (selectedMethodId == "momo") {
+        _showSnackBar('Momo hiện tại đang bảo trì', Colors.red);
+      } else if (selectedMethodId == "vnpay") {
+        _showSnackBar('VNPay hiện tại đang bảo trì', Colors.red);
+      } else if (selectedMethodId == "tms_wallet") {
+        _showSnackBar('Ví TMS hiện tại đang bảo trì', Colors.red);
+      } else {
+        _showSnackBar('Vui lòng chọn phương thức thanh toán', Colors.red);
+      }
+    } catch (e) {
+      print('Lỗi thanh toán: $e');
+      _showSnackBar(
+          'Đã xảy ra lỗi khi thanh toán: ${e.toString()}', Colors.red);
+    }
   }
 
   // Hàm helper để lấy ID của item dựa vào loại
@@ -410,7 +547,7 @@ class _CartScreenState extends State<CartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, 
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
           'Giỏ hàng',
@@ -659,29 +796,30 @@ class _CartScreenState extends State<CartScreen> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: item.image.isNotEmpty
-                  ? Image.network(
-                  item.image,
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                        print('Error loading image for item: ${item.name}, error: $error');
-                    return Container(
-                      width: 80,
-                      height: 80,
-                      color: Colors.grey[200],
-                      child: Icon(productTypeIcon,
-                          color: Colors.grey[500], size: 40),
-                    );
-                  },
-                    )
-                  : Container(
-                      width: 80,
-                      height: 80,
-                      color: Colors.grey[200],
-                      child: Icon(productTypeIcon,
-                          color: Colors.grey[500], size: 40),
-                ),
+                    ? Image.network(
+                        item.image,
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          print(
+                              'Error loading image for item: ${item.name}, error: $error');
+                          return Container(
+                            width: 80,
+                            height: 80,
+                            color: Colors.grey[200],
+                            child: Icon(productTypeIcon,
+                                color: Colors.grey[500], size: 40),
+                          );
+                        },
+                      )
+                    : Container(
+                        width: 80,
+                        height: 80,
+                        color: Colors.grey[200],
+                        child: Icon(productTypeIcon,
+                            color: Colors.grey[500], size: 40),
+                      ),
               ),
               const SizedBox(width: 15),
               Expanded(
@@ -975,12 +1113,16 @@ class _CartScreenState extends State<CartScreen> {
                       child: Container(
                         height: 50,
                         decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.07),
+                          color: _promoApplied
+                              ? Colors.grey.withOpacity(0.05)
+                              : Colors.grey.withOpacity(0.07),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: Colors.grey.shade300),
                         ),
                         child: Center(
                           child: TextField(
+                            enabled: !_promoApplied,
+                            controller: TextEditingController(text: _promoCode),
                             onChanged: (value) {
                               setState(() {
                                 _promoCode = value.trim().toUpperCase();
@@ -1012,42 +1154,66 @@ class _CartScreenState extends State<CartScreen> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    SizedBox(
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: _promoCode.isEmpty ||
-                                _isApplyingPromo ||
-                                _promoApplied
-                            ? null
-                            : _applyPromoCode,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          disabledBackgroundColor: Colors.grey.shade300,
-                          padding: const EdgeInsets.symmetric(horizontal: 18),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: _isApplyingPromo
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
+                    _promoApplied
+                        ? SizedBox(
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: _cancelPromoCode,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.redAccent,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 18),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
-                              )
-                            : Text(
-                                _promoApplied ? 'Đã áp dụng' : 'Áp dụng',
-                                style: const TextStyle(
+                                elevation: 0,
+                              ),
+                              child: const Text(
+                                'Hủy',
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold, fontSize: 15),
                               ),
-                      ),
-                    ),
+                            ),
+                          )
+                        : SizedBox(
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: _promoCode.isEmpty ||
+                                      _isApplyingPromo ||
+                                      _promoApplied
+                                  ? null
+                                  : _applyPromoCode,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                disabledBackgroundColor: Colors.grey.shade300,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 18),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: _isApplyingPromo
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Áp dụng',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15),
+                                    ),
+                            ),
+                          ),
                   ],
                 ),
-                if (_promoApplied)
+                if (_promoApplied &&
+                    _discountController.voucherDetails.value != null)
                   Container(
                     margin: const EdgeInsets.only(top: 12),
                     padding:
@@ -1057,19 +1223,37 @@ class _CartScreenState extends State<CartScreen> {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: Colors.green.withOpacity(0.2)),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.check_circle,
-                            color: Colors.green, size: 18),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Áp dụng thành công: Giảm $_discountPercent%',
-                          style: TextStyle(
-                            color: Colors.green[700],
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
+                        Row(
+                          children: [
+                            const Icon(Icons.check_circle,
+                                color: Colors.green, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Giảm ${_discountPercent.toStringAsFixed(0)}% tổng giá trị đơn hàng',
+                                style: TextStyle(
+                                  color: Colors.green[700],
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                        if (_discountController.voucherDetails.value != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4, left: 26),
+                            child: Text(
+                              'Mã: ${_discountController.voucherDetails.value!.voucherCode}',
+                              style: TextStyle(
+                                color: Colors.green[700],
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -1138,23 +1322,6 @@ class _CartScreenState extends State<CartScreen> {
                     color: Colors.blue,
                   ),
                 ),
-                const Spacer(),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '${_selectedItems.values.where((selected) => selected).length} sản phẩm',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.blue,
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -1197,36 +1364,81 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   // Phương thức xử lý áp dụng mã giảm giá
-  void _applyPromoCode() {
+  void _applyPromoCode() async {
     setState(() {
       _isApplyingPromo = true;
     });
 
-    // Giả lập API call với delay
-    Future.delayed(const Duration(seconds: 1), () {
-      if (!mounted) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(SharedPrefs.KEY_USER_ID);
 
-      // Giả định kiểm tra mã khuyến mãi (trong thực tế sẽ gọi API)
-      final validPromos = {
-        'WELCOME': 10,
-        'TET2024': 20,
-        'SUMMER': 15,
-        'TMS50': 50,
-      };
+      if (userId == null || userId.isEmpty) {
+        throw Exception("Vui lòng đăng nhập để sử dụng mã giảm giá");
+      }
+
+      final userIdInt = int.parse(userId);
+      final isValid =
+          await _discountController.validateVoucher(_promoCode, userIdInt);
+
+      if (!mounted) return;
 
       setState(() {
         _isApplyingPromo = false;
 
-        if (validPromos.containsKey(_promoCode)) {
-          _discountPercent = validPromos[_promoCode]!.toDouble();
+        if (isValid) {
+          // Sử dụng giá trị discountValue từ response API
+          _discountPercent = _discountController.discountValue.value;
           _promoApplied = true;
-          _showSnackBar('Áp dụng mã giảm giá thành công!', Colors.green);
+
+          // Hiển thị thông tin voucher cho người dùng
+          final voucherDetails = _discountController.voucherDetails.value;
+          String voucherInfo = '';
+          if (voucherDetails != null) {
+            final startDate = DateTime.parse(voucherDetails.startDate);
+            final endDate = DateTime.parse(voucherDetails.endDate);
+            final startDateFormatted =
+                '${startDate.day}/${startDate.month}/${startDate.year}';
+            final endDateFormatted =
+                '${endDate.day}/${endDate.month}/${endDate.year}';
+
+            voucherInfo =
+                'Mã giảm giá ${voucherDetails.discountValue.toStringAsFixed(0)}% có hiệu lực từ $startDateFormatted đến $endDateFormatted';
+          }
+
+          _showSnackBar(
+              voucherInfo.isNotEmpty
+                  ? voucherInfo
+                  : 'Áp dụng mã giảm giá thành công!',
+              Colors.green);
         } else {
           _promoApplied = false;
           _discountPercent = 0;
-          _showSnackBar('Mã giảm giá không hợp lệ hoặc đã hết hạn', Colors.red);
+          _showSnackBar(
+              _discountController.errorMessage.value ??
+                  'Mã giảm giá không hợp lệ hoặc đã hết hạn',
+              Colors.red);
         }
       });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isApplyingPromo = false;
+        _promoApplied = false;
+        _discountPercent = 0;
+        _showSnackBar('Lỗi: ${e.toString()}', Colors.red);
+      });
+    }
+  }
+
+  // Phương thức xử lý hủy áp dụng mã giảm giá
+  void _cancelPromoCode() {
+    setState(() {
+      _promoApplied = false;
+      _discountPercent = 0;
+      _promoCode = '';
+      _showSnackBar('Đã hủy áp dụng mã giảm giá', Colors.orange);
     });
   }
 
@@ -1260,24 +1472,24 @@ class _CartScreenState extends State<CartScreen> {
   Widget _buildFinalPrice(String price) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Text(
+      children: [
+        const Text(
           'Thành tiền:',
-            style: TextStyle(
+          style: TextStyle(
             fontSize: 18,
-              fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.bold,
             color: Colors.blue,
-            ),
           ),
-          Text(
-            price,
-            style: const TextStyle(
+        ),
+        Text(
+          price,
+          style: const TextStyle(
             fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.red,
-            ),
+            fontWeight: FontWeight.bold,
+            color: Colors.red,
           ),
-        ],
+        ),
+      ],
     );
   }
 
@@ -1292,16 +1504,16 @@ class _CartScreenState extends State<CartScreen> {
           const dashSpace = 3.0;
           final dashCount = (width / (dashWidth + dashSpace)).floor();
 
-        return Flex(
+          return Flex(
             direction: Axis.horizontal,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: List.generate(dashCount, (_) {
+            children: List.generate(dashCount, (_) {
               return Container(
-              width: dashWidth,
+                width: dashWidth,
                 height: 1,
                 color: Colors.grey.withOpacity(0.3),
-            );
-          }),
+              );
+            }),
           );
         },
       ),
@@ -1312,14 +1524,14 @@ class _CartScreenState extends State<CartScreen> {
   Widget _buildComboSuggestion() {
     // Lấy các khóa học đã chọn từ giỏ hàng
     final selectedCourseItems = _cartController.cartItems.value
-        .where((item) => 
-            _selectedItems[item.cartItemId] == true && 
+        .where((item) =>
+            _selectedItems[item.cartItemId] == true &&
             item.type.toUpperCase() == 'COURSE' &&
             item.courseId != null)
         .toList();
 
     if (selectedCourseItems.isEmpty) return const SizedBox.shrink();
-    
+
     // Hiển thị thông tin khóa học được chọn
     final selectedCourse = selectedCourseItems.first;
 
@@ -1351,7 +1563,8 @@ class _CartScreenState extends State<CartScreen> {
                     children: [
                       const CircularProgressIndicator(),
                       const SizedBox(height: 16),
-                      Text('Đang tìm kiếm combo phù hợp cho "${selectedCourse.name}"...',
+                      Text(
+                        'Đang tìm kiếm combo phù hợp cho "${selectedCourse.name}"...',
                         style: TextStyle(color: Colors.grey[700]),
                         textAlign: TextAlign.center,
                       ),
@@ -1360,7 +1573,7 @@ class _CartScreenState extends State<CartScreen> {
                 ),
               );
             }
-            
+
             if (bundles.isEmpty) return const SizedBox.shrink();
 
             return Container(
@@ -1436,7 +1649,8 @@ class _CartScreenState extends State<CartScreen> {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.purple.withOpacity(0.08),
                             borderRadius: BorderRadius.circular(8),
@@ -1471,7 +1685,8 @@ class _CartScreenState extends State<CartScreen> {
                             ),
                             child: Center(
                               child: Image.network(
-                                bundles.first.imageUrl ?? 'https://via.placeholder.com/60',
+                                bundles.first.imageUrl ??
+                                    'https://via.placeholder.com/60',
                                 width: 40,
                                 height: 40,
                                 fit: BoxFit.cover,
@@ -1509,7 +1724,8 @@ class _CartScreenState extends State<CartScreen> {
                             ],
                           ),
                           trailing: ElevatedButton(
-                            onPressed: () => _navigateToComboDetail(bundles.first.id),
+                            onPressed: () =>
+                                _navigateToComboDetail(bundles.first.id),
                             style: ElevatedButton.styleFrom(
                               foregroundColor: Colors.white,
                               backgroundColor: Colors.purple,
@@ -1517,7 +1733,8 @@ class _CartScreenState extends State<CartScreen> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
                             ),
                             child: const Text('Xem chi tiết'),
                           ),
@@ -1528,12 +1745,13 @@ class _CartScreenState extends State<CartScreen> {
                           decoration: BoxDecoration(
                             color: Colors.purple.withOpacity(0.05),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.purple.withOpacity(0.2)),
+                            border: Border.all(
+                                color: Colors.purple.withOpacity(0.2)),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.info_outline, 
-                                color: Colors.purple, size: 16),
+                              const Icon(Icons.info_outline,
+                                  color: Colors.purple, size: 16),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -1562,11 +1780,10 @@ class _CartScreenState extends State<CartScreen> {
   // Chuyển đến trang chi tiết combo
   void _navigateToComboDetail(int comboId) {
     Navigator.push(
-      context, 
-      MaterialPageRoute(
-        builder: (context) => ComboCourseScreen(comboId: comboId),
-      )
-    );
+        context,
+        MaterialPageRoute(
+          builder: (context) => ComboCourseScreen(comboId: comboId),
+        ));
   }
 
   Widget _buildCheckoutBottomSheet() {
@@ -1830,23 +2047,6 @@ class _CartScreenState extends State<CartScreen> {
                     color: Colors.blue,
                   ),
                 ),
-                const Spacer(),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '${selectedItems.length} sản phẩm',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.blue,
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -1938,7 +2138,22 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  // Widget hiển thị phương thức thanh toán
+  // Phương thức xử lý khi người dùng chọn phương thức thanh toán
+  void _selectPaymentMethod(String methodId) {
+    print('Payment method selected: $methodId');
+    print('Previous method: ${_selectedPaymentMethodIdNotifier.value}');
+
+    // Update the ValueNotifier to trigger UI rebuild
+    _selectedPaymentMethodIdNotifier.value = methodId;
+
+    print('Updated payment method: ${_selectedPaymentMethodIdNotifier.value}');
+
+    // Show feedback to user
+    _showSnackBar(
+        'Đã chọn phương thức thanh toán: ${_getSelectedPaymentMethod()}',
+        Colors.green);
+  }
+
   Widget _buildPaymentMethodsSection() {
     return Container(
       decoration: BoxDecoration(
@@ -1999,78 +2214,167 @@ class _CartScreenState extends State<CartScreen> {
           ),
 
           // Danh sách phương thức thanh toán
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _paymentMethods.length,
-            itemBuilder: (context, index) {
-              final method = _paymentMethods[index];
-              final isSelected = _selectedPaymentMethodId == method.id;
+          ValueListenableBuilder<String>(
+            valueListenable: _selectedPaymentMethodIdNotifier,
+            builder: (context, selectedMethodId, child) {
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _paymentMethods.length,
+                itemBuilder: (context, index) {
+                  final method = _paymentMethods[index];
+                  final isSelected = selectedMethodId == method.id;
 
-              return InkWell(
-                onTap: () {
-                  setState(() {
-                    _selectedPaymentMethodId = method.id;
-                  });
-                },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? Colors.blue.withOpacity(0.05)
-                        : Colors.white,
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Colors.grey.withOpacity(0.2),
-                        width: index < _paymentMethods.length - 1 ? 1 : 0,
+                  return Card(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    elevation: isSelected ? 2 : 0,
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(
+                        color: isSelected ? method.color : Colors.grey.shade300,
+                        width: isSelected ? 2 : 1,
                       ),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: method.color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          method.icon,
-                          color: method.color,
-                          size: 22,
+                    child: InkWell(
+                      onTap: () => _selectPaymentMethod(method.id),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 15, vertical: 12),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                method.icon,
+                                color: method.color,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 15),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    method.name,
+                                    style: TextStyle(
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
+                                      fontSize: 15,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  if (isSelected)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Text(
+                                        'Đã chọn',
+                                        style: TextStyle(
+                                          color: method.color,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            Radio<String>(
+                              value: method.id,
+                              groupValue: selectedMethodId,
+                              onChanged: (value) {
+                                if (value != null) {
+                                  _selectPaymentMethod(value);
+                                }
+                              },
+                              activeColor: method.color,
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 15),
-                      Text(
-                        method.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const Spacer(),
-                      Radio<String>(
-                        value: method.id,
-                        groupValue: _selectedPaymentMethodId,
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() {
-                              _selectedPaymentMethodId = value;
-                            });
-                          }
-                        },
-                        activeColor: Colors.blue,
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               );
             },
           ),
+
+          // Debug info - xác nhận phương thức thanh toán đã chọn
+          // ValueListenableBuilder<String>(
+          //   valueListenable: _selectedPaymentMethodIdNotifier,
+          //   builder: (context, selectedMethodId, child) {
+          //     return Padding(
+          //       padding: const EdgeInsets.all(15),
+          //       child: Container(
+          //         padding: const EdgeInsets.all(10),
+          //         decoration: BoxDecoration(
+          //           color: Colors.grey.shade100,
+          //           borderRadius: BorderRadius.circular(8),
+          //           border: Border.all(color: Colors.grey.shade300),
+          //         ),
+          //         child: Column(
+          //           crossAxisAlignment: CrossAxisAlignment.start,
+          //           children: [
+          //             Text(
+          //               'Đã chọn: ${_getSelectedPaymentMethod()}',
+          //               style: const TextStyle(
+          //                 fontSize: 13,
+          //                 fontWeight: FontWeight.w500,
+          //               ),
+          //             ),
+          //             Text(
+          //               'ID: $selectedMethodId',
+          //               style: const TextStyle(
+          //                 fontSize: 13,
+          //                 color: Colors.red,
+          //               ),
+          //             ),
+          //             const SizedBox(height: 8),
+          //             ElevatedButton(
+          //               onPressed: () {
+          //                 final snackMessage = selectedMethodId.isEmpty
+          //                     ? 'Chưa chọn phương thức thanh toán'
+          //                     : 'Đã chọn phương thức: $selectedMethodId';
+          //                 _showSnackBar(snackMessage, Colors.blue);
+          //               },
+          //               style: ElevatedButton.styleFrom(
+          //                 backgroundColor: Colors.blue,
+          //                 minimumSize: const Size(double.infinity, 36),
+          //                 padding: EdgeInsets.zero,
+          //               ),
+          //               child: const Text('Xác nhận phương thức thanh toán'),
+          //             ),
+          //           ],
+          //         ),
+          //       ),
+          //     );
+          //   },
+          // ),
         ],
       ),
     );
+  }
+
+  // Helper để lấy tên phương thức thanh toán đã chọn
+  String _getSelectedPaymentMethod() {
+    final selectedMethod = _paymentMethods.firstWhere(
+      (method) => method.id == _selectedPaymentMethodIdNotifier.value,
+      orElse: () => PaymentMethod(
+        id: 'unknown',
+        name: 'Chưa chọn',
+        icon: Icons.help_outline,
+        color: Colors.grey,
+      ),
+    );
+    return selectedMethod.name;
   }
 
   // Widget hiển thị tổng tiền trong bottom sheet
@@ -2198,20 +2502,22 @@ class _CartScreenState extends State<CartScreen> {
     setState(() {
       _selectedItems[item.cartItemId] = isSelected;
     });
-    
+
     // Nếu là khóa học và được chọn, thì tải danh sách combo có chứa khóa học đó
-    if (isSelected && item.type.toUpperCase() == 'COURSE' && item.courseId != null) {
+    if (isSelected &&
+        item.type.toUpperCase() == 'COURSE' &&
+        item.courseId != null) {
       print('Tải gợi ý combo cho khóa học ID: ${item.courseId}');
       _cartController.loadCourseBundles(item.courseId!);
     }
     // Kiểm tra xem còn khóa học nào được chọn không
     else if (!isSelected && item.type.toUpperCase() == 'COURSE') {
       bool hasSelectedCourse = _cartController.cartItems.value
-        .where((cartItem) => 
-            _selectedItems[cartItem.cartItemId] == true && 
-            cartItem.type.toUpperCase() == 'COURSE')
-        .isNotEmpty;
-        
+          .where((cartItem) =>
+              _selectedItems[cartItem.cartItemId] == true &&
+              cartItem.type.toUpperCase() == 'COURSE')
+          .isNotEmpty;
+
       if (!hasSelectedCourse) {
         print('Không còn khóa học nào được chọn, xóa gợi ý combo');
         _cartController.suggestedBundles.value = [];

@@ -22,8 +22,6 @@ android {
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.tms_app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -40,6 +38,14 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+    repositories {
+        flatDir {
+            // thêm đường dẫn đến thư mục chứa file .aar
+            dirs("../zpdk-release-28052021")
+        }
+    }
+ 
+
 }
 
 flutter {
@@ -50,4 +56,5 @@ dependencies {
     implementation("androidx.core:core:1.6.0") // Updated to stable version
     // Thêm dependency cho Google Sign-In
     implementation("com.google.android.gms:play-services-auth:20.7.0")
+    implementation(files("../zpdk-release-28052021/zpdk-release-v3.1.aar"))
 }

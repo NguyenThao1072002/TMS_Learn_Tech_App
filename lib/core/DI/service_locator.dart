@@ -4,36 +4,45 @@ import 'package:tms_app/data/repositories/blog_repository_impl.dart';
 import 'package:tms_app/data/repositories/cart_repository_impl.dart';
 
 import 'package:tms_app/data/repositories/course_repository_impl.dart';
+import 'package:tms_app/data/repositories/discount_repository_impl.dart';
 import 'package:tms_app/data/repositories/document_repository_impl.dart';
 import 'package:tms_app/data/repositories/my_course/my_course_list_repository_impl.dart';
 import 'package:tms_app/data/repositories/my_course/course_lesson_repository_impl.dart'; // Import course lesson repository
+import 'package:tms_app/data/repositories/payment_repository_impl.dart';
 import 'package:tms_app/data/services/auth_service.dart'; // Import AuthService
 import 'package:tms_app/data/services/blog_service.dart';
 import 'package:tms_app/data/services/cart/cart_service.dart';
 import 'package:tms_app/data/services/course/course_service.dart';
+import 'package:tms_app/data/services/discount_service.dart';
 import 'package:tms_app/data/services/document/document_service.dart';
 import 'package:tms_app/data/services/my_course/my_course_list_service.dart';
 import 'package:tms_app/data/services/my_course/course_lesson_service.dart'; // Import course lesson service
+import 'package:tms_app/data/services/payment_service.dart';
 import 'package:tms_app/data/services/user_service.dart'; // Import UserService
 import 'package:tms_app/data/repositories/account_repository_impl.dart';
 import 'package:tms_app/domain/repositories/account_repository.dart';
 import 'package:tms_app/domain/repositories/blog_repository.dart';
 import 'package:tms_app/domain/repositories/cart_repository.dart';
 import 'package:tms_app/domain/repositories/course_repository.dart';
+import 'package:tms_app/domain/repositories/discount_repository.dart';
 import 'package:tms_app/domain/repositories/document_repository.dart';
 import 'package:tms_app/domain/repositories/my_course/my_course_list_repository.dart';
 import 'package:tms_app/domain/repositories/my_course/course_lesson_repository.dart'; // Import course lesson repository interface
+import 'package:tms_app/domain/repositories/payment_repository.dart';
 import 'package:tms_app/domain/usecases/blog_usecase.dart';
 import 'package:tms_app/domain/usecases/cart_usecase.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
+import 'package:tms_app/domain/usecases/discount_usecase.dart';
 import 'package:tms_app/domain/usecases/documents_usecase.dart';
 import 'package:tms_app/domain/usecases/forgot_password_usecase.dart';
 import 'package:tms_app/domain/usecases/login_usecase.dart';
 import 'package:tms_app/domain/usecases/my_course/my_course_list_usecase.dart';
 import 'package:tms_app/domain/usecases/my_course/course_lesson_usecase.dart'; // Import course lesson usecase
+import 'package:tms_app/domain/usecases/payment_usecase.dart';
 import 'package:tms_app/domain/usecases/register_usecase.dart';
 import 'package:tms_app/domain/usecases/update_account_usecase.dart';
 import 'package:tms_app/domain/usecases/overview_my_account_usecase.dart';
+import 'package:tms_app/presentation/controller/discount_controller.dart';
 import 'package:tms_app/presentation/controller/login/forgot_password_controller.dart';
 import 'package:tms_app/presentation/controller/my_account/setting/update_account_controller.dart';
 import 'package:tms_app/presentation/controller/login/verify_otp_controller.dart'; // Import LoginUseCase// Import BlogDataSource
@@ -50,6 +59,7 @@ import 'package:tms_app/data/services/practice_test/practice_test_service.dart';
 import 'package:tms_app/data/repositories/practice_test_repository_impl.dart';
 import 'package:tms_app/domain/repositories/practice_test_repository.dart';
 import 'package:tms_app/domain/usecases/practice_test_usecase.dart';
+import 'package:tms_app/presentation/controller/payment_controller.dart';
 import 'package:tms_app/presentation/controller/unified_search_controller.dart';
 import 'package:tms_app/domain/usecases/change_password_usecase.dart';
 import 'package:tms_app/presentation/controller/course_controller.dart';
@@ -166,6 +176,9 @@ void _registerServices() {
   sl.registerLazySingleton(() => MyCourseListService(sl()));
   // Đăng ký CourseLessonService
   sl.registerLazySingleton(() => CourseLessonService(sl()));
+  // Đăng ký PaymentService
+  sl.registerLazySingleton(() => PaymentService(sl()));
+  sl.registerLazySingleton(() => DiscountService(sl()));
 }
 
 // Đăng ký tất cả các Repository
@@ -207,6 +220,14 @@ void _registerRepositories() {
   // Đăng ký CourseLessonRepository
   sl.registerLazySingleton<CourseLessonRepository>(
       () => CourseLessonRepositoryImpl(sl<CourseLessonService>()));
+
+  // Đăng ký PaymentRepository
+  sl.registerLazySingleton<PaymentRepository>(
+    () => PaymentRepositoryImpl(paymentService: sl<PaymentService>()),
+  );
+  sl.registerLazySingleton<DiscountRepository>(
+    () => DiscountRepositoryImpl(discountService: sl<DiscountService>()),
+  );
 }
 
 // Đăng ký tất cả các UseCase
@@ -239,6 +260,13 @@ void _registerUseCases() {
   // Course Lessons
   sl.registerLazySingleton(
       () => CourseLessonUseCase(sl<CourseLessonRepository>()));
+  // Payment
+  sl.registerLazySingleton(() => PaymentUseCase(sl<PaymentRepository>()));
+
+  // UseCases
+  sl.registerLazySingleton(
+    () => DiscountUseCase(sl<DiscountRepository>()),
+  );
 }
 
 // Thêm một phương thức mới riêng để đăng ký controllers
@@ -276,6 +304,17 @@ void _registerControllers() {
           categoryUseCase: sl<CategoryUseCase>(),
         ));
   }
+
+  sl.registerLazySingleton<PaymentController>(
+    () => PaymentController(
+      paymentUseCase: sl<PaymentUseCase>(),
+    ),
+  );
+
+  // Controllers
+  sl.registerLazySingleton<DiscountController>(
+    () => DiscountController(discountUseCase: sl<DiscountUseCase>()),
+  );
 }
 
 // Thêm hàm để đăng ký DioClient
