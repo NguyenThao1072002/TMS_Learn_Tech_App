@@ -6,10 +6,13 @@ import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
 import 'package:tms_app/data/models/cart/cart_model.dart';
 import 'package:tms_app/data/models/combo/course_bundle_model.dart';
+import 'package:tms_app/data/models/course/combo_course/combo_course_detail_model.dart';
 import 'package:tms_app/domain/usecases/cart_usecase.dart';
+import 'package:tms_app/presentation/controller/course_controller.dart';
+import 'package:tms_app/domain/usecases/course_usecase.dart';
+import 'package:tms_app/presentation/controller/cart_controller.dart';
 import 'package:tms_app/domain/usecases/discount_usecase.dart';
 import 'package:tms_app/domain/usecases/payment_usecase.dart';
-import 'package:tms_app/presentation/controller/cart_controller.dart';
 import 'package:tms_app/presentation/controller/payment_controller.dart';
 import 'package:tms_app/presentation/screens/course/course_screen.dart';
 import 'package:tms_app/presentation/screens/my_account/checkout/payment.dart';
@@ -68,6 +71,10 @@ class CartScreen extends StatefulWidget {
 class _CartScreenState extends State<CartScreen> {
   // Sử dụng trực tiếp CartController
   late CartController _cartController;
+  late CourseController _courseController;
+
+  // Biến để lưu thông tin chi tiết của combo đang được chọn
+  ComboCourseDetailModel? _selectedComboDetail;
 
   late final PaymentController _paymentController;
   late final DiscountController _discountController;
@@ -87,7 +94,7 @@ class _CartScreenState extends State<CartScreen> {
   // Biến để theo dõi nếu đã quá thời gian chờ loading
   bool _loadingTimedOut = false;
   String paymentResult = "";
-
+  bool _isLoadingComboDetail = false;
   // Danh sách combo khóa học
   final List<CourseCombo> _availableCombos = [
     CourseCombo(
@@ -151,6 +158,11 @@ class _CartScreenState extends State<CartScreen> {
     // Khởi tạo CartController
     _cartController = CartController(
       cartUseCase: GetIt.instance<CartUseCase>(),
+    );
+
+    // Khởi tạo CourseController
+    _courseController = CourseController(
+      GetIt.instance<CourseUseCase>(),
     );
 
     // Initialize PaymentController
@@ -223,7 +235,7 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   // Phương thức chọn item được gửi từ màn hình chi tiết
-  void _selectPreselectedItem() {
+  Future<void> _selectPreselectedItem() async {
     if (widget.preSelectedItemId == null || widget.preSelectedItemType == null)
       return;
 
@@ -261,8 +273,10 @@ class _CartScreenState extends State<CartScreen> {
         // Nếu là khóa học thì tải gợi ý combo
         if (item.type.toUpperCase() == 'COURSE' && item.courseId != null) {
           _cartController.loadCourseBundles(item.courseId!);
+        } else if (item.type.toUpperCase() == 'COMBO' &&
+            item.courseBundleId != null) {
+          await _loadComboDetail(item.courseBundleId!);
         }
-
         break;
       }
     }
@@ -312,30 +326,111 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   // Phương thức chọn/bỏ chọn tất cả
-  void _toggleSelectAll(bool? value) {
+  Future<void> _toggleSelectAll(bool? value) async {
     if (value == null) return;
 
+    // Nếu bỏ chọn tất cả thì đơn giản là set tất cả về false
+    if (!value) {
+      setState(() {
+        for (var item in _cartController.cartItems.value) {
+          _selectedItems[item.cartItemId] = false;
+        }
+
+        // Xóa thông tin chi tiết combo và gợi ý
+        _selectedComboDetail = null;
+        _cartController.suggestedBundles.value = [];
+      });
+      return;
+    }
+
+    // Nếu chọn tất cả, ưu tiên combo và không chọn khóa học đã có trong combo
     setState(() {
-      for (var item in _cartController.cartItems.value) {
-        _selectedItems[item.cartItemId] = value;
-      }
+      _selectedItems.clear(); // Reset lại toàn bộ lựa chọn
     });
 
-    if (value) {
-      // Nếu chọn tất cả, tìm tất cả các khóa học và tải gợi ý cho khóa học đầu tiên
-      var courses = _cartController.cartItems.value
-          .where((item) =>
-              item.type.toUpperCase() == 'COURSE' && item.courseId != null)
-          .toList();
+    // Danh sách các mục trong giỏ hàng
+    final items = _cartController.cartItems.value;
 
-      if (courses.isNotEmpty) {
-        print(
-            'Tải gợi ý combo cho khóa học đầu tiên ID: ${courses.first.courseId}');
-        _cartController.loadCourseBundles(courses.first.courseId!);
+    // Lọc danh sách combo và khóa học
+    final combos =
+        items.where((item) => item.type.toUpperCase() == 'COMBO').toList();
+    final courses =
+        items.where((item) => item.type.toUpperCase() == 'COURSE').toList();
+    final others = items
+        .where((item) =>
+            item.type.toUpperCase() != 'COMBO' &&
+            item.type.toUpperCase() != 'COURSE')
+        .toList();
+
+    // Bước 1: Chọn tất cả combo trước
+    for (var combo in combos) {
+      setState(() {
+        _selectedItems[combo.cartItemId] = true;
+      });
+
+      // Tải chi tiết combo để lấy danh sách khóa học trong combo
+      if (combo.courseBundleId != null) {
+        try {
+          await _loadComboDetail(combo.courseBundleId!);
+        } catch (e) {
+          print('Lỗi tải chi tiết combo khi chọn tất cả: $e');
+        }
       }
-    } else {
-      // Nếu bỏ chọn tất cả, xóa danh sách gợi ý
-      _cartController.suggestedBundles.value = [];
+    }
+
+    // Bước 2: Lấy tất cả ID khóa học đã có trong các combo đã chọn
+    Set<int> coursesInSelectedCombos = {};
+    if (_selectedComboDetail != null) {
+      coursesInSelectedCombos =
+          _selectedComboDetail!.courses.map((c) => c.id).toSet();
+    }
+
+    // Nếu có nhiều combo đã chọn, cần tải thông tin chi tiết của từng combo
+    for (var combo in combos) {
+      if (combo.courseBundleId != null &&
+          _selectedItems[combo.cartItemId] == true) {
+        try {
+          final comboDetail =
+              await _courseController.getComboDetail(combo.courseBundleId!);
+          if (comboDetail != null) {
+            coursesInSelectedCombos
+                .addAll(comboDetail.courses.map((c) => c.id));
+          }
+        } catch (e) {
+          print('Lỗi khi tải chi tiết combo ${combo.name}: $e');
+        }
+      }
+    }
+
+    // Bước 3: Chỉ chọn các khóa học không thuộc combo đã chọn
+    for (var course in courses) {
+      if (course.courseId != null &&
+          !coursesInSelectedCombos.contains(course.courseId)) {
+        setState(() {
+          _selectedItems[course.cartItemId] = true;
+        });
+      } else {
+        setState(() {
+          _selectedItems[course.cartItemId] = false;
+        });
+      }
+    }
+
+    // Bước 4: Chọn các loại item khác
+    for (var item in others) {
+      setState(() {
+        _selectedItems[item.cartItemId] = true;
+      });
+    }
+
+    // Tải gợi ý combo cho khóa học đầu tiên được chọn (nếu có)
+    final selectedCourses = courses
+        .where((item) =>
+            _selectedItems[item.cartItemId] == true && item.courseId != null)
+        .toList();
+
+    if (selectedCourses.isNotEmpty) {
+      _cartController.loadCourseBundles(selectedCourses.first.courseId!);
     }
   }
 
@@ -657,6 +752,8 @@ class _CartScreenState extends State<CartScreen> {
                           ...items.map((item) => _buildCartItem(item)).toList(),
                           if (_hasSelectedItems) ...[
                             _buildComboSuggestion(),
+                            if (_selectedComboDetail != null)
+                              _buildComboDetailSection(),
                             _buildPromoCodeSection(),
                             _buildOrderSummary(),
                           ],
@@ -777,6 +874,7 @@ class _CartScreenState extends State<CartScreen> {
       color: isSelected ? Colors.blue.shade50 : Colors.white,
       child: InkWell(
         onTap: () {
+          // Cách xử lý async
           _toggleItemSelection(item, !isSelected);
         },
         borderRadius: BorderRadius.circular(12),
@@ -789,6 +887,7 @@ class _CartScreenState extends State<CartScreen> {
                 value: isSelected,
                 onChanged: (bool? value) {
                   if (value == null) return;
+                  // Cách xử lý async
                   _toggleItemSelection(item, value);
                 },
                 activeColor: Colors.blue,
@@ -1724,8 +1823,7 @@ class _CartScreenState extends State<CartScreen> {
                             ],
                           ),
                           trailing: ElevatedButton(
-                            onPressed: () =>
-                                _navigateToComboDetail(bundles.first.id),
+                            onPressed: () => _loadComboDetail(bundles.first.id),
                             style: ElevatedButton.styleFrom(
                               foregroundColor: Colors.white,
                               backgroundColor: Colors.purple,
@@ -1778,12 +1876,35 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   // Chuyển đến trang chi tiết combo
-  void _navigateToComboDetail(int comboId) {
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ComboCourseScreen(comboId: comboId),
-        ));
+  // Phương thức lấy chi tiết combo
+  Future<void> _loadComboDetail(int comboId) async {
+    if (_isLoadingComboDetail) return;
+
+    setState(() {
+      _isLoadingComboDetail = true;
+    });
+
+    try {
+      print('Đang tải chi tiết combo có ID: $comboId');
+      final comboDetail = await _courseController.getComboDetail(comboId);
+
+      setState(() {
+        _selectedComboDetail = comboDetail;
+        _isLoadingComboDetail = false;
+      });
+
+      if (comboDetail != null) {
+        print(
+            'Đã tải chi tiết combo: ${comboDetail.name} với ${comboDetail.courses.length} khóa học');
+      } else {
+        print('Không tìm thấy thông tin chi tiết cho combo ID: $comboId');
+      }
+    } catch (e) {
+      print('Lỗi khi tải chi tiết combo: $e');
+      setState(() {
+        _isLoadingComboDetail = false;
+      });
+    }
   }
 
   Widget _buildCheckoutBottomSheet() {
@@ -2498,9 +2619,56 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   // Phương thức xử lý khi người dùng chọn/bỏ chọn một mục
-  void _toggleItemSelection(CartItem item, bool isSelected) {
+  Future<void> _toggleItemSelection(CartItem item, bool isSelected) async {
+    // Kiểm tra xung đột trước khi chọn
+    if (isSelected) {
+      bool hasConflict = _hasConflict(item, isSelected);
+
+      if (hasConflict) {
+        // Nếu có xung đột, hiển thị thông báo và không thực hiện thao tác
+        if (item.type.toUpperCase() == 'COURSE') {
+          _showSnackBar(
+              'Không thể chọn khóa học này vì bạn đã chọn combo chứa khóa học này',
+              Colors.orange);
+        } else {
+          _showSnackBar(
+              'Không thể chọn combo này vì bạn đã chọn một hoặc nhiều khóa học trong combo này',
+              Colors.orange);
+        }
+        return;
+      }
+
+      // Nếu đang chọn khóa học, kiểm tra xem có thuộc combo nào không
+      if (item.type.toUpperCase() == 'COURSE' && item.courseId != null) {
+        final availableCombos =
+            await _findCombosContainingCourse(item.courseId!);
+
+        if (availableCombos.isNotEmpty) {
+          // Hiển thị dialog gợi ý chọn combo
+          _showSuggestComboDialog(item, availableCombos);
+          return; // Tạm dừng và không chọn khóa học cho đến khi người dùng quyết định
+        }
+      }
+
+      // Nếu đang chọn combo, load thông tin chi tiết combo
+      if (isSelected &&
+          item.type.toUpperCase() == 'COMBO' &&
+          item.courseBundleId != null) {
+        print('Tải chi tiết combo ID: ${item.courseBundleId}');
+        _loadComboDetail(item.courseBundleId!);
+        // Xóa danh sách combo gợi ý
+        _cartController.suggestedBundles.value = [];
+      }
+    }
+
     setState(() {
       _selectedItems[item.cartItemId] = isSelected;
+      if (!isSelected &&
+          item.type.toUpperCase() == 'COMBO' &&
+          _selectedComboDetail != null &&
+          _selectedComboDetail!.id == item.courseBundleId) {
+        _selectedComboDetail = null;
+      }
     });
 
     // Nếu là khóa học và được chọn, thì tải danh sách combo có chứa khóa học đó
@@ -2509,6 +2677,10 @@ class _CartScreenState extends State<CartScreen> {
         item.courseId != null) {
       print('Tải gợi ý combo cho khóa học ID: ${item.courseId}');
       _cartController.loadCourseBundles(item.courseId!);
+      // Xóa thông tin combo detail đang hiển thị để tránh xung đột
+      setState(() {
+        _selectedComboDetail = null;
+      });
     }
     // Kiểm tra xem còn khóa học nào được chọn không
     else if (!isSelected && item.type.toUpperCase() == 'COURSE') {
@@ -2523,5 +2695,570 @@ class _CartScreenState extends State<CartScreen> {
         _cartController.suggestedBundles.value = [];
       }
     }
+  }
+
+  // Chuyển đến trang chi tiết combo
+  void _navigateToComboDetail(int comboId) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ComboCourseScreen(comboId: comboId),
+        ));
+  }
+
+  // Widget hiển thị chi tiết combo
+  Widget _buildComboDetailSection() {
+    if (_selectedComboDetail == null) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            spreadRadius: 1,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(color: Colors.purple.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Tiêu đề phần chi tiết combo
+          Container(
+            padding: const EdgeInsets.fromLTRB(15, 15, 15, 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.purple.withOpacity(0.08),
+                  Colors.purple.withOpacity(0.03)
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.menu_book,
+                      color: Colors.purple, size: 20),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Khóa học trong "${_selectedComboDetail!.name}"',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.purple,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${_selectedComboDetail!.courses.length} khóa học',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.purple,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Chi tiết các khóa học trong combo
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _selectedComboDetail!.courses.length,
+            itemBuilder: (context, index) {
+              final course = _selectedComboDetail!.courses[index];
+              return ListTile(
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    course.imageUrl,
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 60,
+                        height: 60,
+                        color: Colors.grey.shade200,
+                        child: const Icon(Icons.book,
+                            color: Colors.grey, size: 30),
+                      );
+                    },
+                  ),
+                ),
+                title: Text(
+                  course.title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      course.author,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${_formatCurrency(course.price)} đ',
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              );
+            },
+          ),
+
+          // Nút xem chi tiết combo
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Center(
+              child: ElevatedButton.icon(
+                onPressed: () =>
+                    _navigateToComboDetail(_selectedComboDetail!.id),
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.purple,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                icon: const Icon(Icons.visibility, size: 18),
+                label: const Text('Xem trang chi tiết combo'),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Kiểm tra xem một khóa học có nằm trong một combo hay không
+  bool _isCourseInBundle(int courseId, int bundleId) {
+    if (_selectedComboDetail != null && _selectedComboDetail!.id == bundleId) {
+      return _selectedComboDetail!.courses
+          .any((course) => course.id == courseId);
+    }
+    return false;
+  }
+
+  // Lấy danh sách ID của các khóa học trong một combo
+  List<int> _getCoursesInBundle(int bundleId) {
+    if (_selectedComboDetail != null && _selectedComboDetail!.id == bundleId) {
+      return _selectedComboDetail!.courses.map((course) => course.id).toList();
+    }
+    return [];
+  }
+
+  // Kiểm tra xem có xung đột giữa các mục đã chọn hay không
+  bool _hasConflict(CartItem newItem, bool isSelected) {
+    if (!isSelected) return false; // Nếu đang bỏ chọn thì không xung đột
+
+    final List<CartItem> selectedItems = _cartController.cartItems.value
+        .where((item) => _selectedItems[item.cartItemId] == true)
+        .toList();
+
+    // Nếu đang chọn khóa học, kiểm tra xem có combo nào chứa khóa học này đã được chọn chưa
+    if (newItem.type.toUpperCase() == 'COURSE' && newItem.courseId != null) {
+      for (final item in selectedItems) {
+        if (item.type.toUpperCase() == 'COMBO' && item.courseBundleId != null) {
+          if (_isCourseInBundle(newItem.courseId!, item.courseBundleId!)) {
+            return true; // Xung đột: đã chọn combo chứa khóa học này
+          }
+        }
+      }
+    }
+
+    // Nếu đang chọn combo, kiểm tra xem có khóa học nào trong combo này đã được chọn chưa
+    if (newItem.type.toUpperCase() == 'COMBO' &&
+        newItem.courseBundleId != null) {
+      final courseIds = _getCoursesInBundle(newItem.courseBundleId!);
+      for (final item in selectedItems) {
+        if (item.type.toUpperCase() == 'COURSE' && item.courseId != null) {
+          if (courseIds.contains(item.courseId)) {
+            return true; // Xung đột: đã chọn khóa học có trong combo này
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  // Kiểm tra xem một khóa học có thuộc bất kỳ combo nào trong giỏ hàng không
+  Future<List<CartItem>> _findCombosContainingCourse(int courseId) async {
+    List<CartItem> result = [];
+
+    // Lấy tất cả combo trong giỏ hàng
+    final combos = _cartController.cartItems.value
+        .where((item) =>
+            item.type.toUpperCase() == 'COMBO' && item.courseBundleId != null)
+        .toList();
+
+    for (var combo in combos) {
+      if (combo.courseBundleId == null) continue;
+
+      // Nếu combo này chưa được load chi tiết, tải thông tin
+      if (_selectedComboDetail == null ||
+          _selectedComboDetail!.id != combo.courseBundleId) {
+        try {
+          final comboDetail =
+              await _courseController.getComboDetail(combo.courseBundleId!);
+          if (comboDetail != null &&
+              comboDetail.courses.any((course) => course.id == courseId)) {
+            result.add(combo);
+          }
+        } catch (e) {
+          print('Lỗi khi tải chi tiết combo để kiểm tra: $e');
+        }
+      } else if (_selectedComboDetail!.id == combo.courseBundleId) {
+        // Nếu combo này đã được load, kiểm tra trực tiếp
+        if (_selectedComboDetail!.courses
+            .any((course) => course.id == courseId)) {
+          result.add(combo);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  // Hiển thị dialog gợi ý chọn combo thay vì khóa học riêng lẻ
+  void _showSuggestComboDialog(
+      CartItem courseItem, List<CartItem> availableCombos) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.card_giftcard, color: Colors.purple, size: 24),
+              const SizedBox(width: 8),
+              const Text(
+                'Combo tiết kiệm hơn',
+                style: TextStyle(
+                  color: Colors.purple,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
+          content: Container(
+            width: double.maxFinite,
+            constraints: const BoxConstraints(maxHeight: 400),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade100),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.info_outline,
+                              color: Colors.blue, size: 18),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Lời khuyên',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Khóa học "${courseItem.name}" có trong các combo dưới đây. Chọn combo sẽ giúp bạn tiết kiệm hơn và nhận thêm các khóa học liên quan!',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: availableCombos.length,
+                    itemBuilder: (context, index) {
+                      final combo = availableCombos[index];
+                      bool isComboSaving = courseItem.price > 0 &&
+                          ((combo.price / courseItem.price) <
+                              1.5); // Combo tiết kiệm nếu giá < 1.5 lần giá khóa học
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          border:
+                              Border.all(color: Colors.purple.withOpacity(0.3)),
+                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.purple.withOpacity(0.05),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 5,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            ListTile(
+                              title: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      combo.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (isComboSaving)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.shade100,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        'Tiết kiệm',
+                                        style: TextStyle(
+                                          color: Colors.green.shade800,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Giá: ${_formatCurrency(combo.price)} đ',
+                                    style: TextStyle(
+                                      color: Colors.red.shade700,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  // Hiển thị thông tin so sánh
+                                  if (combo.courseBundleId != null)
+                                    FutureBuilder(
+                                      future: _courseController.getComboDetail(
+                                          combo.courseBundleId!),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.hasData &&
+                                            snapshot.data != null) {
+                                          final comboDetail = snapshot.data!;
+                                          final courseCount =
+                                              comboDetail.courses.length;
+                                          final savings =
+                                              comboDetail.getSavings();
+
+                                          return Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 4),
+                                            child: Text(
+                                              '$courseCount khóa học - Tiết kiệm ${_formatCurrency(savings)} đ',
+                                              style: TextStyle(
+                                                color: Colors.green.shade700,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                        return const SizedBox.shrink();
+                                      },
+                                    ),
+                                ],
+                              ),
+                              leading: Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  border:
+                                      Border.all(color: Colors.grey.shade200),
+                                ),
+                                child: Center(
+                                  child: combo.image.isNotEmpty
+                                      ? ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(7),
+                                          child: Image.network(
+                                            combo.image,
+                                            width: 60,
+                                            height: 60,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                              return const Icon(
+                                                  Icons.card_giftcard,
+                                                  color: Colors.purple,
+                                                  size: 30);
+                                            },
+                                          ),
+                                        )
+                                      : const Icon(Icons.card_giftcard,
+                                          color: Colors.purple, size: 30),
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                            ),
+                            const Divider(height: 1),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 10),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  OutlinedButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                      if (combo.courseBundleId != null) {
+                                        _navigateToComboDetail(
+                                            combo.courseBundleId!);
+                                      }
+                                    },
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.purple,
+                                      side: const BorderSide(
+                                          color: Colors.purple),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12),
+                                    ),
+                                    child: const Text('Xem chi tiết'),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                      // Chọn combo này thay vì khóa học riêng lẻ
+                                      setState(() {
+                                        _selectedItems[courseItem.cartItemId] =
+                                            false; // Bỏ chọn khóa học
+                                        _selectedItems[combo.cartItemId] =
+                                            true; // Chọn combo
+                                      });
+                                      // Tải chi tiết combo
+                                      if (combo.courseBundleId != null) {
+                                        _loadComboDetail(combo.courseBundleId!);
+                                      }
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.purple,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12),
+                                    ),
+                                    child: const Text('Chọn combo'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Vẫn chọn khóa học riêng lẻ theo ý người dùng
+                setState(() {
+                  _selectedItems[courseItem.cartItemId] = true;
+                });
+              },
+              child: const Text(
+                'Vẫn chọn khóa học này',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Đóng'),
+            ),
+          ],
+          actionsPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        );
+      },
+    );
   }
 }

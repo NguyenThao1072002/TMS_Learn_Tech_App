@@ -15,6 +15,8 @@ import 'package:provider/provider.dart';
 import 'package:tms_app/presentation/controller/unified_search_controller.dart';
 import 'package:tms_app/core/auth/auth_manager.dart';
 import 'package:get_it/get_it.dart';
+import 'package:tms_app/presentation/controller/my_course/my_course_controller.dart';
+import 'package:tms_app/core/widgets/app_connectivity_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -84,34 +86,51 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<UnifiedSearchController>(
           create: (_) => sl<UnifiedSearchController>(),
         ),
+        ChangeNotifierProvider(create: (_) => MyCourseController()),
         // Thêm các provider khác nếu cần
       ],
-      child: MaterialApp(
-        title: 'TMS Learn Tech',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          visualDensity: VisualDensity.adaptivePlatformDensity,
-          fontFamily: 'Roboto',
-          appBarTheme: const AppBarTheme(
-            elevation: 0,
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
-            centerTitle: false,
+      child: AppConnectivityWrapper(
+        child: MaterialApp(
+          title: 'TMS Learn Tech',
+          theme: ThemeData(
+            primarySwatch: Colors.blue,
+            visualDensity: VisualDensity.adaptivePlatformDensity,
+            fontFamily: 'Roboto',
+            appBarTheme: const AppBarTheme(
+              elevation: 0,
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+              centerTitle: false,
+            ),
           ),
+          debugShowCheckedModeBanner: false,
+          navigatorKey: authManager.navigatorKey,
+          routes: {
+            '/teaching_staff': (context) => const TeachingStaffScreen(),
+            '/about_us': (context) => const AboutUsScreen(),
+          },
+          // Flow chọn màn hình hiển thị:
+          // 1. Nếu chưa xem onboarding -> hiển thị OnboardingScreen
+          // 2. Nếu đã xem onboarding nhưng chưa đăng nhập -> hiển thị LoginScreen
+          // 3. Nếu đã xem onboarding và đã đăng nhập -> hiển thị HomeScreen
+          home: showOnboarding
+              ? const OnboardingScreen()
+              : (isLoggedIn ? HomeScreen() : LoginScreen()),
         ),
-        debugShowCheckedModeBanner: false,
-        navigatorKey: authManager.navigatorKey,
-        routes: {
-          '/teaching_staff': (context) => const TeachingStaffScreen(),
-          '/about_us': (context) => const AboutUsScreen(),
-        },
-        // Flow chọn màn hình hiển thị:
-        // 1. Nếu chưa xem onboarding -> hiển thị OnboardingScreen
-        // 2. Nếu đã xem onboarding nhưng chưa đăng nhập -> hiển thị LoginScreen
-        // 3. Nếu đã xem onboarding và đã đăng nhập -> hiển thị HomeScreen
-        home: showOnboarding
-            ? const OnboardingScreen()
-            : (isLoggedIn ? HomeScreen() : LoginScreen()),
+      ),
+    );
+  }
+}
+
+// Placeholder home screen, replace with your actual home screen
+class HomePlaceholder extends StatelessWidget {
+  const HomePlaceholder({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Text('TMS App Home Screen'),
       ),
     );
   }
