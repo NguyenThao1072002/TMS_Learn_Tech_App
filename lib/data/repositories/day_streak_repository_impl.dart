@@ -1,4 +1,3 @@
-import 'package:tms_app/core/errors/exceptions.dart';
 import 'package:tms_app/data/models/streak/day_streak_model.dart';
 import 'package:tms_app/data/services/day_streak_service.dart';
 import 'package:tms_app/domain/repositories/day_streak_repository.dart';
