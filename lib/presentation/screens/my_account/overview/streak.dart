@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 // import 'package:tms_app/presentation/widgets/app_bar/custom_app_bar.dart';
 // import 'package:tms_app/presentation/widgets/custom_elevated_button.dart';
 import 'package:intl/intl.dart';
+import 'package:get_it/get_it.dart';
 import 'dart:math';
 import 'dart:ui';
+import 'package:tms_app/presentation/controller/day_streak_controller.dart';
+import 'package:tms_app/data/models/streak/day_streak_model.dart';
 
 class StreakScreen extends StatefulWidget {
   final int currentStreak;
@@ -49,6 +52,11 @@ class _StreakScreenState extends State<StreakScreen> {
   late DateTime _currentDisplayMonth;
   final Map<String, List<bool>> _monthlyActivityData = {};
 
+  // Day streak controller
+  late DayStreakController _dayStreakController;
+  bool _isLoading = true;
+  String? _error;
+
   @override
   void initState() {
     super.initState();
@@ -56,22 +64,58 @@ class _StreakScreenState extends State<StreakScreen> {
     // Khởi tạo với tháng hiện tại
     _currentDisplayMonth = DateTime.now();
 
-    // Initialize streak history with simulated data
-    _streakHistory = List.generate(15, (index) {
-      // Random pattern but ensure current streak is reflected
-      if (index < widget.currentStreak) {
-        return true;
-      } else {
-        return index % 3 != 0; // Create some pattern of missed days
-      }
-    });
+    // Khởi tạo controller
+    _dayStreakController = GetIt.instance<DayStreakController>();
 
-    _calculateStats();
-    _generateMonthlyData();
+    // Tải dữ liệu từ API
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      // Tải dữ liệu từ API
+      await _dayStreakController.loadDayStreak();
+
+      if (_dayStreakController.error != null) {
+        setState(() {
+          _error = _dayStreakController.error;
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Khởi tạo streak history từ dữ liệu API
+      _initializeStreakHistory();
+      _calculateStats();
+      _generateMonthlyData();
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Đã xảy ra lỗi: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _initializeStreakHistory() {
+    // Lấy 15 ngày gần nhất để hiển thị streak history
+    final now = DateTime.now();
+    _streakHistory = List.generate(15, (index) {
+      final date = now.subtract(Duration(days: 14 - index));
+      return _dayStreakController.isActiveDate(date);
+    });
   }
 
   void _generateMonthlyData() {
-    // Tạo dữ liệu giả lập cho các tháng
+    // Tạo dữ liệu cho các tháng
     final now = DateTime.now();
 
     // Tạo dữ liệu cho 6 tháng trước đến 1 tháng sau
@@ -82,37 +126,19 @@ class _StreakScreenState extends State<StreakScreen> {
       if (!_monthlyActivityData.containsKey(monthKey)) {
         final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
 
-        // Tạo dữ liệu giả cho tháng này
+        // Tạo dữ liệu cho tháng này
         final List<bool> monthData = List.generate(daysInMonth, (index) {
           final day = index + 1;
+          final date = DateTime(month.year, month.month, day);
 
-          // Tháng hiện tại
-          if (month.year == now.year && month.month == now.month) {
-            // Ngày hiện tại và trước đó
-            if (day <= now.day) {
-              // Lấy dữ liệu từ streak hiện tại cho 15 ngày gần đây
-              if (now.day - day < 15) {
-                return _streakHistory[15 - (now.day - day) - 1];
-              }
-              // Ngày xa hơn: random nhưng có xu hướng giảm khi xa hơn
-              return (day % 3 != 0 && day % 2 == 0);
-            }
-            // Ngày tương lai: chưa có dữ liệu
+          // Kiểm tra xem ngày này có trong danh sách activeDates không
+          if (date.isAfter(now)) {
+            // Ngày trong tương lai
             return false;
+          } else {
+            // Sử dụng dữ liệu thực từ API
+            return _dayStreakController.isActiveDate(date);
           }
-
-          // Tháng trong quá khứ - giả lập dữ liệu học tập
-          if (month.isBefore(DateTime(now.year, now.month, 1))) {
-            // Tháng càng xa, tỉ lệ hoàn thành càng thấp
-            int monthsAgo =
-                now.month - month.month + (now.year - month.year) * 12;
-            double completionRate = max(0.3, 0.8 - (monthsAgo * 0.05));
-
-            return day % 4 != 0 && Random().nextDouble() < completionRate;
-          }
-
-          // Tháng tương lai: chưa có dữ liệu
-          return false;
         });
 
         _monthlyActivityData[monthKey] = monthData;
@@ -144,24 +170,11 @@ class _StreakScreenState extends State<StreakScreen> {
   }
 
   void _calculateStats() {
-    // Calculate longest streak
-    int currentCount = 0;
-    _longestStreak = 0;
+    // Lấy longest streak từ API
+    _longestStreak = _dayStreakController.maxStreak;
 
-    for (bool day in _streakHistory) {
-      if (day) {
-        currentCount++;
-        if (currentCount > _longestStreak) {
-          _longestStreak = currentCount;
-        }
-      } else {
-        currentCount = 0;
-      }
-    }
-
-    // Calculate completion rate
-    int completedDays = _streakHistory.where((day) => day).length;
-    _completionRate = completedDays / _streakHistory.length * 100;
+    // Tính tỷ lệ hoàn thành trong 30 ngày gần nhất
+    _completionRate = _dayStreakController.getCompletionRate();
   }
 
   @override
@@ -169,21 +182,68 @@ class _StreakScreenState extends State<StreakScreen> {
     return Scaffold(
       backgroundColor: bgColor,
       appBar: _buildAppBar(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildStreakOverview(),
-            const SizedBox(height: 24),
-            _buildStreakStats(),
-            const SizedBox(height: 24),
-            _buildActivityCalendar(),
-            const SizedBox(height: 24),
-            _buildStreakTips(),
-          ],
-        ),
-      ),
+      body: _isLoading
+          ? Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+              ),
+            )
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: Colors.red,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Không thể tải dữ liệu',
+                        style: titleLarge.copyWith(color: Colors.red),
+                      ),
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: bodyMedium.copyWith(color: gray600),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: _loadData,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text('Thử lại'),
+                      ),
+                    ],
+                  ),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildStreakOverview(),
+                      const SizedBox(height: 24),
+                      _buildStreakStats(),
+                      const SizedBox(height: 24),
+                      _buildActivityCalendar(),
+                      const SizedBox(height: 24),
+                      _buildStreakTips(),
+                    ],
+                  ),
+                ),
     );
   }
 
@@ -199,6 +259,13 @@ class _StreakScreenState extends State<StreakScreen> {
         "Học liên tục",
         style: TextStyle(color: Colors.black, fontSize: 18),
       ),
+      actions: [
+        // Nút refresh để tải lại dữ liệu
+        IconButton(
+          icon: const Icon(Icons.refresh, color: Colors.blue),
+          onPressed: _loadData,
+        ),
+      ],
     );
   }
 
@@ -244,7 +311,7 @@ class _StreakScreenState extends State<StreakScreen> {
                     ),
                   ),
                   Text(
-                    "${widget.currentStreak} ngày",
+                    "${_dayStreakController.currentStreak} ngày",
                     style: headlineLarge.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -559,10 +626,8 @@ class _StreakScreenState extends State<StreakScreen> {
               // Kiểm tra ngày có trong tháng hiện tại và đã qua
               final isActive = date.isBefore(now.add(const Duration(days: 1)));
 
-              // Kiểm tra ngày có hoạt động học tập
-              final isCompleted = dayOffset >= 0 &&
-                  day <= monthData.length &&
-                  monthData[day - 1];
+              // Kiểm tra ngày có hoạt động học tập (sử dụng dữ liệu từ API)
+              final isCompleted = _dayStreakController.isActiveDate(date);
 
               return _buildCalendarDay(
                 day.toString(),
@@ -590,7 +655,7 @@ class _StreakScreenState extends State<StreakScreen> {
           ),
 
           // Hiển thị thông tin streak khi xem tháng hiện tại
-          if (isCurrentMonth && widget.currentStreak >= 7)
+          if (isCurrentMonth && _dayStreakController.currentStreak >= 7)
             Container(
               margin: const EdgeInsets.only(top: 16),
               padding: const EdgeInsets.all(12),
@@ -611,7 +676,7 @@ class _StreakScreenState extends State<StreakScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "${widget.currentStreak} ngày liên tục!",
+                          "${_dayStreakController.currentStreak} ngày liên tục!",
                           style: titleMedium.copyWith(
                             fontWeight: FontWeight.bold,
                           ),

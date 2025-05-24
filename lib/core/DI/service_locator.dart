@@ -66,6 +66,11 @@ import 'package:tms_app/core/interceptors/token_interceptor.dart';
 import 'package:tms_app/core/network/dio_client.dart';
 import 'package:tms_app/core/auth/auth_manager.dart';
 import 'package:tms_app/presentation/controller/my_course/my_course_controller.dart';
+import 'package:tms_app/data/repositories/day_streak_repository_impl.dart';
+import 'package:tms_app/domain/repositories/day_streak_repository.dart';
+import 'package:tms_app/data/services/day_streak_service.dart';
+import 'package:tms_app/domain/usecases/day_streak_usecase.dart';
+import 'package:tms_app/presentation/controller/day_streak_controller.dart';
 
 // Đảm bảo các import không bị xóa bởi công cụ IDE
 // ignore: unused_element
@@ -179,6 +184,12 @@ void _registerServices() {
   // Đăng ký PaymentService
   sl.registerLazySingleton(() => PaymentService(sl()));
   sl.registerLazySingleton(() => DiscountService(sl()));
+  // Đăng ký DayStreakService
+  sl.registerLazySingleton<DayStreakService>(
+    () => DayStreakService(
+      dio: sl(),
+    ),
+  );
 }
 
 // Đăng ký tất cả các Repository
@@ -228,6 +239,13 @@ void _registerRepositories() {
   sl.registerLazySingleton<DiscountRepository>(
     () => DiscountRepositoryImpl(discountService: sl<DiscountService>()),
   );
+
+  // Đăng ký DayStreakRepository
+  sl.registerLazySingleton<DayStreakRepository>(
+    () => DayStreakRepositoryImpl(
+      dayStreakService: sl(),
+    ),
+  );
 }
 
 // Đăng ký tất cả các UseCase
@@ -266,6 +284,35 @@ void _registerUseCases() {
   // UseCases
   sl.registerLazySingleton(
     () => DiscountUseCase(sl<DiscountRepository>()),
+  );
+
+  // Đăng ký các usecase liên quan đến Day Streak
+  sl.registerLazySingleton<GetUserDayStreakUseCase>(
+    () => GetUserDayStreakUseCase(
+      sl(),
+    ),
+  );
+
+  sl.registerLazySingleton<IsActiveDateUseCase>(
+    () => IsActiveDateUseCase(
+      sl(),
+    ),
+  );
+
+  sl.registerLazySingleton<GetActiveCountInMonthUseCase>(
+    () => GetActiveCountInMonthUseCase(
+      sl(),
+    ),
+  );
+
+  sl.registerLazySingleton<GetActiveCountInWeekUseCase>(
+    () => GetActiveCountInWeekUseCase(
+      sl(),
+    ),
+  );
+
+  sl.registerLazySingleton<GetWeekStartDateUseCase>(
+    () => GetWeekStartDateUseCase(),
   );
 }
 
@@ -319,6 +366,17 @@ void _registerControllers() {
   // Controllers
   sl.registerLazySingleton<DiscountController>(
     () => DiscountController(discountUseCase: sl<DiscountUseCase>()),
+  );
+
+  // Đăng ký DayStreakController
+  sl.registerLazySingleton<DayStreakController>(
+    () => DayStreakController(
+      getUserDayStreakUseCase: sl(),
+      isActiveDateUseCase: sl(),
+      getActiveCountInMonthUseCase: sl(),
+      getActiveCountInWeekUseCase: sl(),
+      getWeekStartDateUseCase: sl(),
+    ),
   );
 }
 

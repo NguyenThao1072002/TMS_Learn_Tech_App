@@ -7,6 +7,7 @@ import 'package:tms_app/data/models/account/user_update_model.dart';
 import 'package:tms_app/domain/repositories/account_repository.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
 import 'package:tms_app/presentation/controller/course_controller.dart';
+import 'package:tms_app/presentation/controller/day_streak_controller.dart';
 import 'package:tms_app/presentation/screens/my_account/setting/setting.dart';
 import 'package:tms_app/presentation/screens/my_account/overview/streak.dart';
 import 'package:tms_app/presentation/screens/my_account/my_wallet/my_wallet.dart';
@@ -86,26 +87,22 @@ class _StatCardState extends State<StatCard>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white,
-                widget.color.withOpacity(0.08),
-              ],
-            ),
+            color: widget.color.withOpacity(0.09),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: widget.color.withOpacity(0.15),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
+                color: Colors.grey.withOpacity(0.15),
+                blurRadius: 12,
+                spreadRadius: 1,
+                offset: const Offset(0, 4),
+              ),
+              BoxShadow(
+                color: Colors.white,
+                blurRadius: 0,
+                spreadRadius: 0,
+                offset: const Offset(0, 0),
               ),
             ],
-            border: Border.all(
-              color: widget.color.withOpacity(0.15),
-              width: 1,
-            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -202,6 +199,10 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
   bool _isLoadingOverview = true;
   String? _errorLoadingOverview;
 
+  // Day streak controller
+  late DayStreakController _dayStreakController;
+  bool _isLoadingDayStreak = true;
+
   // Số liệu tổng quan (will be replaced with API data)
   int _totalPoints = 0;
   int _dayStreaks = 0;
@@ -222,11 +223,17 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
     _courseController = CourseController(_courseUseCase);
     _loadMyCourses();
 
+    // Khởi tạo DayStreakController
+    _dayStreakController = GetIt.instance<DayStreakController>();
+
     // Tải thông tin người dùng
     _loadUserInfo();
 
     // Tải account overview
     _loadAccountOverview();
+
+    // Tải day streak
+    _loadDayStreak();
 
     // Tải số lượng item trong giỏ hàng
     _loadCartItemCount();
@@ -248,6 +255,29 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
       );
       WidgetsBinding.instance.addObserver(observer);
     });
+  }
+
+  // Tải day streak từ API
+  Future<void> _loadDayStreak() async {
+    try {
+      setState(() {
+        _isLoadingDayStreak = true;
+      });
+
+      await _dayStreakController.loadDayStreak();
+
+      setState(() {
+        _dayStreaks = _dayStreakController.currentStreak;
+        _isLoadingDayStreak = false;
+      });
+
+      debugPrint('Đã tải day streak thành công: $_dayStreaks');
+    } catch (e) {
+      setState(() {
+        _isLoadingDayStreak = false;
+      });
+      debugPrint('Lỗi khi tải day streak: $e');
+    }
   }
 
   // Tải thông tin người dùng từ API
@@ -363,11 +393,11 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
     try {
       final cartService = GetIt.instance<CartService>();
       final cartItems = await cartService.getCartItems();
-      
+
       setState(() {
         _cartItemCount = cartItems.length;
       });
-      
+
       debugPrint('Số lượng item trong giỏ hàng: $_cartItemCount');
     } catch (e) {
       debugPrint('Lỗi khi tải số lượng item trong giỏ hàng: $e');
@@ -397,12 +427,14 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
               debugPrint('Nút refresh được nhấn, tải lại dữ liệu...');
               setState(() {
                 _isLoadingOverview = true;
+                _isLoadingDayStreak = true;
               });
               // Xóa SharedPreferences cache nếu cần
               _clearSharedPrefsCache().then((_) {
                 // Tải lại dữ liệu
                 _loadUserInfo();
                 _loadAccountOverview();
+                _loadDayStreak();
               });
             },
           ),
@@ -690,7 +722,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
             ],
           ),
           const SizedBox(height: 16),
-          _isLoadingOverview
+          _isLoadingOverview || _isLoadingDayStreak
               ? const Center(
                   child: CircularProgressIndicator(),
                 )
@@ -704,15 +736,16 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
                   children: [
                     _buildStatCard(
                       title: "Day Streaks",
-                      value: _dayStreaks.toString(),
+                      value: _dayStreakController.currentStreak.toString(),
                       icon: Icons.local_fire_department,
                       color: primaryColor,
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>
-                                StreakScreen(currentStreak: _dayStreaks),
+                            builder: (context) => StreakScreen(
+                                currentStreak:
+                                    _dayStreakController.currentStreak),
                           ),
                         );
                       },
@@ -771,14 +804,14 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFEBEE), // Màu pastel đỏ nhạt
+        color: const Color.fromARGB(255, 255, 255, 255),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+            color: const Color.fromARGB(255, 163, 163, 163).withOpacity(0.25),
+            spreadRadius: 2,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -795,13 +828,30 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Kết quả học tập',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.emoji_events_outlined,
+                    color: Colors.red,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Kết quả học tập',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
+                  ),
+                ),
+              ],
             ),
             Icon(
               Icons.arrow_forward_ios,
@@ -821,40 +871,81 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color:
-            const Color(0xFFFFF9C4), // Màu pastel vàng nhạt phù hợp với màu cam
+        color: const Color.fromARGB(255, 255, 255, 255),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+            color: const Color.fromARGB(255, 163, 163, 163).withOpacity(0.25),
+            spreadRadius: 2,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: const Text(
-        'Lịch sử hoạt động',
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Color.fromARGB(255, 252, 175, 9),
+      child: InkWell(
+        onTap: () {
+          // Add navigation when needed
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.history_outlined,
+                    color: Colors.orange,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Lịch sử hoạt động',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange,
+                  ),
+                ),
+              ],
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Colors.orange.withOpacity(0.7),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // Widget hiển thị lịch sử thanh toán và giỏ hàng
+  // Widget hiển thị lịch sử thanh toán
   Widget _buildPaymentHistorySection() {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return Container(
+      width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 255, 255, 255),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: const Color.fromARGB(255, 163, 163, 163).withOpacity(0.25),
+            spreadRadius: 2,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: InkWell(
         onTap: () {
-          // Điều hướng đến trang giỏ hàng
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -863,80 +954,41 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
           );
         },
         borderRadius: BorderRadius.circular(12),
-        splashColor: Colors.blue.withOpacity(0.1),
-        highlightColor: Colors.blue.withOpacity(0.05),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16.0),
-          decoration: BoxDecoration(
-            color: const Color(0xFFE3F2FD), // Màu pastel xanh dương nhạt
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Giỏ hàng & Thanh toán',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 9, 94, 252),
-                    ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color:
+                        const Color.fromARGB(255, 16, 92, 233).withOpacity(0.1),
+                    shape: BoxShape.circle,
                   ),
-                  if (_cartItemCount > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '$_cartItemCount sản phẩm',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _cartItemCount > 0
-                    ? 'Bạn có $_cartItemCount sản phẩm trong giỏ hàng. Nhấn để thanh toán ngay!'
-                    : 'Xem lịch sử thanh toán và quản lý giỏ hàng của bạn',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[700],
+                  child: const Icon(
+                    Icons.receipt_long_outlined,
+                    color: Color.fromARGB(255, 16, 92, 233),
+                    size: 20,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: const [
-                  Text(
-                    'Xem chi tiết',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.blue,
-                      fontWeight: FontWeight.bold,
-                    ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Lịch sử thanh toán',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color.fromARGB(255, 16, 92, 233),
                   ),
-                  SizedBox(width: 4),
-                  Icon(
-                    Icons.arrow_forward,
-                    size: 16,
-                    color: Colors.blue,
-                  ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: const Color.fromARGB(255, 41, 9, 252).withOpacity(0.7),
+            ),
+          ],
         ),
       ),
     );
@@ -949,23 +1001,56 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3E5F5), // Màu pastel tím nhạt
+        color: const Color.fromARGB(255, 255, 255, 255),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+            color: const Color.fromARGB(255, 163, 163, 163).withOpacity(0.25),
+            spreadRadius: 2,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: const Text(
-        'Hỗ trợ',
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Color.fromARGB(255, 207, 9, 252),
+      child: InkWell(
+        onTap: () {
+          // Add navigation when needed
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.support_agent_outlined,
+                    color: Colors.green,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Hỗ trợ',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+              ],
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Colors.green.withOpacity(0.7),
+            ),
+          ],
         ),
       ),
     );
@@ -1176,6 +1261,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
         // Force reload
         await _loadUserInfo();
         await _loadAccountOverview();
+        await _loadDayStreak();
         await _loadCartItemCount();
         return;
       }
@@ -1190,6 +1276,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
         // Reload dữ liệu nếu userId thay đổi
         await _loadUserInfo();
         await _loadAccountOverview();
+        await _loadDayStreak();
         await _loadCartItemCount();
       }
     } catch (e) {
@@ -1221,7 +1308,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
           _accountOverview = null;
         });
       }
-      
+
       // Tải lại số lượng giỏ hàng
       _loadCartItemCount();
     } catch (e) {
