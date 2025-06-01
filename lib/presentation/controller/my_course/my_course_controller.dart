@@ -354,42 +354,6 @@ class MyCourseController with ChangeNotifier {
     return true;
   }
 
-  // Check if can navigate to next lesson
-  bool canNavigateToNextLesson() {
-    // If at the last lesson of the course
-    if (_selectedChapterIndex == _courseData.length - 1 &&
-        _selectedLessonIndex ==
-            _courseData[_selectedChapterIndex].lessons.length - 1) {
-      return false;
-    }
-
-    // If current lesson is not completed
-    final currentLesson =
-        _courseData[_selectedChapterIndex].lessons[_selectedLessonIndex];
-    if (_completedLessons[currentLesson.id] != true) {
-      return false;
-    }
-
-    // If next lesson is locked
-    if (_selectedLessonIndex <
-        _courseData[_selectedChapterIndex].lessons.length - 1) {
-      // Next lesson in the same chapter
-      final nextLesson =
-          _courseData[_selectedChapterIndex].lessons[_selectedLessonIndex + 1];
-      if (!nextLesson.isUnlocked) {
-        return false;
-      }
-    } else if (_selectedChapterIndex < _courseData.length - 1) {
-      // First lesson of next chapter
-      final nextLesson = _courseData[_selectedChapterIndex + 1].lessons[0];
-      if (!nextLesson.isUnlocked) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
   // Navigate to previous lesson
   void navigateToPreviousLesson() {
     if (canNavigateToPreviousLesson()) {
@@ -411,28 +375,122 @@ class MyCourseController with ChangeNotifier {
 
   // Navigate to next lesson
   void navigateToNextLesson() {
+    print('🚀 Đang thử chuyển đến bài học tiếp theo...');
+    print(
+        '🔍 TRƯỚC KHI CHUYỂN: Chương $_selectedChapterIndex, Bài học $_selectedLessonIndex');
+
     if (canNavigateToNextLesson()) {
+      // Lưu thông tin bài học hiện tại để so sánh
+      final oldChapterIndex = _selectedChapterIndex;
+      final oldLessonIndex = _selectedLessonIndex;
+
       if (_selectedLessonIndex <
           _courseData[_selectedChapterIndex].lessons.length - 1) {
         // Go to next lesson in same chapter
         _selectedLessonIndex++;
+        print(
+            '✅ Đã chuyển đến bài học tiếp theo trong cùng chương: $_selectedLessonIndex');
       } else if (_selectedChapterIndex < _courseData.length - 1) {
         // Go to first lesson of next chapter
         _selectedChapterIndex++;
         _selectedLessonIndex = 0;
+        print(
+            '✅ Đã chuyển đến chương tiếp theo: $_selectedChapterIndex, bài học: $_selectedLessonIndex');
 
         // Ensure chapter is expanded
         _expandedChapters[_selectedChapterIndex] = true;
       }
+
+      // Kiểm tra xem giá trị đã được cập nhật chưa
+      print(
+          '🔍 SAU KHI CHUYỂN: Chương $_selectedChapterIndex, Bài học $_selectedLessonIndex');
+      print(
+          '🔄 Đã thay đổi từ [${oldChapterIndex}:${oldLessonIndex}] sang [${_selectedChapterIndex}:${_selectedLessonIndex}]');
+
+      // Thông báo UI cập nhật sau khi chuyển bài học
       notifyListeners();
+      print('📢 Đã thông báo UI cập nhật');
+
+      // Thêm log để kiểm tra thông tin bài học hiện tại sau khi chuyển
+      final currentLesson =
+          _courseData[_selectedChapterIndex].lessons[_selectedLessonIndex];
+      print('📝 Bài học hiện tại: ${currentLesson.title}');
+      print('🧪 Có bài kiểm tra: ${currentLesson.testType != null}');
+      print('✅ Đã hoàn thành: ${_completedLessons[currentLesson.id] == true}');
+    } else {
+      print(
+          '❌ Không thể chuyển đến bài học tiếp theo - điều kiện không thỏa mãn');
     }
+  }
+
+  // Check if can navigate to next lesson
+  bool canNavigateToNextLesson() {
+    print('🔍 Kiểm tra có thể chuyển đến bài học tiếp theo...');
+
+    // If at the last lesson of the course
+    if (_selectedChapterIndex == _courseData.length - 1 &&
+        _selectedLessonIndex ==
+            _courseData[_selectedChapterIndex].lessons.length - 1) {
+      print('❌ Đã ở bài học cuối cùng của khóa học');
+      return false;
+    }
+
+    // Lấy bài học hiện tại
+    final currentLesson =
+        _courseData[_selectedChapterIndex].lessons[_selectedLessonIndex];
+
+    // Log chi tiết về bài học hiện tại để debug
+    print('📊 Thông tin bài học hiện tại:');
+    print('   - ID: ${currentLesson.id}');
+    print('   - Tên: ${currentLesson.title}');
+    print('   - Có bài kiểm tra: ${currentLesson.testType != null}');
+    print('   - Đã hoàn thành: ${_completedLessons[currentLesson.id] == true}');
+
+    // Nếu bài học không có bài kiểm tra (testType = null), cho phép chuyển tiếp
+    if (currentLesson.testType == null) {
+      print('✅ Bài học không có bài kiểm tra - cho phép chuyển tiếp');
+      return true;
+    }
+
+    // If current lesson is not completed
+    if (_completedLessons[currentLesson.id] != true) {
+      print('❌ Bài học hiện tại chưa hoàn thành: ${currentLesson.id}');
+      return false;
+    }
+
+    // If next lesson is locked
+    if (_selectedLessonIndex <
+        _courseData[_selectedChapterIndex].lessons.length - 1) {
+      // Next lesson in the same chapter
+      final nextLesson =
+          _courseData[_selectedChapterIndex].lessons[_selectedLessonIndex + 1];
+      if (!nextLesson.isUnlocked) {
+        print(
+            '❌ Bài học tiếp theo trong cùng chương bị khóa: ${nextLesson.id}');
+        return false;
+      }
+    } else if (_selectedChapterIndex < _courseData.length - 1) {
+      // First lesson of next chapter
+      final nextLesson = _courseData[_selectedChapterIndex + 1].lessons[0];
+      if (!nextLesson.isUnlocked) {
+        print(
+            '❌ Bài học đầu tiên của chương tiếp theo bị khóa: ${nextLesson.id}');
+        return false;
+      }
+    }
+
+    print('✅ Có thể chuyển đến bài học tiếp theo');
+    return true;
   }
 
   // LESSON COMPLETION METHODS
 
   // Mark a lesson as completed
   void onLessonCompleted(String lessonId) {
+    print('🔄 onLessonCompleted: Đánh dấu hoàn thành bài học $lessonId');
     _completedLessons[lessonId] = true;
+    print(
+        '  ✅ Đã đặt _completedLessons[$lessonId] = ${_completedLessons[lessonId]}');
 
     // Unlock next lesson
     _unlockNextLesson(lessonId);
@@ -449,16 +507,22 @@ class MyCourseController with ChangeNotifier {
       if (completedLesson != null) break;
     }
 
+    print(
+        '  📝 Bài học hoàn thành: ${completedLesson?.title ?? "không tìm thấy"}');
+    print('  🧪 Có bài kiểm tra: ${completedLesson?.testType != null}');
+
     // Nếu có callback và bài học có bài kiểm tra, gọi callback
     if (_onStartTestCallback != null &&
         completedLesson != null &&
         completedLesson.testType != null) {
+      print('  🧪 Chuẩn bị gọi callback bài kiểm tra');
       Future.delayed(const Duration(milliseconds: 500), () {
         _onStartTestCallback!(completedLesson!);
       });
     }
 
     notifyListeners();
+    print('  📢 Đã thông báo cập nhật UI');
   }
 
   // Unlock the next lesson after completing current one

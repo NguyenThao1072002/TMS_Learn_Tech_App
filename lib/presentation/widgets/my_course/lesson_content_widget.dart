@@ -84,6 +84,14 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
         _initializeVideoPlayer();
       }
     }
+
+    // Thêm log để kiểm tra khi nào widget được cập nhật và dữ liệu hiện tại
+    print('📱 didUpdateWidget được gọi trong LessonContentWidget');
+    print('   - Chương hiện tại: ${widget.currentChapter.title}');
+    print('   - Bài học hiện tại: ${widget.currentLesson.title}');
+    print('   - Có thể chuyển bài tiếp: ${widget.canNavigateToNext}');
+    print(
+        '   - Đã hoàn thành: ${widget.completedLessons[widget.currentLesson.id] == true}');
   }
 
   // Khởi tạo video player
@@ -99,7 +107,7 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
       // Sử dụng service để tạo ChewieController
       _chewieController = await VideoPlayerService.initializeChewieController(
         videoUrl: cleanUrl,
-        autoPlay: true, // Tự động phát ngay khi tải xong
+        autoPlay: false, // Thay đổi: không tự động phát khi tải xong
         looping: false,
         allowFullScreen: true,
         allowMuting: true,
@@ -117,7 +125,7 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
         if (mounted) {
           setState(() {
             _isVideoInitialized = true;
-            _isPlaying = true;
+            _isPlaying = false; // Thay đổi: cập nhật trạng thái là không phát
           });
         }
       } else {
@@ -199,6 +207,14 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Thêm log để kiểm tra khi widget build được gọi
+    print('📱 build được gọi trong LessonContentWidget');
+    print('   - Chương hiện tại: ${widget.currentChapter.title}');
+    print('   - Bài học hiện tại: ${widget.currentLesson.title}');
+    print('   - Có thể chuyển bài tiếp: ${widget.canNavigateToNext}');
+    print(
+        '   - Đã hoàn thành: ${widget.completedLessons[widget.currentLesson.id] == true}');
+
     return DefaultTabController(
       length: 3,
       child: Column(
@@ -310,15 +326,20 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
 
                       // Nút bài tiếp
                       IconButton(
-                        onPressed: widget.canNavigateToNext
-                            ? widget.onNextLesson
-                            : null,
+                        onPressed: () {
+                          print("📱 Nhấn nút bài tiếp ở header");
+                          if (widget.canNavigateToNext) {
+                            widget.onNextLesson();
+                          }
+                        },
                         icon: const Icon(Icons.arrow_forward_ios, size: 16),
                         tooltip: 'Bài tiếp',
                         constraints: const BoxConstraints(),
                         padding: const EdgeInsets.all(8),
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.orange,
+                          backgroundColor: widget.canNavigateToNext
+                              ? Colors.orange
+                              : Colors.grey[300],
                           foregroundColor: Colors.white,
                           disabledBackgroundColor: Colors.grey[300],
                           disabledForegroundColor: Colors.grey[400],
@@ -483,16 +504,7 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
           ),
 
           // Hiển thị nút hoàn thành bài học khi không ở chế độ toàn màn hình
-          if (!_isFullScreen)
-            CompleteLessonButton(
-              isCompleted:
-                  widget.completedLessons[widget.currentLesson.id] == true,
-              onComplete: widget.onCompleteLesson,
-              hasTest: widget.currentLesson.testType != null,
-              onStartTest: widget.currentLesson.testType != null
-                  ? () => widget.startTest()
-                  : null,
-            ),
+          if (!_isFullScreen) _buildCompleteLessonButton(),
         ],
       ),
     );
@@ -542,13 +554,11 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
       await _initializeVideoPlayer();
     }
 
-    // Nếu đã khởi tạo thành công, tự động phát
-    if (_isVideoInitialized && _chewieController != null) {
-      _chewieController!.play();
-      setState(() {
-        _isPlaying = true;
-      });
-    }
+    // Không tự động phát video sau khi khởi tạo
+    // Đã bỏ đoạn code tự động phát
+    setState(() {
+      _isPlaying = _videoPlayerController?.value.isPlaying ?? false;
+    });
   }
 
   // Định dạng thời gian từ giây sang MM:SS
@@ -807,6 +817,31 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
           ),
         ),
       ],
+    );
+  }
+
+  // Widget để hiển thị nút hoàn thành bài học
+  Widget _buildCompleteLessonButton() {
+    final bool isCompleted =
+        widget.completedLessons[widget.currentLesson.id] == true;
+    final bool hasTest = widget.currentLesson.testType != null;
+    final bool canNavigate = widget.canNavigateToNext;
+
+    print('🔍 LessonContentWidget: Hiển thị CompleteLessonButton');
+    print('   - isCompleted: $isCompleted');
+    print('   - hasTest: $hasTest');
+    print('   - canNavigateToNext: $canNavigate');
+    print('   - currentLessonId: ${widget.currentLesson.id}');
+
+    return CompleteLessonButton(
+      isCompleted: isCompleted,
+      onComplete: () {
+        print('📢 LessonContentWidget: Gọi onCompleteLesson từ UI');
+        widget.onCompleteLesson();
+      },
+      hasTest: hasTest,
+      onStartTest: hasTest ? () => widget.startTest() : null,
+      onNextLesson: canNavigate ? widget.onNextLesson : null,
     );
   }
 }

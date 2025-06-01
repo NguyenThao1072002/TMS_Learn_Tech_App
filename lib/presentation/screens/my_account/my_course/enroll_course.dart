@@ -136,8 +136,45 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
     // Initialize controller from dependency injection
     _controller = sl<MyCourseController>();
 
+    // Lắng nghe sự thay đổi từ controller để cập nhật UI
+    _controller.addListener(() {
+      if (mounted) {
+        setState(() {
+          // UI sẽ được cập nhật khi controller thay đổi
+          print('🔄 UI được cập nhật do controller thay đổi');
+          print('🔄 Chương hiện tại: ${_controller.selectedChapterIndex}');
+          print('🔄 Bài học hiện tại: ${_controller.selectedLessonIndex}');
+
+          // Force rebuild và focus vào bài học hiện tại
+          _forceUpdateCurrentLesson();
+        });
+      }
+    });
+
     // Load course data using the controller
     _loadCourseData();
+  }
+
+  // Phương thức để đảm bảo UI luôn hiển thị bài học hiện tại chính xác
+  void _forceUpdateCurrentLesson() {
+    // Lấy dữ liệu hiện tại từ controller
+    final currentChapter = _controller.currentChapter;
+    final currentLesson = _controller.currentLesson;
+
+    if (currentChapter != null && currentLesson != null) {
+      print('📌 Force update UI để hiển thị:');
+      print('   - Chương: ${currentChapter.title}');
+      print('   - Bài học: ${currentLesson.title}');
+
+      // Yêu cầu UI cập nhật lại
+      Future.microtask(() {
+        if (mounted) {
+          setState(() {
+            // Không cần làm gì, chỉ cần trigger rebuild
+          });
+        }
+      });
+    }
   }
 
   // Load course data using the controller
@@ -1084,6 +1121,13 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
     final currentChapter = _controller.currentChapter;
     final currentLesson = _controller.currentLesson;
 
+    // Thêm logs để theo dõi bài học hiện tại
+    print('🔍 _buildLessonContent được gọi');
+    print('🔍 currentChapter: ${currentChapter?.title}');
+    print('🔍 currentLesson: ${currentLesson?.title}');
+    print('🔍 selectedChapterIndex: ${_controller.selectedChapterIndex}');
+    print('🔍 selectedLessonIndex: ${_controller.selectedLessonIndex}');
+
     if (currentChapter == null) {
       return const Center(
         child: Text('Không tìm thấy chương học phù hợp'),
@@ -1129,6 +1173,8 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
         _controller.getMaterialsForLesson(currentLesson);
 
     return LessonContentWidget(
+      // Thêm key để giúp Flutter biết khi nào rebuild widget
+      key: ValueKey('lesson_${currentChapter.id}_${currentLesson.id}'),
       currentChapter: currentChapter,
       currentLesson: currentLesson,
       completedLessons: _controller.completedLessons,
@@ -1142,13 +1188,8 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
       },
       onCompleteLesson: () {
         // Mark lesson as complete using controller
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đã hoàn thành bài học'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
         _controller.onLessonCompleted(currentLesson.id);
+        // Đã xóa đoạn hiển thị toast
       },
       onPreviousLesson: _controller.navigateToPreviousLesson,
       onNextLesson: _controller.navigateToNextLesson,
