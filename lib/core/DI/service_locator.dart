@@ -7,7 +7,9 @@ import 'package:tms_app/data/repositories/discount_repository_impl.dart';
 import 'package:tms_app/data/repositories/document_repository_impl.dart';
 import 'package:tms_app/data/repositories/my_course/my_course_list_repository_impl.dart';
 import 'package:tms_app/data/repositories/my_course/course_lesson_repository_impl.dart'; // Import course lesson repository
+import 'package:tms_app/data/repositories/my_course/content_test_repository_impl.dart'; // Import content test repository
 import 'package:tms_app/data/repositories/payment_repository_impl.dart';
+import 'package:tms_app/data/repositories/test_repository_impl.dart';
 import 'package:tms_app/data/services/auth_service.dart'; // Import AuthService
 import 'package:tms_app/data/services/blog_service.dart';
 import 'package:tms_app/data/services/cart/cart_service.dart';
@@ -16,7 +18,9 @@ import 'package:tms_app/data/services/discount_service.dart';
 import 'package:tms_app/data/services/document/document_service.dart';
 import 'package:tms_app/data/services/my_course/my_course_list_service.dart';
 import 'package:tms_app/data/services/my_course/course_lesson_service.dart'; // Import course lesson service
+import 'package:tms_app/data/services/my_course/content_test_service.dart'; // Import content test service
 import 'package:tms_app/data/services/payment_service.dart';
+import 'package:tms_app/data/services/test_service.dart';
 import 'package:tms_app/data/services/user_service.dart'; // Import UserService
 import 'package:tms_app/data/repositories/account_repository_impl.dart';
 import 'package:tms_app/domain/repositories/account_repository.dart';
@@ -27,7 +31,9 @@ import 'package:tms_app/domain/repositories/discount_repository.dart';
 import 'package:tms_app/domain/repositories/document_repository.dart';
 import 'package:tms_app/domain/repositories/my_course/my_course_list_repository.dart';
 import 'package:tms_app/domain/repositories/my_course/course_lesson_repository.dart'; // Import course lesson repository interface
+import 'package:tms_app/domain/repositories/my_course/content_test_repository.dart'; // Import content test repository interface
 import 'package:tms_app/domain/repositories/payment_repository.dart';
+import 'package:tms_app/domain/repositories/test_repository.dart';
 import 'package:tms_app/domain/usecases/blog_usecase.dart';
 import 'package:tms_app/domain/usecases/cart_usecase.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
@@ -37,8 +43,10 @@ import 'package:tms_app/domain/usecases/forgot_password_usecase.dart';
 import 'package:tms_app/domain/usecases/login_usecase.dart';
 import 'package:tms_app/domain/usecases/my_course/my_course_list_usecase.dart';
 import 'package:tms_app/domain/usecases/my_course/course_lesson_usecase.dart'; // Import course lesson usecase
+import 'package:tms_app/domain/usecases/my_course/content_test_usecase.dart'; // Import content test usecase
 import 'package:tms_app/domain/usecases/payment_usecase.dart';
 import 'package:tms_app/domain/usecases/register_usecase.dart';
+import 'package:tms_app/domain/usecases/submit_test_result_usecase.dart';
 import 'package:tms_app/domain/usecases/update_account_usecase.dart';
 import 'package:tms_app/domain/usecases/overview_my_account_usecase.dart';
 import 'package:tms_app/presentation/controller/discount_controller.dart';
@@ -71,6 +79,7 @@ import 'package:tms_app/domain/repositories/day_streak_repository.dart';
 import 'package:tms_app/data/services/day_streak_service.dart';
 import 'package:tms_app/domain/usecases/day_streak_usecase.dart';
 import 'package:tms_app/presentation/controller/day_streak_controller.dart';
+import 'package:tms_app/presentation/controller/my_course/submit_test_result_controller.dart';
 
 // Đảm bảo các import không bị xóa bởi công cụ IDE
 // ignore: unused_element
@@ -84,6 +93,10 @@ void _keepImports() {
   PracticeTestRepositoryImpl? f;
   PracticeTestRepository? g;
   PracticeTestUseCase? h;
+  ContentTestService? i;
+  ContentTestRepositoryImpl? j;
+  ContentTestRepository? k;
+  ContentTestUseCase? l;
   a;
   b;
   c;
@@ -92,6 +105,10 @@ void _keepImports() {
   f;
   g;
   h;
+  i;
+  j;
+  k;
+  l;
 }
 
 // Khởi tạo GetIt cho Dependency Injection
@@ -181,6 +198,8 @@ void _registerServices() {
   sl.registerLazySingleton(() => MyCourseListService(sl()));
   // Đăng ký CourseLessonService
   sl.registerLazySingleton(() => CourseLessonService(sl()));
+  // Đăng ký ContentTestService
+  sl.registerLazySingleton(() => ContentTestService(sl()));
   // Đăng ký PaymentService
   sl.registerLazySingleton(() => PaymentService(sl()));
   sl.registerLazySingleton(() => DiscountService(sl()));
@@ -190,6 +209,7 @@ void _registerServices() {
       dio: sl(),
     ),
   );
+  sl.registerLazySingleton(() => TestService(sl()));
 }
 
 // Đăng ký tất cả các Repository
@@ -232,6 +252,10 @@ void _registerRepositories() {
   sl.registerLazySingleton<CourseLessonRepository>(
       () => CourseLessonRepositoryImpl(sl<CourseLessonService>()));
 
+  // Đăng ký ContentTestRepository
+  sl.registerLazySingleton<ContentTestRepository>(() =>
+      ContentTestRepositoryImpl(contentTestService: sl<ContentTestService>()));
+
   // Đăng ký PaymentRepository
   sl.registerLazySingleton<PaymentRepository>(
     () => PaymentRepositoryImpl(paymentService: sl<PaymentService>()),
@@ -245,6 +269,9 @@ void _registerRepositories() {
     () => DayStreakRepositoryImpl(
       dayStreakService: sl(),
     ),
+  );
+  sl.registerLazySingleton<TestRepository>(
+    () => TestRepositoryImpl(testService: sl<TestService>()),
   );
 }
 
@@ -278,6 +305,9 @@ void _registerUseCases() {
   // Course Lessons
   sl.registerLazySingleton(
       () => CourseLessonUseCase(sl<CourseLessonRepository>()));
+  // Content Test
+  sl.registerLazySingleton(
+      () => ContentTestUseCase(sl<ContentTestRepository>()));
   // Payment
   sl.registerLazySingleton(() => PaymentUseCase(sl<PaymentRepository>()));
 
@@ -313,6 +343,9 @@ void _registerUseCases() {
 
   sl.registerLazySingleton<GetWeekStartDateUseCase>(
     () => GetWeekStartDateUseCase(),
+  );
+  sl.registerLazySingleton<SubmitTestResultUseCase>(
+    () => SubmitTestResultUseCase(sl<TestRepository>()),
   );
 }
 
@@ -376,6 +409,12 @@ void _registerControllers() {
       getActiveCountInMonthUseCase: sl(),
       getActiveCountInWeekUseCase: sl(),
       getWeekStartDateUseCase: sl(),
+    ),
+  );
+  sl.registerLazySingleton<SubmitTestResultController>(
+    () => SubmitTestResultController(
+      testService: sl<TestService>(),
+      myCourseController: sl<MyCourseController>(),
     ),
   );
 }
