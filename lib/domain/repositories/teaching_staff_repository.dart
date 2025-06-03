@@ -1,4 +1,5 @@
 import '../../data/models/teaching_staff/teaching_staff_model.dart';
+import '../../data/models/teaching_staff/teaching_staff_detail_model.dart';
 
 // Interface định nghĩa các phương thức làm việc với giảng viên
 abstract class TeachingStaffRepository {
@@ -14,9 +15,9 @@ abstract class TeachingStaffRepository {
     int? categoryId,
   });
 
-  /// Lấy chi tiết thông tin giảng viên theo ID
-  /// [id] - ID của giảng viên cần lấy thông tin
-  Future<TeachingStaff?> getTeachingStaffById(int id);
+  /// Lấy chi tiết đầy đủ thông tin giảng viên theo ID
+  /// [id] - ID của giảng viên cần lấy thông tin chi tiết
+  Future<TeachingStaffDetailResponse> getTeachingStaffDetailById(int id);
 
   /// Lấy danh sách giảng viên nổi bật
   /// [limit] - Số lượng giảng viên cần lấy

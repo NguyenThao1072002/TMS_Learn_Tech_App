@@ -1,5 +1,6 @@
 import '../../domain/repositories/teaching_staff_repository.dart';
 import '../models/teaching_staff/teaching_staff_model.dart';
+import '../models/teaching_staff/teaching_staff_detail_model.dart';
 import '../services/teaching_staff/teaching_staff_service.dart';
 
 class TeachingStaffRepositoryImpl implements TeachingStaffRepository {
@@ -23,8 +24,8 @@ class TeachingStaffRepositoryImpl implements TeachingStaffRepository {
   }
 
   @override
-  Future<TeachingStaff?> getTeachingStaffById(int id) async {
-    return await teachingStaffService.getTeachingStaffById(id);
+  Future<TeachingStaffDetailResponse> getTeachingStaffDetailById(int id) async {
+    return await teachingStaffService.getTeachingStaffDetailById(id);
   }
 
   @override

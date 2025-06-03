@@ -102,6 +102,89 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
       ),
       body: Column(
         children: [
+          // Banner Image
+          Container(
+            width: double.infinity,
+            height: 150,
+            margin: const EdgeInsets.only(bottom: 16),
+            child: Stack(
+              children: [
+                // Banner Image
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFF3498DB),
+                        const Color(0xFF3498DB).withOpacity(0.7),
+                      ],
+                    ),
+                  ),
+                  child: Image.network(
+                    'https://ik.imagekit.io/kbxte3uo1/teaching_staff_banner.jpg?updatedAt=1746243177185',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.groups,
+                              size: 48,
+                              color: Colors.white.withOpacity(0.8),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                // Overlay with text
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.1),
+                        Colors.black.withOpacity(0.5),
+                      ],
+                    ),
+                  ),
+                ),
+                // Text content
+                Positioned(
+                  bottom: 16,
+                  left: 16,
+                  right: 16,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        'Đội ngũ chuyên gia hàng đầu',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Giảng dạy bởi những người giỏi nhất trong lĩnh vực',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
           // Search Bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -682,7 +765,14 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Về đội ngũ giảng viên'),
+        title: const Text(
+          'Về đội ngũ giảng viên',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF3498DB),
+          ),
+        ),
+        backgroundColor: Colors.white,
         content: const SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -711,7 +801,13 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng'),
+            child: const Text(
+              'Đóng',
+              style: TextStyle(
+                color: Color(0xFF3498DB),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -722,7 +818,14 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Gợi ý giảng viên'),
+        title: const Text(
+          'Gợi ý giảng viên',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF3498DB),
+          ),
+        ),
+        backgroundColor: Colors.white,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -747,7 +850,12 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(
+                color: Colors.grey,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {

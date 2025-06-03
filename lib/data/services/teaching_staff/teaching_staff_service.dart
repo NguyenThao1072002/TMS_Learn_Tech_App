@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../../../core/utils/constants.dart';
 import '../../../core/utils/api_response_helper.dart';
 import '../../models/teaching_staff/teaching_staff_model.dart';
+import '../../models/teaching_staff/teaching_staff_detail_model.dart';
 
 class TeachingStaffService {
   final String baseUrl = "${Constants.BASE_URL}/api";
@@ -60,11 +61,11 @@ class TeachingStaffService {
     }
   }
 
-  /// Lấy chi tiết thông tin giảng viên theo ID
-  /// [id] - ID của giảng viên cần lấy thông tin
-  Future<TeachingStaff?> getTeachingStaffById(int id) async {
+  /// Lấy chi tiết đầy đủ thông tin giảng viên theo ID
+  /// [id] - ID của giảng viên cần lấy thông tin chi tiết
+  Future<TeachingStaffDetailResponse> getTeachingStaffDetailById(int id) async {
     try {
-      final endpoint = '$baseUrl/lecturers/$id';
+      final endpoint = '$baseUrl/lecturers/$id/detail';
 
       final response = await dio.get(
         endpoint,
@@ -75,15 +76,10 @@ class TeachingStaffService {
       );
 
       if (response.statusCode == 200) {
-        final responseData = response.data;
-
-        if (responseData != null && responseData['data'] != null) {
-          return TeachingStaff.fromJson(responseData['data']);
-        }
-        return null;
+        return TeachingStaffDetailResponse.fromJson(response.data);
       } else {
         throw Exception(
-            'Lỗi khi lấy thông tin giảng viên: ${response.statusMessage}');
+            'Lỗi khi lấy chi tiết giảng viên: ${response.statusMessage}');
       }
     } on DioException catch (e) {
       throw Exception('Lỗi kết nối: ${e.message}');

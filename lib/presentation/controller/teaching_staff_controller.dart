@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tms_app/data/models/teaching_staff/teaching_staff_model.dart';
+import 'package:tms_app/data/models/teaching_staff/teaching_staff_detail_model.dart';
 import 'package:tms_app/domain/usecases/teaching_staff/teaching_staff_usecase.dart';
 import 'package:get_it/get_it.dart';
 
@@ -11,7 +12,7 @@ class TeachingStaffController with ChangeNotifier {
   String? error;
   List<TeachingStaff> teachingStaffs = [];
   List<TeachingStaff> featuredTeachingStaffs = [];
-  TeachingStaff? selectedTeachingStaff;
+  TeachingStaffDetail? selectedTeachingStaffDetail;
 
   // Bộ lọc
   String searchKeyword = '';
@@ -88,17 +89,18 @@ class TeachingStaffController with ChangeNotifier {
   }
 
   /// Lấy chi tiết giảng viên theo ID
-  Future<TeachingStaff?> getTeachingStaffById(int id) async {
+  Future<TeachingStaffDetail?> getTeachingStaffDetailById(int id) async {
     try {
       isLoading = true;
       notifyListeners();
 
-      selectedTeachingStaff =
-          await _teachingStaffUseCase.getTeachingStaffById(id);
+      final response =
+          await _teachingStaffUseCase.getTeachingStaffDetailById(id);
+      selectedTeachingStaffDetail = response.data;
 
       isLoading = false;
       notifyListeners();
-      return selectedTeachingStaff;
+      return selectedTeachingStaffDetail;
     } catch (e) {
       isLoading = false;
       error = e.toString();

@@ -1,4 +1,5 @@
 import 'package:tms_app/data/models/teaching_staff/teaching_staff_model.dart';
+import 'package:tms_app/data/models/teaching_staff/teaching_staff_detail_model.dart';
 import 'package:tms_app/domain/repositories/teaching_staff_repository.dart';
 
 class TeachingStaffUseCase {
@@ -25,10 +26,10 @@ class TeachingStaffUseCase {
     );
   }
 
-  /// Lấy chi tiết thông tin giảng viên theo ID
-  /// [id] - ID của giảng viên cần lấy thông tin
-  Future<TeachingStaff?> getTeachingStaffById(int id) async {
-    return await repository.getTeachingStaffById(id);
+  /// Lấy chi tiết đầy đủ thông tin giảng viên theo ID
+  /// [id] - ID của giảng viên cần lấy thông tin chi tiết
+  Future<TeachingStaffDetailResponse> getTeachingStaffDetailById(int id) async {
+    return await repository.getTeachingStaffDetailById(id);
   }
 
   /// Lấy danh sách giảng viên nổi bật
