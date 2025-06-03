@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tms_app/data/models/teaching_staff/teaching_staff_model.dart';
+import 'package:tms_app/data/models/teaching_staff/course_of_teaching_staff_model.dart';
 import 'package:tms_app/presentation/controller/teaching_staff_controller.dart';
 import 'package:tms_app/core/theme/app_styles.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tms_app/domain/usecases/teaching_staff/teaching_staff_usecase.dart';
+import 'package:tms_app/presentation/widgets/course/course_card.dart';
+import 'package:tms_app/data/models/course/course_card_model.dart';
 
 class TeachingStaffScreen extends StatefulWidget {
   const TeachingStaffScreen({Key? key}) : super(key: key);
@@ -694,14 +697,8 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                 padding: const EdgeInsets.all(16),
                 child: OutlinedButton(
                   onPressed: () {
-                    // Action to view instructor's courses
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Xem khóa học của ${staff.fullname}'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
+                    // Hiển thị khóa học của giảng viên
+                    _showTeachingStaffCourses(staff);
                   },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF3498DB)),
@@ -722,6 +719,229 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
               ),
 
               const SizedBox(height: 30),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Hiển thị danh sách khóa học của giảng viên
+  void _showTeachingStaffCourses(TeachingStaff staff) {
+    Navigator.pop(context); // Đóng bottom sheet chi tiết giảng viên
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildTeachingStaffCoursesSheet(staff),
+    );
+  }
+
+  Widget _buildTeachingStaffCoursesSheet(TeachingStaff staff) {
+    // Lấy accountId từ đối tượng staff
+    final int accountId = staff.accountId;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.9,
+      maxChildSize: 0.95,
+      minChildSize: 0.5,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF3498DB),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // Handle bar for dragging
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 25,
+                          backgroundImage: NetworkImage(staff.avatarUrl),
+                          onBackgroundImageError: (exception, stackTrace) =>
+                              const Icon(Icons.person),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Khóa học của ${staff.fullname}',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              Text(
+                                staff.categoryName,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white.withOpacity(0.9),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Courses list
+              Expanded(
+                child: FutureBuilder<Map<String, dynamic>>(
+                  future:
+                      GetIt.I<TeachingStaffUseCase>().getCoursesOfTeachingStaff(
+                    accountId: accountId, // Sử dụng accountId thay vì id
+                  ),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              color: Colors.red,
+                              size: 48,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Không thể tải dữ liệu: ${snapshot.error}',
+                              style: AppStyles.errorText,
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _showInstructorDetails(staff);
+                              },
+                              child: const Text('Thử lại'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    final data = snapshot.data!;
+                    final List<CourseOfTeachingStaffModel> courses =
+                        data['courses'];
+
+                    if (courses.isEmpty) {
+                      return const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.school_outlined,
+                              color: Colors.grey,
+                              size: 48,
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Giảng viên chưa có khóa học nào',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      controller: scrollController,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: courses.length,
+                      itemBuilder: (context, index) {
+                        final course = courses[index];
+                        // Chuyển đổi CourseOfTeachingStaffModel sang CourseCardModel
+                        final courseCardModel = CourseCardModel(
+                          id: course.id,
+                          title: course.title,
+                          imageUrl: course.imageUrl,
+                          categoryName: course.categoryName,
+                          totalLessons: course.lessonCount,
+                          numberOfStudents: course.studentCount,
+                          averageRating: course.rating,
+                          cost: course.cost,
+                          price: course.price,
+                          discountPercent: course.percentDiscount,
+                          author: course.author,
+                          language: course.language,
+                          description: course.courseOutput,
+                          duration: course.duration,
+                          courseOutput: course.courseOutput,
+                          status: course.status,
+                          type: course.type,
+                        );
+
+                        return CourseCard(
+                          course: courseCardModel,
+                          selectedIndex: null,
+                          onTap: (course) {
+                            // Xử lý khi bấm vào khóa học
+                            Navigator.pop(context);
+                            // TODO: Điều hướng đến trang chi tiết khóa học
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content:
+                                    Text('Đã chọn khóa học: ${course.title}'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
             ],
           ),
         );

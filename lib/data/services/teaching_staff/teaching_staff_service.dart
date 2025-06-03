@@ -3,6 +3,7 @@ import '../../../core/utils/constants.dart';
 import '../../../core/utils/api_response_helper.dart';
 import '../../models/teaching_staff/teaching_staff_model.dart';
 import '../../models/teaching_staff/teaching_staff_detail_model.dart';
+import '../../models/teaching_staff/course_of_teaching_staff_model.dart';
 
 class TeachingStaffService {
   final String baseUrl = "${Constants.BASE_URL}/api";
@@ -115,6 +116,64 @@ class TeachingStaffService {
       } else {
         throw Exception(
             'Lỗi khi lấy danh sách giảng viên nổi bật: ${response.statusMessage}');
+      }
+    } on DioException catch (e) {
+      throw Exception('Lỗi kết nối: ${e.message}');
+    } catch (e) {
+      throw Exception('Đã xảy ra lỗi: $e');
+    }
+  }
+
+  /// Lấy danh sách khóa học của giảng viên
+  /// [accountId] - ID của giảng viên
+  /// [page] - Trang hiện tại (mặc định là 0)
+  /// [size] - Số lượng khóa học trên mỗi trang (mặc định là 10)
+  Future<Map<String, dynamic>> getCoursesOfTeachingStaff({
+    required int accountId,
+    int page = 0,
+    int size = 10,
+  }) async {
+    try {
+      // Xây dựng query parameters
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'size': size,
+      };
+
+      // Gọi API với id trực tiếp (id chính là accountId của giảng viên)
+      final endpoint = '$baseUrl/courses/public/filter/$accountId';
+
+      final response = await dio.get(
+        endpoint,
+        queryParameters: queryParams,
+        options: Options(
+          validateStatus: (status) => true,
+          headers: {'Accept': 'application/json'},
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        if (responseData['status'] == 200 && responseData['data'] != null) {
+          final data = responseData['data'];
+          final List<dynamic> coursesList = data['content'] ?? [];
+
+          final courses = coursesList
+              .map((course) => CourseOfTeachingStaffModel.fromJson(course))
+              .toList();
+
+          return {
+            'totalElements': data['totalElements'] ?? 0,
+            'totalPages': data['totalPages'] ?? 0,
+            'currentPage': data['number'] ?? 0,
+            'courses': courses,
+          };
+        } else {
+          throw Exception('Không có dữ liệu khóa học');
+        }
+      } else {
+        throw Exception(
+            'Lỗi khi lấy danh sách khóa học của giảng viên: ${response.statusMessage}');
       }
     } on DioException catch (e) {
       throw Exception('Lỗi kết nối: ${e.message}');
