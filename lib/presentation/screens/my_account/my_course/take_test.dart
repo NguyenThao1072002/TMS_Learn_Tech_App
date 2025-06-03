@@ -1,42 +1,22 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
-
-enum QuestionType {
-  multipleChoice,
-  checkboxes,
-  fillInBlank,
-  essay,
-}
-
-class TestQuestion {
-  final String questionText;
-  final QuestionType type;
-  final List<String> options;
-  final dynamic
-      correctAnswer; // Có thể là int, List<int>, hoặc String tùy theo loại câu hỏi
-  final int points;
-
-  TestQuestion({
-    required this.questionText,
-    required this.type,
-    required this.options,
-    required this.correctAnswer,
-    required this.points,
-  });
-}
+import 'package:tms_app/data/models/my_course/test/content_test_model.dart';
+import 'package:tms_app/domain/usecases/my_course/content_test_usecase.dart';
 
 class TakeTestScreen extends StatefulWidget {
-  final String testTitle;
-  final int questionCount;
-  final int timeInMinutes;
-  final List<TestQuestion> questions;
+  final ContentTestModel contentTest;
+  final ContentTestUseCase contentTestUseCase;
+  final Function? onNextLesson; // Callback khi chuyển đến bài học tiếp theo
+  final Function(double)?
+      onTestCompleted; // Callback khi hoàn thành bài kiểm tra
 
   const TakeTestScreen({
     Key? key,
-    required this.testTitle,
-    required this.questionCount,
-    required this.timeInMinutes,
-    required this.questions,
+    required this.contentTest,
+    required this.contentTestUseCase,
+    this.onNextLesson,
+    this.onTestCompleted,
   }) : super(key: key);
 
   @override
@@ -51,6 +31,9 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
   // Câu hỏi hiện tại
   int _currentQuestionIndex = 0;
 
+  // Controller cho PageView
+  late PageController _pageController;
+
   // Lưu câu trả lời của người dùng
   late List<dynamic> _userAnswers;
 
@@ -64,10 +47,22 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
   void initState() {
     super.initState();
     // Khởi tạo thời gian còn lại từ phút sang giây
-    _timeRemaining = widget.timeInMinutes * 60;
+    _timeRemaining = widget.contentTest.duration;
+
+    // Kiểm tra danh sách câu hỏi trước khi khởi tạo
+    if (widget.contentTest.questionList.isEmpty) {
+      _userAnswers = [];
+      _isSubmitted = true; // Đánh dấu là đã nộp bài để tránh timer
+      _timer?.cancel(); // Ngừng đếm ngược ngay lập tức
+      return;
+    }
 
     // Khởi tạo danh sách câu trả lời trống
-    _userAnswers = List<dynamic>.filled(widget.questions.length, null);
+    _userAnswers =
+        List<dynamic>.filled(widget.contentTest.questionList.length, null);
+
+    // Khởi tạo PageController với cấu hình cơ bản
+    _pageController = PageController(initialPage: 0);
 
     // Bắt đầu đếm ngược thời gian
     _startTimer();
@@ -76,11 +71,17 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _pageController.dispose();
     super.dispose();
   }
 
   // Hàm bắt đầu đếm ngược thời gian
   void _startTimer() {
+    // Không bắt đầu timer nếu danh sách câu hỏi trống
+    if (widget.contentTest.questionList.isEmpty) {
+      return;
+    }
+
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         if (_timeRemaining > 0) {
@@ -111,63 +112,51 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
 
   // Tính điểm bài thi
   void _calculateScore() {
-    double totalPoints = 0;
+    double totalPoints = widget.contentTest.questionList.length.toDouble();
     double earnedPoints = 0;
 
-    for (int i = 0; i < widget.questions.length; i++) {
-      final question = widget.questions[i];
+    for (int i = 0; i < widget.contentTest.questionList.length; i++) {
+      final question = widget.contentTest.questionList[i];
       final userAnswer = _userAnswers[i];
 
-      // Lấy điểm tối đa của câu hỏi
-      final double maxPoints = question.points.toDouble();
-      totalPoints += maxPoints;
+      if (userAnswer == null) continue;
 
       // Kiểm tra câu trả lời dựa vào loại câu hỏi
-      switch (question.type) {
-        case QuestionType.multipleChoice:
-          if (userAnswer == question.correctAnswer) {
-            earnedPoints += maxPoints;
-          }
-          break;
-
-        case QuestionType.checkboxes:
-          final correctAnswers = question.correctAnswer as List;
-          if (userAnswer != null && userAnswer is List) {
-            // Nếu tất cả các lựa chọn đều đúng
-            if (userAnswer.length == correctAnswers.length &&
-                correctAnswers.every((item) => userAnswer.contains(item))) {
-              earnedPoints += maxPoints;
+      try {
+        switch (question.type) {
+          case 'multiple-choice':
+            if (widget.contentTestUseCase
+                .checkMultipleChoiceAnswer(question, userAnswer)) {
+              earnedPoints += 1;
             }
-            // Điểm một phần nếu đúng một số
-            else if (userAnswer.isNotEmpty) {
-              int correctCount = 0;
-              for (var answer in userAnswer) {
-                if (correctAnswers.contains(answer)) {
-                  correctCount++;
-                }
-              }
-              earnedPoints +=
-                  maxPoints * (correctCount / correctAnswers.length);
+            break;
+
+          case 'checkbox':
+            if (userAnswer is String &&
+                widget.contentTestUseCase
+                    .checkCheckboxAnswer(question, userAnswer)) {
+              earnedPoints += 1;
             }
-          }
-          break;
+            break;
 
-        case QuestionType.fillInBlank:
-          final correctAnswer =
-              question.correctAnswer.toString().trim().toLowerCase();
-          if (userAnswer != null &&
-              userAnswer.toString().trim().toLowerCase() == correctAnswer) {
-            earnedPoints += maxPoints;
-          }
-          break;
+          case 'fill-in-the-blank':
+            if (userAnswer is String &&
+                widget.contentTestUseCase
+                    .checkFillInTheBlankAnswer(question, userAnswer)) {
+              earnedPoints += 1;
+            }
+            break;
 
-        case QuestionType.essay:
-          // Điểm tự luận sẽ được chấm sau
-          // Tạm tính điểm dựa vào độ dài câu trả lời
-          if (userAnswer != null && userAnswer.toString().trim().length > 20) {
-            earnedPoints += maxPoints * 0.7; // Tạm tính 70% điểm
-          }
-          break;
+          case 'essay':
+            // Câu tự luận tạm tính 70% điểm nếu có nội dung
+            if (userAnswer is String && userAnswer.trim().length > 20) {
+              earnedPoints += 0.7;
+            }
+            break;
+        }
+      } catch (e) {
+        // Xử lý ngoại lệ khi kiểm tra đáp án
+        debugPrint('Lỗi khi kiểm tra đáp án: $e');
       }
     }
 
@@ -177,80 +166,229 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
 
   // Hiển thị dialog kết quả
   void _showResultDialog() {
+    final bool isPassed = _score >= 7.0; // Điểm đạt thường là 7.0/10
+    final correctCount = _getCorrectAnswersCount();
+    final totalQuestions = widget.contentTest.questionList.length;
+    final correctPercentage = (correctCount / totalQuestions * 100).round();
+
+    // Gọi callback khi hoàn thành bài kiểm tra
+    if (widget.onTestCompleted != null) {
+      debugPrint('📊 Gọi callback onTestCompleted với điểm: $_score');
+      widget.onTestCompleted!(_score);
+    } else {
+      debugPrint('⚠️ Callback onTestCompleted chưa được cung cấp!');
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Kết quả bài kiểm tra'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+        title: Row(
           children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: _score >= 5
-                    ? Colors.green.withOpacity(0.1)
-                    : Colors.red.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  '${_score.toStringAsFixed(1)}',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: _score >= 5 ? Colors.green : Colors.red,
+            Icon(
+              isPassed ? Icons.check_circle : Icons.error,
+              color: isPassed ? Colors.green : Colors.orange,
+            ),
+            const SizedBox(width: 8),
+            Text(isPassed ? 'Hoàn thành!' : 'Chưa đạt'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Hiển thị điểm số
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: isPassed
+                      ? Colors.green.withOpacity(0.1)
+                      : Colors.orange.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '${_score.toStringAsFixed(1)}',
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                          color: isPassed ? Colors.green : Colors.orange,
+                        ),
+                      ),
+                      Text(
+                        '/10',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: isPassed ? Colors.green : Colors.orange,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _score >= 5
-                  ? 'Chúc mừng! Bạn đã vượt qua bài kiểm tra.'
-                  : 'Bạn chưa vượt qua bài kiểm tra.',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: _score >= 5 ? Colors.green : Colors.red,
+              const SizedBox(height: 16),
+
+              // Thông báo kết quả
+              Text(
+                isPassed
+                    ? 'Chúc mừng! Bạn đã vượt qua bài kiểm tra.'
+                    : 'Bạn chưa vượt qua bài kiểm tra. Hãy xem lại bài học và thử lại.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isPassed ? Colors.green : Colors.orange,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Kết quả: ${_score.toStringAsFixed(1)}/10 điểm',
-              style: const TextStyle(
-                fontSize: 16,
+              const SizedBox(height: 16),
+
+              // Thông tin chi tiết
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    _buildResultItem(
+                      icon: Icons.question_answer,
+                      label: 'Số câu đúng:',
+                      value:
+                          '$correctCount/$totalQuestions ($correctPercentage%)',
+                    ),
+                    const Divider(),
+                    _buildResultItem(
+                      icon: Icons.timer,
+                      label: 'Thời gian làm bài:',
+                      value:
+                          '${(widget.contentTest.duration - _timeRemaining) ~/ 60} phút ${(widget.contentTest.duration - _timeRemaining) % 60} giây',
+                    ),
+                    const Divider(),
+                    _buildResultItem(
+                      icon: Icons.psychology,
+                      label: 'Mức độ bài kiểm tra:',
+                      value: widget.contentTest.type.contains('essay')
+                          ? 'Tự luận'
+                          : 'Trắc nghiệm',
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Số câu đúng: ${_getCorrectAnswersCount()}/${widget.questions.length}',
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Thời gian làm bài: ${widget.timeInMinutes - (_timeRemaining / 60).floor()} phút',
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
+          // Nút trở về bài học hiện tại
           TextButton(
             onPressed: () {
               Navigator.pop(context); // Đóng dialog
               Navigator.pop(
                   context, _score); // Trở về màn hình trước với kết quả
             },
-            child: const Text('Đóng'),
+            child: const Text('Trở về bài học'),
           ),
-          ElevatedButton(
+
+          // Nút xem chi tiết kết quả
+          TextButton(
             onPressed: () {
               Navigator.pop(context); // Đóng dialog
               // Hiển thị chi tiết bài làm
               _showDetailedResults();
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.blue,
             ),
             child: const Text('Xem chi tiết'),
+          ),
+
+          // Nút chuyển đến bài học tiếp theo - chỉ hiển thị khi đạt đủ điểm
+          if (isPassed)
+            ElevatedButton(
+              onPressed: () {
+                // Gọi phương thức để chuyển đến bài học tiếp theo trước
+                _navigateToNextLesson();
+
+                // Sau đó đóng dialog và trở về màn hình trước
+                Navigator.pop(context); // Đóng dialog
+                Navigator.pop(
+                    context, _score); // Trở về màn hình trước với kết quả
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Bài học tiếp theo'),
+            ),
+        ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+    );
+  }
+
+  // Phương thức để chuyển đến bài học tiếp theo
+  void _navigateToNextLesson() {
+    debugPrint('🔄 _navigateToNextLesson được gọi');
+
+    // Thông báo cho người dùng biết đang chuyển đến bài học tiếp theo
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Đang chuyển đến bài học tiếp theo...'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    // Gọi callback để chuyển đến bài học tiếp theo nếu được cung cấp
+    if (widget.onNextLesson != null) {
+      debugPrint('✅ Gọi callback onNextLesson');
+      widget.onNextLesson!();
+    } else {
+      debugPrint('❌ Callback onNextLesson chưa được cung cấp!');
+      // Nếu không có callback, hiển thị thông báo
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Không thể chuyển đến bài học tiếp theo. Vui lòng quay lại và chọn thủ công.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
+
+  // Widget hiển thị mục thông tin trong bảng kết quả
+  Widget _buildResultItem({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Colors.grey[700]),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
+            ),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -260,39 +398,43 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
   // Đếm số câu đúng
   int _getCorrectAnswersCount() {
     int count = 0;
-    for (int i = 0; i < widget.questions.length; i++) {
-      final question = widget.questions[i];
+    for (int i = 0; i < widget.contentTest.questionList.length; i++) {
+      final question = widget.contentTest.questionList[i];
       final userAnswer = _userAnswers[i];
 
-      switch (question.type) {
-        case QuestionType.multipleChoice:
-          if (userAnswer == question.correctAnswer) {
-            count++;
-          }
-          break;
+      if (userAnswer == null) continue;
 
-        case QuestionType.checkboxes:
-          final correctAnswers = question.correctAnswer as List;
-          if (userAnswer != null && userAnswer is List) {
-            if (userAnswer.length == correctAnswers.length &&
-                correctAnswers.every((item) => userAnswer.contains(item))) {
+      try {
+        switch (question.type) {
+          case 'multiple-choice':
+            if (widget.contentTestUseCase
+                .checkMultipleChoiceAnswer(question, userAnswer)) {
               count++;
             }
-          }
-          break;
+            break;
 
-        case QuestionType.fillInBlank:
-          final correctAnswer =
-              question.correctAnswer.toString().trim().toLowerCase();
-          if (userAnswer != null &&
-              userAnswer.toString().trim().toLowerCase() == correctAnswer) {
-            count++;
-          }
-          break;
+          case 'checkbox':
+            if (userAnswer is String &&
+                widget.contentTestUseCase
+                    .checkCheckboxAnswer(question, userAnswer)) {
+              count++;
+            }
+            break;
 
-        case QuestionType.essay:
-          // Bỏ qua câu tự luận khi đếm
-          break;
+          case 'fill-in-the-blank':
+            if (userAnswer is String &&
+                widget.contentTestUseCase
+                    .checkFillInTheBlankAnswer(question, userAnswer)) {
+              count++;
+            }
+            break;
+
+          case 'essay':
+            // Bỏ qua câu tự luận khi đếm
+            break;
+        }
+      } catch (e) {
+        // Bỏ qua nếu có lỗi
       }
     }
 
@@ -302,11 +444,191 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
   // Hiển thị chi tiết kết quả
   void _showDetailedResults() {
     // Trong thực tế sẽ điều hướng đến một màn hình khác
-    // Đây chỉ là mô phỏng
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Chức năng xem chi tiết đang được phát triển'),
-        duration: Duration(seconds: 2),
+    // Hiển thị danh sách câu hỏi với câu trả lời của người dùng và đáp án đúng
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.9,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (_, scrollController) {
+            return Column(
+              children: [
+                // Tiêu đề
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const Text(
+                        'Chi tiết kết quả',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+
+                // Danh sách câu hỏi
+                Expanded(
+                  child: ListView.separated(
+                    controller: scrollController,
+                    itemCount: widget.contentTest.questionList.length,
+                    separatorBuilder: (_, __) => const Divider(),
+                    itemBuilder: (context, index) {
+                      final question = widget.contentTest.questionList[index];
+                      final userAnswer = _userAnswers[index];
+                      bool isCorrect = false;
+
+                      try {
+                        switch (question.type) {
+                          case 'multiple-choice':
+                            isCorrect = widget.contentTestUseCase
+                                .checkMultipleChoiceAnswer(
+                                    question, userAnswer);
+                            break;
+                          case 'checkbox':
+                            isCorrect = userAnswer is String &&
+                                widget.contentTestUseCase
+                                    .checkCheckboxAnswer(question, userAnswer);
+                            break;
+                          case 'fill-in-the-blank':
+                            isCorrect = userAnswer is String &&
+                                widget.contentTestUseCase
+                                    .checkFillInTheBlankAnswer(
+                                        question, userAnswer);
+                            break;
+                          case 'essay':
+                            // Tự luận không đánh giá đúng/sai
+                            isCorrect = true;
+                            break;
+                        }
+                      } catch (e) {
+                        // Xử lý ngoại lệ
+                      }
+
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: userAnswer == null
+                              ? Colors.grey
+                              : (isCorrect ? Colors.green : Colors.red),
+                          child: Icon(
+                            userAnswer == null
+                                ? Icons.question_mark
+                                : (isCorrect ? Icons.check : Icons.close),
+                            color: Colors.white,
+                          ),
+                        ),
+                        title: Text(
+                          'Câu ${index + 1}: ${question.content.length > 50 ? question.content.substring(0, 50) + '...' : question.content}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: userAnswer == null
+                            ? const Text('Không có câu trả lời',
+                                style: TextStyle(color: Colors.grey))
+                            : Text(
+                                'Câu trả lời của bạn: $userAnswer',
+                                style: TextStyle(
+                                  color: isCorrect ? Colors.green : Colors.red,
+                                ),
+                              ),
+                        trailing: Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: Colors.grey[400],
+                        ),
+                        onTap: () {
+                          // Hiển thị chi tiết câu hỏi và đáp án
+                          _showQuestionDetail(index);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Hiển thị chi tiết của một câu hỏi
+  void _showQuestionDetail(int index) {
+    final question = widget.contentTest.questionList[index];
+    final userAnswer = _userAnswers[index];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Câu ${index + 1}'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                question.content,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              const Text('Câu trả lời của bạn:'),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(userAnswer?.toString() ?? 'Không có câu trả lời'),
+              ),
+              const SizedBox(height: 16),
+              const Text('Đáp án đúng:'),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(question.result ?? 'Không có đáp án'),
+              ),
+              if (question.instruction != null &&
+                  question.instruction!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text('Hướng dẫn:'),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(question.instruction!),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Đóng'),
+          ),
+        ],
       ),
     );
   }
@@ -320,239 +642,458 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
 
   // Chuyển đến câu hỏi tiếp theo
   void _nextQuestion() {
-    if (_currentQuestionIndex < widget.questions.length - 1) {
+    debugPrint(
+        '📌 _nextQuestion được gọi, chỉ số hiện tại: $_currentQuestionIndex');
+    if (_currentQuestionIndex < widget.contentTest.questionList.length - 1) {
       setState(() {
         _currentQuestionIndex++;
       });
+
+      // Cập nhật PageView - tách ra khỏi setState để đảm bảo hoạt động đúng
+      _pageController.jumpToPage(_currentQuestionIndex);
+
+      debugPrint('📌 Đã chuyển đến câu hỏi: $_currentQuestionIndex');
+
+      // Hiển thị thông báo nếu đã hoàn thành tất cả câu hỏi
+      if (_currentQuestionIndex == widget.contentTest.questionList.length - 1) {
+        final unansweredCount = _userAnswers.where((a) => a == null).length;
+        if (unansweredCount > 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Còn $unansweredCount câu chưa được trả lời'),
+              backgroundColor: Colors.orange,
+              action: SnackBarAction(
+                label: 'Nộp bài',
+                onPressed: _submitTest,
+                textColor: Colors.white,
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:
+                  Text('Đã hoàn thành tất cả câu hỏi. Bạn có thể nộp bài.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
     }
   }
 
   // Trở về câu hỏi trước
   void _previousQuestion() {
+    debugPrint(
+        '📌 _previousQuestion được gọi, chỉ số hiện tại: $_currentQuestionIndex');
     if (_currentQuestionIndex > 0) {
       setState(() {
         _currentQuestionIndex--;
       });
+
+      // Cập nhật PageView - tách ra khỏi setState để đảm bảo hoạt động đúng
+      _pageController.jumpToPage(_currentQuestionIndex);
+
+      debugPrint('📌 Đã chuyển đến câu hỏi: $_currentQuestionIndex');
     }
   }
 
   // Lưu câu trả lời của người dùng
   void _saveAnswer(dynamic answer) {
+    debugPrint('💾 Lưu câu trả lời cho câu $_currentQuestionIndex: $answer');
+
+    // Kiểm tra nếu giá trị không thay đổi thì không cần setState
+    if (_userAnswers[_currentQuestionIndex] == answer) {
+      return;
+    }
+
     setState(() {
       _userAnswers[_currentQuestionIndex] = answer;
     });
+
+    // Hiển thị số câu đã trả lời để debug
+    int answeredCount = _userAnswers.where((a) => a != null).length;
+    debugPrint(
+        '💾 Tổng số câu đã trả lời: $answeredCount/${_userAnswers.length}');
+
+    // Đã bỏ phần hiển thị Snackbar thông báo lưu câu trả lời
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
-        title: Text(
-          widget.testTitle,
-          style: const TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        iconTheme: const IconThemeData(color: Colors.black),
-        actions: [
-          // Hiển thị thời gian còn lại
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-            decoration: BoxDecoration(
-              color: _timeRemaining < 60
-                  ? Colors.red.withOpacity(0.1)
-                  : Colors.blue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.timer,
-                  size: 18,
-                  color: _timeRemaining < 60 ? Colors.red : Colors.blue,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  _formattedTimeRemaining,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: _timeRemaining < 60 ? Colors.red : Colors.blue,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Thông tin bài thi
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Số câu hiện tại / tổng số câu
-                Text(
-                  'Câu ${_currentQuestionIndex + 1}/${widget.questions.length}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                // Thông tin đã trả lời / chưa trả lời
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        'Đã làm: ${_userAnswers.where((a) => a != null).length}',
-                        style: const TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        'Chưa làm: ${_userAnswers.where((a) => a == null).length}',
-                        style: const TextStyle(
-                          color: Colors.orange,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+    debugPrint(
+        '🔄 build được gọi, chỉ số câu hỏi hiện tại: $_currentQuestionIndex');
 
-          // Nội dung câu hỏi
-          Expanded(
-            child: Container(
-              color: Colors.white,
-              padding: const EdgeInsets.all(16),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Nội dung câu hỏi
-                    _buildQuestionContent(
-                        widget.questions[_currentQuestionIndex]),
-                  ],
+    // Kiểm tra danh sách câu hỏi trống
+    if (widget.contentTest.questionList.isEmpty) {
+      // Hiển thị thông báo nếu không có câu hỏi
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 1,
+          title: Text(
+            widget.contentTest.testTitle,
+            style: const TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          iconTheme: const IconThemeData(color: Colors.black),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Colors.orange,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Không có câu hỏi trong bài kiểm tra này',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Bài kiểm tra "${widget.contentTest.testTitle}" chưa có câu hỏi nào.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Quay lại bài học'),
+                style: ElevatedButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
               ),
-            ),
+            ],
           ),
+        ),
+      );
+    }
 
-          // Điều hướng
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, -2),
+    final currentQuestion =
+        widget.contentTest.questionList[_currentQuestionIndex];
+    debugPrint(
+        '🔄 Hiển thị câu hỏi: ${currentQuestion.content.substring(0, min(30, currentQuestion.content.length))}...');
+
+    return WillPopScope(
+      onWillPop: () async {
+        // Hiển thị xác nhận trước khi thoát nếu chưa nộp bài
+        if (!_isSubmitted) {
+          final shouldExit = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Xác nhận thoát'),
+              content: const Text(
+                'Bạn có chắc muốn thoát? Bài làm của bạn sẽ không được lưu.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Ở lại'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  child: const Text('Thoát'),
                 ),
               ],
             ),
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Nút quay lại
-                ElevatedButton.icon(
-                  onPressed:
-                      _currentQuestionIndex > 0 ? _previousQuestion : null,
-                  icon: const Icon(Icons.arrow_back),
-                  label: const Text('Trước'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[200],
-                    foregroundColor: Colors.black,
-                  ),
-                ),
-                // Nút nộp bài
-                if (_isSubmitted == false)
-                  ElevatedButton(
-                    onPressed: _submitTest,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                    ),
-                    child: const Text('Nộp bài'),
-                  ),
-                // Nút câu tiếp theo
-                ElevatedButton.icon(
-                  onPressed: _currentQuestionIndex < widget.questions.length - 1
-                      ? _nextQuestion
-                      : null,
-                  icon: const Icon(Icons.arrow_forward),
-                  label: const Text('Tiếp'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                  ),
-                ),
-              ],
+          );
+          return shouldExit ?? false;
+        }
+        return true;
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 1,
+          title: Text(
+            widget.contentTest.testTitle,
+            style: const TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
             ),
           ),
-        ],
+          iconTheme: const IconThemeData(color: Colors.black),
+          actions: [
+            // Hiển thị thời gian còn lại
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+              decoration: BoxDecoration(
+                color: _timeRemaining < 60
+                    ? Colors.red.withOpacity(0.1)
+                    : Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.timer,
+                    size: 18,
+                    color: _timeRemaining < 60 ? Colors.red : Colors.blue,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _formattedTimeRemaining,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: _timeRemaining < 60 ? Colors.red : Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // Thanh tiến trình câu hỏi
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Thông tin câu hỏi hiện tại và tiến trình
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Số câu hiện tại / tổng số câu
+                      Text(
+                        'Câu ${_currentQuestionIndex + 1}/${widget.contentTest.questionList.length}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      // Thông tin đã trả lời / chưa trả lời
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              'Đã làm: ${_userAnswers.where((a) => a != null).length}',
+                              style: const TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              'Chưa làm: ${_userAnswers.where((a) => a == null).length}',
+                              style: const TextStyle(
+                                color: Colors.orange,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  // Thanh tiến trình
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: (_currentQuestionIndex + 1) /
+                          widget.contentTest.questionList.length,
+                      backgroundColor: Colors.grey[200],
+                      color: Colors.orange,
+                      minHeight: 6,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Nội dung câu hỏi
+            Expanded(
+              child: PageView.builder(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(), // Tắt vuốt ngang
+                itemCount: widget.contentTest.questionList.length,
+                onPageChanged: (index) {
+                  debugPrint('🔄 PageView onPageChanged: $index');
+                  if (_currentQuestionIndex != index) {
+                    setState(() {
+                      _currentQuestionIndex = index;
+                    });
+                  }
+                },
+                itemBuilder: (context, index) {
+                  final question = widget.contentTest.questionList[index];
+                  return Container(
+                    key: ValueKey('question_content_$index'),
+                    color: Colors.white,
+                    padding: const EdgeInsets.all(16),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Nội dung câu hỏi
+                          _buildQuestionContent(question),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            // Điều hướng
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Nút quay lại - chỉ hiển thị icon
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed:
+                          _currentQuestionIndex > 0 ? _previousQuestion : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueGrey,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        disabledBackgroundColor: Colors.grey[200],
+                        disabledForegroundColor: Colors.grey[400],
+                      ),
+                      child: const Icon(Icons.arrow_back, size: 24),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Nút nộp bài - cải thiện giao diện
+                  Expanded(
+                    flex: 5,
+                    child: ElevatedButton(
+                      onPressed: _isSubmitted ? null : _submitTest,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green.shade600,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                        elevation: 2,
+                        shadowColor: Colors.green.withOpacity(0.5),
+                        disabledBackgroundColor: Colors.grey[300],
+                      ),
+                      child: const Text('NỘP BÀI'),
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  // Nút câu tiếp theo - chỉ hiển thị icon
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: _currentQuestionIndex <
+                              widget.contentTest.questionList.length - 1
+                          ? _nextQuestion
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        disabledBackgroundColor: Colors.grey[200],
+                        disabledForegroundColor: Colors.grey[400],
+                      ),
+                      child: const Icon(Icons.arrow_forward, size: 24),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   // Xây dựng nội dung câu hỏi
-  Widget _buildQuestionContent(TestQuestion question) {
-    // Lấy thông tin câu hỏi
-    final questionText = question.questionText;
-    final questionType = question.type;
-    final pointsValue = question.points.toDouble();
-
+  Widget _buildQuestionContent(QuestionModel question) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Tiêu đề câu hỏi với điểm
+        // Tiêu đề câu hỏi
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Số thứ tự câu hỏi
             Container(
-              width: 32,
-              height: 32,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                color: Colors.orange,
-                borderRadius: BorderRadius.circular(16),
+                color: _userAnswers[_currentQuestionIndex] != null
+                    ? Colors.green
+                    : Colors.orange,
+                borderRadius: BorderRadius.circular(18),
               ),
               child: Center(
                 child: Text(
@@ -560,6 +1101,7 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
+                    fontSize: 16,
                   ),
                 ),
               ),
@@ -571,29 +1113,82 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    questionText,
+                    question.content,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '${pointsValue.toStringAsFixed(1)} điểm',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.blue,
-                        fontWeight: FontWeight.bold,
+                  const SizedBox(height: 8),
+                  // Loại câu hỏi và độ khó
+                  Row(
+                    children: [
+                      _buildQuestionTypeChip(question.type),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _getDifficultyColor(question.level)
+                              .withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Mức độ: ${_getLevelText(question.level)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _getDifficultyColor(question.level),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (question.instruction != null &&
+                      question.instruction!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16.0),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border:
+                              Border.all(color: Colors.amber.withOpacity(0.5)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.lightbulb,
+                                  color: Colors.amber,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Hướng dẫn:',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.amber,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              question.instruction!,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -603,137 +1198,268 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
         const SizedBox(height: 24),
 
         // Phần câu trả lời tùy theo loại câu hỏi
-        switch (questionType) {
-          QuestionType.multipleChoice => _buildMultipleChoiceQuestion(question),
-          QuestionType.checkboxes => _buildCheckboxQuestion(question),
-          QuestionType.fillInBlank => _buildFillBlankQuestion(question),
-          QuestionType.essay => _buildEssayQuestion(question),
+        switch (question.type) {
+          'multiple-choice' => _buildMultipleChoiceQuestion(question),
+          'checkbox' => _buildCheckboxQuestion(question),
+          'fill-in-the-blank' => _buildFillBlankQuestion(question),
+          'essay' => _buildEssayQuestion(question),
           _ => const Text('Loại câu hỏi không hỗ trợ'),
         },
       ],
     );
   }
 
+  // Widget hiển thị loại câu hỏi
+  Widget _buildQuestionTypeChip(String type) {
+    IconData icon;
+    String label;
+    Color color;
+
+    switch (type) {
+      case 'multiple-choice':
+        icon = Icons.radio_button_checked;
+        label = 'Trắc nghiệm';
+        color = Colors.blue;
+        break;
+      case 'checkbox':
+        icon = Icons.check_box;
+        label = 'Nhiều đáp án';
+        color = Colors.purple;
+        break;
+      case 'fill-in-the-blank':
+        icon = Icons.text_fields;
+        label = 'Điền khuyết';
+        color = Colors.teal;
+        break;
+      case 'essay':
+        icon = Icons.edit_note;
+        label = 'Tự luận';
+        color = Colors.deepOrange;
+        break;
+      default:
+        icon = Icons.help;
+        label = 'Không xác định';
+        color = Colors.grey;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Lấy màu dựa trên độ khó
+  Color _getDifficultyColor(String level) {
+    switch (level) {
+      case '1':
+        return Colors.green;
+      case '2':
+        return Colors.orange;
+      case '3':
+        return Colors.red;
+      default:
+        return Colors.blue;
+    }
+  }
+
+  // Chuyển đổi cấp độ từ số sang text
+  String _getLevelText(String level) {
+    switch (level) {
+      case '1':
+        return 'Dễ';
+      case '2':
+        return 'Trung bình';
+      case '3':
+        return 'Khó';
+      default:
+        return 'Không xác định';
+    }
+  }
+
   // Xây dựng câu hỏi trắc nghiệm (chọn 1 đáp án)
-  Widget _buildMultipleChoiceQuestion(TestQuestion question) {
-    final options = question.options;
-    final currentAnswer = _userAnswers[_currentQuestionIndex];
+  Widget _buildMultipleChoiceQuestion(QuestionModel question) {
+    final options = [
+      if (question.optionA != null) question.optionA!,
+      if (question.optionB != null) question.optionB!,
+      if (question.optionC != null) question.optionC!,
+      if (question.optionD != null) question.optionD!,
+    ];
+    final optionLabels = ['A', 'B', 'C', 'D'];
+    final currentAnswer = _userAnswers[_currentQuestionIndex] as String?;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Chọn một đáp án đúng:',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 8),
-        ...options.map((option) {
-          final optionValue = option;
-          final optionText = option;
-
-          return RadioListTile<dynamic>(
-            value: optionValue,
-            groupValue: currentAnswer,
-            title: Text(optionText),
-            onChanged: _isSubmitted
-                ? null
-                : (value) {
-                    _saveAnswer(value);
-                  },
-            activeColor: Colors.orange,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-              side: BorderSide(
-                color: currentAnswer == optionValue
-                    ? Colors.orange
-                    : Colors.grey[300]!,
+        const Row(
+          children: [
+            Icon(Icons.radio_button_checked, size: 16, color: Colors.blue),
+            SizedBox(width: 8),
+            Text(
+              'Chọn một đáp án đúng:',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
               ),
             ),
-            tileColor: currentAnswer == optionValue
-                ? Colors.orange.withOpacity(0.1)
-                : Colors.grey[50],
-            dense: true,
+          ],
+        ),
+        const SizedBox(height: 16),
+        ...List.generate(options.length, (index) {
+          final optionValue = optionLabels[index];
+          final optionText = options[index];
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: RadioListTile<String>(
+              value: optionValue,
+              groupValue: currentAnswer,
+              title: Text('$optionValue. $optionText'),
+              onChanged: _isSubmitted
+                  ? null
+                  : (value) {
+                      _saveAnswer(value);
+                    },
+              activeColor: Colors.orange,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(
+                  color: currentAnswer == optionValue
+                      ? Colors.orange
+                      : Colors.grey[300]!,
+                  width: currentAnswer == optionValue ? 2 : 1,
+                ),
+              ),
+              tileColor: currentAnswer == optionValue
+                  ? Colors.orange.withOpacity(0.1)
+                  : Colors.grey[50],
+              dense: false,
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
 
   // Xây dựng câu hỏi checkbox (chọn nhiều đáp án)
-  Widget _buildCheckboxQuestion(TestQuestion question) {
-    final options = question.options;
-    final currentAnswer = _userAnswers[_currentQuestionIndex] ?? [];
+  Widget _buildCheckboxQuestion(QuestionModel question) {
+    final options = [
+      if (question.optionA != null) question.optionA!,
+      if (question.optionB != null) question.optionB!,
+      if (question.optionC != null) question.optionC!,
+      if (question.optionD != null) question.optionD!,
+    ];
+    final optionLabels = ['1', '2', '3', '4'];
+    final currentAnswer = _userAnswers[_currentQuestionIndex] as String? ?? '';
+    final selectedOptions =
+        currentAnswer.split('-').where((e) => e.isNotEmpty).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Chọn một hoặc nhiều đáp án đúng:',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 8),
-        ...options.map((option) {
-          final optionValue = option;
-          final optionText = option;
-          final isSelected =
-              currentAnswer is List && currentAnswer.contains(optionValue);
-
-          return CheckboxListTile(
-            value: isSelected,
-            title: Text(optionText),
-            onChanged: _isSubmitted
-                ? null
-                : (bool? checked) {
-                    if (checked == true) {
-                      final newAnswer = List<dynamic>.from(currentAnswer);
-                      newAnswer.add(optionValue);
-                      _saveAnswer(newAnswer);
-                    } else {
-                      final newAnswer = List<dynamic>.from(currentAnswer);
-                      newAnswer.remove(optionValue);
-                      _saveAnswer(newAnswer);
-                    }
-                  },
-            activeColor: Colors.orange,
-            checkColor: Colors.white,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-              side: BorderSide(
-                color: isSelected ? Colors.orange : Colors.grey[300]!,
+        const Row(
+          children: [
+            Icon(Icons.check_box, size: 16, color: Colors.purple),
+            SizedBox(width: 8),
+            Text(
+              'Chọn một hoặc nhiều đáp án đúng:',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
               ),
             ),
-            tileColor:
-                isSelected ? Colors.orange.withOpacity(0.1) : Colors.grey[50],
-            dense: true,
+          ],
+        ),
+        const SizedBox(height: 16),
+        ...List.generate(options.length, (index) {
+          final optionValue = optionLabels[index];
+          final optionText = options[index];
+          final isSelected = selectedOptions.contains(optionValue);
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: CheckboxListTile(
+              value: isSelected,
+              title: Text('$optionValue. $optionText'),
+              onChanged: _isSubmitted
+                  ? null
+                  : (bool? checked) {
+                      List<String> newSelectedOptions =
+                          List.from(selectedOptions);
+
+                      if (checked == true) {
+                        if (!newSelectedOptions.contains(optionValue)) {
+                          newSelectedOptions.add(optionValue);
+                        }
+                      } else {
+                        newSelectedOptions.remove(optionValue);
+                      }
+
+                      // Sắp xếp các lựa chọn theo thứ tự và tạo chuỗi định dạng "1-2-3-4"
+                      newSelectedOptions.sort();
+                      _saveAnswer(newSelectedOptions.join('-'));
+                    },
+              activeColor: Colors.purple,
+              checkColor: Colors.white,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(
+                  color: isSelected ? Colors.purple : Colors.grey[300]!,
+                  width: isSelected ? 2 : 1,
+                ),
+              ),
+              tileColor:
+                  isSelected ? Colors.purple.withOpacity(0.1) : Colors.grey[50],
+              dense: false,
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
 
   // Xây dựng câu hỏi điền khuyết
-  Widget _buildFillBlankQuestion(TestQuestion question) {
+  Widget _buildFillBlankQuestion(QuestionModel question) {
     final currentAnswer = _userAnswers[_currentQuestionIndex] as String? ?? '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Điền vào ô trống:',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
+        const Row(
+          children: [
+            Icon(Icons.text_fields, size: 16, color: Colors.teal),
+            SizedBox(width: 8),
+            Text(
+              'Điền vào ô trống:',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         TextField(
@@ -746,34 +1472,51 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.orange),
+              borderSide: const BorderSide(color: Colors.teal, width: 2),
             ),
             filled: true,
             fillColor: Colors.grey[50],
+            prefixIcon: const Icon(Icons.edit, color: Colors.teal),
           ),
           maxLines: 1,
           enabled: !_isSubmitted,
           onChanged: (value) {
             _saveAnswer(value);
           },
+          textInputAction: TextInputAction.done,
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'Lưu ý: Nhập chính xác cú pháp, chú ý các ký tự viết hoa/thường và dấu cách.',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey,
+            fontStyle: FontStyle.italic,
+          ),
         ),
       ],
     );
   }
 
   // Xây dựng câu hỏi tự luận
-  Widget _buildEssayQuestion(TestQuestion question) {
+  Widget _buildEssayQuestion(QuestionModel question) {
     final currentAnswer = _userAnswers[_currentQuestionIndex] as String? ?? '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Trả lời câu hỏi:',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
+        const Row(
+          children: [
+            Icon(Icons.edit_note, size: 16, color: Colors.deepOrange),
+            SizedBox(width: 8),
+            Text(
+              'Trả lời câu hỏi:',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         TextField(
@@ -786,7 +1529,7 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.orange),
+              borderSide: const BorderSide(color: Colors.deepOrange, width: 2),
             ),
             filled: true,
             fillColor: Colors.grey[50],
@@ -797,7 +1540,29 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
           onChanged: (value) {
             _saveAnswer(value);
           },
+          textInputAction: TextInputAction.newline,
         ),
+        const SizedBox(height: 12),
+        const Text(
+          'Gợi ý: Viết chi tiết, đầy đủ và cung cấp ví dụ minh họa nếu có thể.',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+        if (currentAnswer.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Text(
+              'Độ dài: ${currentAnswer.length} ký tự',
+              style: TextStyle(
+                fontSize: 12,
+                color: currentAnswer.length < 20 ? Colors.red : Colors.green,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
       ],
     );
   }

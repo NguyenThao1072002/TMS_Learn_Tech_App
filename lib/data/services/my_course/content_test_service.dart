@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:tms_app/data/models/my_course/test/content_test_model.dart';
+import 'package:tms_app/core/utils/constants.dart';
 
 class ContentTestService {
   final Dio _dio;
+  final String baseUrl = "${Constants.BASE_URL}/api";
 
   ContentTestService(this._dio);
 
@@ -11,7 +13,16 @@ class ContentTestService {
   /// [testId] là ID của bài kiểm tra cần lấy
   Future<ContentTestResponse> getContentTest(int testId) async {
     try {
-      final response = await _dio.get('/api/questions/test-mobile/$testId');
+      final endpoint = '$baseUrl/questions/test-mobile/$testId';
+      final response = await _dio.get(
+        endpoint,
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache',
+          },
+        ),
+      );
 
       return ContentTestResponse.fromJson(response.data);
     } on DioException catch (e) {

@@ -17,6 +17,8 @@ import 'package:tms_app/presentation/widgets/my_course/test_results_dialog.dart'
 import 'package:tms_app/presentation/widgets/my_course/lesson_content_widget.dart';
 import 'package:tms_app/presentation/controller/my_course/my_course_controller.dart';
 import 'package:provider/provider.dart';
+import 'package:tms_app/domain/usecases/my_course/content_test_usecase.dart';
+import 'package:tms_app/data/models/my_course/test/content_test_model.dart';
 
 // Enum for lesson types
 enum LessonType { video, test }
@@ -71,6 +73,7 @@ class Lesson {
   final String? videoUrl; // URL video từ API
   final String? documentUrl; // URL tài liệu từ API
   final String? testType; // Loại bài kiểm tra (Test Bài/Test Chương)
+  final int? testId; // ID bài kiểm tra (nếu có)
 
   Lesson({
     required this.id,
@@ -82,6 +85,7 @@ class Lesson {
     this.videoUrl,
     this.documentUrl,
     this.testType,
+    this.testId,
   });
 }
 
@@ -473,6 +477,9 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
           testType: apiLesson.lessonTest != null
               ? apiLesson.lessonTest!.testType
               : null,
+          testId: apiLesson.lessonTest != null
+              ? apiLesson.lessonTest!.testId
+              : null,
         );
 
         lessons.add(lesson);
@@ -491,6 +498,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
           videoUrl: null, // Bài kiểm tra chương không có video
           documentUrl: null, // Bài kiểm tra chương không có tài liệu
           testType: chapter.chapterTest!.testType,
+          testId: chapter.chapterTest!.testId,
         );
 
         lessons.add(chapterTest);
@@ -535,6 +543,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
             videoUrl: "https://example.com/video1.mp4",
             documentUrl: "https://example.com/document1.pdf",
             testType: "Test Bài",
+            testId: 1,
           ),
           Lesson(
             id: "1_2",
@@ -545,6 +554,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
             videoUrl: "https://example.com/video2.mp4",
             documentUrl: "https://example.com/document2.docx",
             testType: "Test Bài",
+            testId: 2,
           ),
           Lesson(
             id: "1_test",
@@ -556,6 +566,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
             videoUrl: "https://example.com/test_video.mp4",
             documentUrl: "https://example.com/test_document.pdf",
             testType: "Test Bài",
+            testId: 3,
           ),
         ],
       ),
@@ -572,6 +583,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
             videoUrl: "https://example.com/video3.mp4",
             documentUrl: "https://example.com/document3.pptx",
             testType: "Test Bài",
+            testId: 4,
           ),
           Lesson(
             id: "2_test",
@@ -583,6 +595,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
             videoUrl: "https://example.com/test_video2.mp4",
             documentUrl: "https://example.com/test_document2.docx",
             testType: "Test Chương",
+            testId: 5,
           ),
         ],
       ),
@@ -2080,62 +2093,83 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
   Widget _buildTestScreen() {
     Lesson currentLesson = _getCurrentLesson();
 
-    // Tạo danh sách câu hỏi mẫu cho bài kiểm tra
-    final List<TestQuestion> sampleQuestions = [
-      TestQuestion(
-        questionText: 'Đâu là định nghĩa chính xác nhất về Flutter?',
-        type: QuestionType.multipleChoice,
-        options: [
-          'Một ngôn ngữ lập trình',
-          'Một framework UI đa nền tảng',
-          'Một hệ điều hành di động',
-          'Một công cụ quản lý cơ sở dữ liệu'
-        ],
-        correctAnswer: 'Một framework UI đa nền tảng',
-        points: 1,
-      ),
-      TestQuestion(
-        questionText: 'Các widget nào sau đây thuộc nhóm Stateless Widget?',
-        type: QuestionType.checkboxes,
-        options: ['Text', 'Image', 'StatefulBuilder', 'FutureBuilder', 'Icon'],
-        correctAnswer: ['Text', 'Image', 'Icon'],
-        points: 2,
-      ),
-      TestQuestion(
-        questionText:
-            'Thư viện quản lý trạng thái phổ biến trong Flutter là gì?',
-        type: QuestionType.fillInBlank,
-        options: [],
-        correctAnswer: 'provider',
-        points: 1,
-      ),
-      TestQuestion(
-        questionText:
-            'Giải thích cách hoạt động của widget BuildContext trong Flutter',
-        type: QuestionType.essay,
-        options: [],
-        correctAnswer: '',
-        points: 3,
-      ),
-      TestQuestion(
-        questionText: 'Dart là ngôn ngữ lập trình kiểu gì?',
-        type: QuestionType.multipleChoice,
-        options: [
-          'Ngôn ngữ lập trình hướng đối tượng',
-          'Ngôn ngữ lập trình hàm',
-          'Ngôn ngữ kịch bản',
-          'Tất cả các đáp án trên'
-        ],
-        correctAnswer: 'Ngôn ngữ lập trình hướng đối tượng',
-        points: 1,
-      ),
-    ];
+    // Đang tải dữ liệu
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Colors.orange,
+        ),
+      );
+    }
 
-    return TakeTestScreen(
-      testTitle: currentLesson.title,
-      questionCount: currentLesson.questionCount ?? 5,
-      timeInMinutes: 15, // Thời gian mẫu
-      questions: sampleQuestions,
+    // Lấy ID bài kiểm tra từ ID bài học
+    int testId = currentLesson.testId ?? 0;
+
+    // Kiểm tra nếu không có bài kiểm tra
+    if (testId == 0) {
+      return const Center(
+        child: Text('Bài học này không có bài kiểm tra'),
+      );
+    }
+
+    // Khởi tạo ContentTestUseCase từ DI
+    final contentTestUseCase = sl<ContentTestUseCase>();
+
+    // Lấy dữ liệu bài kiểm tra từ API
+    return FutureBuilder<ContentTestModel>(
+      future: contentTestUseCase.getContentTest(testId),
+      builder: (context, snapshot) {
+        // Đang tải
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(
+              color: Colors.orange,
+            ),
+          );
+        }
+
+        // Lỗi
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.red,
+                  size: 48,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Không thể tải bài kiểm tra: ${snapshot.error}',
+                  style: const TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {});
+                  },
+                  child: const Text('Thử lại'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Thành công
+        if (snapshot.hasData) {
+          return TakeTestScreen(
+            contentTest: snapshot.data!,
+            contentTestUseCase: contentTestUseCase,
+          );
+        }
+
+        // Mặc định
+        return const Center(
+          child: Text('Không có dữ liệu bài kiểm tra'),
+        );
+      },
     );
   }
 
@@ -3218,82 +3252,120 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
 
   // Bắt đầu bài kiểm tra
   void _startTest(Lesson lesson) {
-    // Tạo danh sách câu hỏi mẫu cho bài kiểm tra
-    final List<TestQuestion> sampleQuestions = [
-      TestQuestion(
-        questionText: 'Đâu là định nghĩa chính xác nhất về Flutter?',
-        type: QuestionType.multipleChoice,
-        options: [
-          'Một ngôn ngữ lập trình',
-          'Một framework UI đa nền tảng',
-          'Một hệ điều hành di động',
-          'Một công cụ quản lý cơ sở dữ liệu'
-        ],
-        correctAnswer: 'Một framework UI đa nền tảng',
-        points: 1,
-      ),
-      TestQuestion(
-        questionText: 'Các widget nào sau đây thuộc nhóm Stateless Widget?',
-        type: QuestionType.checkboxes,
-        options: ['Text', 'Image', 'StatefulBuilder', 'FutureBuilder', 'Icon'],
-        correctAnswer: ['Text', 'Image', 'Icon'],
-        points: 2,
-      ),
-      TestQuestion(
-        questionText:
-            'Thư viện quản lý trạng thái phổ biến trong Flutter là gì?',
-        type: QuestionType.fillInBlank,
-        options: [],
-        correctAnswer: 'provider',
-        points: 1,
-      ),
-      TestQuestion(
-        questionText:
-            'Giải thích cách hoạt động của widget BuildContext trong Flutter',
-        type: QuestionType.essay,
-        options: [],
-        correctAnswer: '',
-        points: 3,
-      ),
-      TestQuestion(
-        questionText: 'Dart là ngôn ngữ lập trình kiểu gì?',
-        type: QuestionType.multipleChoice,
-        options: [
-          'Ngôn ngữ lập trình hướng đối tượng',
-          'Ngôn ngữ lập trình hàm',
-          'Ngôn ngữ kịch bản',
-          'Tất cả các đáp án trên'
-        ],
-        correctAnswer: 'Ngôn ngữ lập trình hướng đối tượng',
-        points: 1,
-      ),
-    ];
+    // Lấy ID bài kiểm tra từ thuộc tính testId
+    int testId = lesson.testId ?? 0;
 
-    // Chuyển đến màn hình làm bài kiểm tra
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TakeTestScreen(
-          testTitle: lesson.title,
-          questionCount: lesson.questionCount ?? 5,
-          timeInMinutes: 15, // Thời gian mẫu
-          questions: sampleQuestions,
+    // Kiểm tra nếu không có bài kiểm tra
+    if (testId == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bài học này không có bài kiểm tra'),
+          backgroundColor: Colors.orange,
         ),
-      ),
-    ).then((result) {
-      // Xử lý kết quả khi quay lại từ màn hình kiểm tra
-      if (result != null && result is double) {
-        // Set test result in controller
-        _controller.setTestResult(result);
+      );
+      return;
+    }
 
-        // Cập nhật trạng thái hoàn thành nếu đạt điểm
-        if (_controller.isTestPassed()) {
-          _controller.onLessonCompleted(lesson.id);
-        }
+    // Khởi tạo ContentTestUseCase từ DI
+    final contentTestUseCase = sl<ContentTestUseCase>();
 
-        // Hiển thị kết quả
-        _showTestResults(lesson);
+    // Hiển thị trạng thái đang tải
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Log chi tiết để debug
+    debugPrint('🧪 Bắt đầu lấy bài kiểm tra:');
+    debugPrint('🧪 - ID bài kiểm tra từ API: $testId');
+    debugPrint('🧪 - ID bài học tương ứng: ${lesson.id}');
+    debugPrint('🧪 - Tiêu đề bài học: ${lesson.title}');
+    debugPrint('🧪 - Loại bài kiểm tra: ${lesson.testType}');
+
+    // Lấy dữ liệu bài kiểm tra từ API
+    contentTestUseCase.getContentTest(testId).then((contentTest) {
+      // Tắt trạng thái đang tải
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Log kết quả API để debug
+      debugPrint('✅ Đã nhận phản hồi API bài kiểm tra:');
+      debugPrint('✅ - Tiêu đề: ${contentTest.testTitle}');
+      debugPrint('✅ - Số câu hỏi: ${contentTest.questionList.length}');
+
+      // Kiểm tra xem questionList có trống không
+      if (contentTest.questionList.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Bài kiểm tra không có câu hỏi nào'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        return; // Không chuyển đến màn hình kiểm tra nếu không có câu hỏi
       }
+
+      // Chuyển đến màn hình làm bài kiểm tra
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) {
+            return TakeTestScreen(
+              contentTest: contentTest,
+              contentTestUseCase: contentTestUseCase,
+              onNextLesson: () {
+                // Chuyển đến bài học tiếp theo
+                if (_controller.canNavigateToNextLesson()) {
+                  _controller.navigateToNextLesson();
+                  // Thông báo chuyển thành công
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Đã chuyển đến bài học tiếp theo'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } else {
+                  // Thông báo không thể chuyển
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Không thể chuyển đến bài học tiếp theo'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+              },
+              onTestCompleted: (double score) {
+                // Cập nhật kết quả và đánh dấu hoàn thành nếu đạt điểm
+                _controller.setTestResult(score);
+                if (_controller.isTestPassed()) {
+                  _controller.onLessonCompleted(lesson.id);
+                }
+              },
+            );
+          },
+        ),
+      ).then((result) {
+        // Xử lý kết quả khi quay lại từ màn hình kiểm tra
+        if (result != null && result is double) {
+          // Hiển thị kết quả
+          _showTestResults(lesson);
+        }
+      });
+    }).catchError((error) {
+      // Tắt trạng thái đang tải và hiển thị thông báo lỗi
+      setState(() {
+        _isLoading = false;
+      });
+
+      debugPrint('❌ Lỗi khi lấy bài kiểm tra: $error');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Không thể tải bài kiểm tra: $error'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     });
   }
 

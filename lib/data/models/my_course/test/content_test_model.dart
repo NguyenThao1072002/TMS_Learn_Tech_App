@@ -8,7 +8,7 @@ class ContentTestModel extends Equatable {
   final int testId;
   final String testTitle;
   final String? lessonTitle;
-  final String description;
+  final String? description;
   final int totalQuestion;
   final String
       type; // Các loại câu hỏi trong bài kiểm tra (multiple-choice, essay, fill-in-the-blank, checkbox)
@@ -23,7 +23,7 @@ class ContentTestModel extends Equatable {
     required this.testId,
     required this.testTitle,
     this.lessonTitle,
-    required this.description,
+    this.description,
     required this.totalQuestion,
     required this.type,
     required this.duration,
@@ -40,7 +40,7 @@ class ContentTestModel extends Equatable {
       testId: json['testId'] as int,
       testTitle: json['testTitle'] as String,
       lessonTitle: json['lessonTitle'] as String?,
-      description: json['description'] as String,
+      description: json['description'] as String?,
       totalQuestion: json['totalQuestion'] as int,
       type: json['type'] as String,
       duration: json['duration'] as int,
@@ -99,7 +99,7 @@ class QuestionModel extends Equatable {
   final String? optionD; // Lựa chọn D (null với essay)
   final String? result; // Kết quả hiển thị
   final String? resultCheck; // Kết quả để kiểm tra đáp án
-  final String instruction; // Hướng dẫn
+  final String? instruction; // Hướng dẫn có thể null
   final String level; // Độ khó (1: dễ, 2: trung bình, 3: khó)
   final String
       type; // Loại câu hỏi (multiple-choice, essay, fill-in-the-blank, checkbox)
@@ -116,7 +116,7 @@ class QuestionModel extends Equatable {
     this.optionD,
     this.result,
     this.resultCheck,
-    required this.instruction,
+    this.instruction, // Không bắt buộc phải có giá trị
     required this.level,
     required this.type,
     required this.topic,
@@ -135,7 +135,7 @@ class QuestionModel extends Equatable {
       optionD: json['optionD'] as String?,
       result: json['result'] as String?,
       resultCheck: json['resultCheck'] as String?,
-      instruction: json['instruction'] as String,
+      instruction: json['instruction'] as String?, // Xử lý giá trị có thể null
       level: json['level'] as String,
       type: json['type'] as String,
       topic: json['topic'] as String,

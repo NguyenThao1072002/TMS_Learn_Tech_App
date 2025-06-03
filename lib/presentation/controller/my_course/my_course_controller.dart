@@ -129,6 +129,9 @@ class MyCourseController with ChangeNotifier {
           testType: apiLesson.lessonTest != null
               ? apiLesson.lessonTest!.testType
               : null,
+          testId: apiLesson.lessonTest != null
+              ? apiLesson.lessonTest!.testId
+              : null,
         );
 
         lessons.add(lesson);
@@ -146,6 +149,7 @@ class MyCourseController with ChangeNotifier {
           videoUrl: null,
           documentUrl: null,
           testType: chapter.chapterTest!.testType,
+          testId: chapter.chapterTest!.testId,
         );
 
         lessons.add(chapterTest);
