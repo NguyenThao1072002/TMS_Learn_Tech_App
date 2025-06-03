@@ -17,6 +17,7 @@ import 'package:tms_app/core/auth/auth_manager.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tms_app/presentation/controller/my_course/my_course_controller.dart';
 import 'package:tms_app/core/widgets/app_connectivity_wrapper.dart';
+import 'package:tms_app/presentation/controller/teaching_staff_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -87,6 +88,8 @@ class MyApp extends StatelessWidget {
           create: (_) => sl<UnifiedSearchController>(),
         ),
         ChangeNotifierProvider(create: (_) => MyCourseController()),
+        // Thêm TeachingStaffController vào providers
+        ChangeNotifierProvider(create: (_) => TeachingStaffController()),
         // Thêm các provider khác nếu cần
       ],
       child: AppConnectivityWrapper(

@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:tms_app/data/models/teaching_staff/teaching_staff_model.dart';
+import 'package:tms_app/presentation/controller/teaching_staff_controller.dart';
+import 'package:tms_app/core/theme/app_styles.dart';
+import 'package:get_it/get_it.dart';
+import 'package:tms_app/domain/usecases/teaching_staff/teaching_staff_usecase.dart';
 
 class TeachingStaffScreen extends StatefulWidget {
   const TeachingStaffScreen({Key? key}) : super(key: key);
@@ -8,141 +14,66 @@ class TeachingStaffScreen extends StatefulWidget {
 }
 
 class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
-  // Filter options
-  final List<String> _categories = [
-    'Tất cả',
-    'Web Development',
-    'Mobile Development',
-    'AI & Machine Learning',
-    'Data Science',
-    'UI/UX Design',
+  late TeachingStaffController _controller;
+  final TextEditingController _searchController = TextEditingController();
+
+  // Danh sách các danh mục
+  List<Map<String, dynamic>> _categories = [
+    {'id': null, 'name': 'Tất cả'},
   ];
-
-  String _selectedCategory = 'Tất cả';
-  TextEditingController _searchController = TextEditingController();
-
-  // Mock data for instructors
-  final List<Map<String, dynamic>> _instructors = [
-    {
-      'name': 'Nguyễn Văn A',
-      'role': 'Giảng viên AI & Machine Learning',
-      'image': 'https://randomuser.me/api/portraits/men/32.jpg',
-      'courses': 12,
-      'students': 1450,
-      'rating': 4.8,
-      'category': 'AI & Machine Learning',
-      'expertise': ['Machine Learning', 'Deep Learning', 'Computer Vision'],
-      'bio':
-          'Tiến sĩ về AI tại Đại học Stanford với hơn 10 năm kinh nghiệm giảng dạy và nghiên cứu trong lĩnh vực Machine Learning và AI.',
-    },
-    {
-      'name': 'Trần Thị B',
-      'role': 'Giảng viên Web Development',
-      'image': 'https://randomuser.me/api/portraits/women/44.jpg',
-      'courses': 8,
-      'students': 1280,
-      'rating': 4.9,
-      'category': 'Web Development',
-      'expertise': ['ReactJS', 'NodeJS', 'JavaScript', 'TypeScript'],
-      'bio':
-          'Chuyên gia Frontend với hơn 8 năm kinh nghiệm phát triển web. Từng làm việc tại Google và các công ty công nghệ hàng đầu.',
-    },
-    {
-      'name': 'Lê Văn C',
-      'role': 'Giảng viên Mobile Development',
-      'image': 'https://randomuser.me/api/portraits/men/46.jpg',
-      'courses': 6,
-      'students': 950,
-      'rating': 4.7,
-      'category': 'Mobile Development',
-      'expertise': ['Flutter', 'React Native', 'iOS', 'Android'],
-      'bio':
-          'Phát triển hơn 20 ứng dụng mobile với hàng triệu lượt tải. Chuyên gia về Flutter và React Native.',
-    },
-    {
-      'name': 'Phạm Thị D',
-      'role': 'Giảng viên Data Science',
-      'image': 'https://randomuser.me/api/portraits/women/33.jpg',
-      'courses': 5,
-      'students': 820,
-      'rating': 4.6,
-      'category': 'Data Science',
-      'expertise': ['Python', 'SQL', 'Data Analysis', 'Visualization'],
-      'bio':
-          'Chuyên gia phân tích dữ liệu với kinh nghiệm làm việc tại các tổ chức tài chính và nghiên cứu hàng đầu.',
-    },
-    {
-      'name': 'Hoàng Văn E',
-      'role': 'Giảng viên UI/UX Design',
-      'image': 'https://randomuser.me/api/portraits/men/36.jpg',
-      'courses': 7,
-      'students': 1100,
-      'rating': 4.9,
-      'category': 'UI/UX Design',
-      'expertise': ['Figma', 'Adobe XD', 'User Research', 'Prototyping'],
-      'bio':
-          'Nhà thiết kế UX với hơn 12 năm kinh nghiệm. Từng thiết kế cho các thương hiệu lớn và startups thành công.',
-    },
-    {
-      'name': 'Nguyễn Thị F',
-      'role': 'Giảng viên Web Development',
-      'image': 'https://randomuser.me/api/portraits/women/22.jpg',
-      'courses': 9,
-      'students': 1300,
-      'rating': 4.8,
-      'category': 'Web Development',
-      'expertise': ['Angular', 'Vue.js', 'PHP', 'Laravel'],
-      'bio':
-          'Full-stack developer với kinh nghiệm xây dựng các ứng dụng web quy mô lớn và hiệu suất cao.',
-    },
-  ];
-
-  List<Map<String, dynamic>> _filteredInstructors = [];
+  dynamic _selectedCategoryId;
+  bool _initialized = false;
 
   @override
   void initState() {
     super.initState();
-    _filteredInstructors = List.from(_instructors);
-    _searchController.addListener(_filterInstructors);
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Lấy controller từ Provider
+    _controller = Provider.of<TeachingStaffController>(context);
+
+    // Đảm bảo chỉ gọi loadData một lần sau khi widget đã hoàn toàn khởi tạo
+    if (!_initialized) {
+      _loadData();
+      _initialized = true;
+    }
+  }
+
+  void _loadData() async {
+    try {
+      // Lấy danh sách giảng viên
+      await _controller.getTeachingStaffs(refresh: true);
+
+      // Cập nhật UI
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      // Lỗi đã được xử lý trong controller
+      print('Lỗi khi tải dữ liệu giảng viên: $e');
+    }
+  }
+
+  void _onSearchChanged() {
+    _controller.setSearchKeyword(_searchController.text);
+  }
+
+  void _selectCategory(dynamic categoryId) {
+    setState(() {
+      _selectedCategoryId = categoryId;
+      _controller.filterByCategory(categoryId);
+    });
   }
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _filterInstructors() {
-    setState(() {
-      final String query = _searchController.text.toLowerCase();
-      _filteredInstructors = _instructors.where((instructor) {
-        final bool matchesCategory = _selectedCategory == 'Tất cả' ||
-            instructor['category'] == _selectedCategory;
-
-        final bool matchesSearch =
-            instructor['name'].toLowerCase().contains(query) ||
-                instructor['role'].toLowerCase().contains(query) ||
-                instructor['bio'].toLowerCase().contains(query);
-
-        return matchesCategory && matchesSearch;
-      }).toList();
-    });
-  }
-
-  void _selectCategory(String category) {
-    setState(() {
-      _selectedCategory = category;
-      _filterInstructors();
-    });
-  }
-
-  void _showInstructorDetails(Map<String, dynamic> instructor) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _buildInstructorDetailsSheet(instructor),
-    );
   }
 
   @override
@@ -198,14 +129,14 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               itemCount: _categories.length,
               itemBuilder: (context, index) {
-                final String category = _categories[index];
-                final bool isSelected = category == _selectedCategory;
+                final category = _categories[index];
+                final bool isSelected = category['id'] == _selectedCategoryId;
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: ChoiceChip(
                     label: Text(
-                      category,
+                      category['name'],
                       style: TextStyle(
                         color: isSelected ? Colors.white : Colors.black87,
                         fontWeight:
@@ -215,40 +146,16 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                     selected: isSelected,
                     selectedColor: const Color(0xFF3498DB),
                     backgroundColor: Colors.grey[100],
-                    onSelected: (_) => _selectCategory(category),
+                    onSelected: (_) => _selectCategory(category['id']),
                   ),
                 );
               },
             ),
           ),
 
-          // Instructors Grid
+          // Instructors Grid - với trạng thái loading và error handling
           Expanded(
-            child: _filteredInstructors.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Không tìm thấy giảng viên phù hợp',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  )
-                : GridView.builder(
-                    padding: const EdgeInsets.all(16),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.60,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                    ),
-                    itemCount: _filteredInstructors.length,
-                    itemBuilder: (context, index) {
-                      final instructor = _filteredInstructors[index];
-                      return _buildInstructorCard(instructor);
-                    },
-                  ),
+            child: _buildTeachingStaffGrid(),
           ),
         ],
       ),
@@ -265,9 +172,83 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
   }
 
   // Helper methods for UI components
-  Widget _buildInstructorCard(Map<String, dynamic> instructor) {
+  Widget _buildTeachingStaffGrid() {
+    if (_controller.isLoading && _controller.teachingStaffs.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_controller.error != null && _controller.teachingStaffs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Không thể tải dữ liệu: ${_controller.error}',
+              style: AppStyles.errorText,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadData,
+              child: const Text('Thử lại'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_controller.teachingStaffs.isEmpty) {
+      return const Center(
+        child: Text(
+          'Không tìm thấy giảng viên phù hợp',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.grey,
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        await _controller.getTeachingStaffs(refresh: true);
+      },
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (ScrollNotification scrollInfo) {
+          if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent &&
+              !_controller.isLoading &&
+              _controller.hasMoreData) {
+            _controller.getTeachingStaffs();
+            return true;
+          }
+          return false;
+        },
+        child: GridView.builder(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.60,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          itemCount: _controller.teachingStaffs.length +
+              (_controller.hasMoreData ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index == _controller.teachingStaffs.length) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final staff = _controller.teachingStaffs[index];
+            return _buildInstructorCard(staff);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInstructorCard(TeachingStaff staff) {
     return GestureDetector(
-      onTap: () => _showInstructorDetails(instructor),
+      onTap: () => _showInstructorDetails(staff),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -304,8 +285,18 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                   ),
                 ),
                 child: Image.network(
-                  instructor['image'],
+                  staff.avatarUrl,
                   fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey[200],
+                      child: const Icon(
+                        Icons.person,
+                        size: 50,
+                        color: Colors.grey,
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -318,7 +309,7 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      instructor['name'],
+                      staff.fullname,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -329,7 +320,7 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      instructor['role'],
+                      staff.categoryName,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -351,7 +342,7 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                             ),
                             const SizedBox(width: 2),
                             Text(
-                              instructor['rating'].toString(),
+                              staff.averageRating.toString(),
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -369,7 +360,7 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                             ),
                             const SizedBox(width: 2),
                             Text(
-                              '${instructor['courses']} khóa',
+                              '${staff.courseCount} khóa',
                               style: const TextStyle(
                                 fontSize: 12,
                               ),
@@ -388,7 +379,16 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
     );
   }
 
-  Widget _buildInstructorDetailsSheet(Map<String, dynamic> instructor) {
+  void _showInstructorDetails(TeachingStaff staff) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildInstructorDetailsSheet(staff),
+    );
+  }
+
+  Widget _buildInstructorDetailsSheet(TeachingStaff staff) {
     return DraggableScrollableSheet(
       initialChildSize: 0.9,
       maxChildSize: 0.95,
@@ -480,8 +480,18 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(60),
                           child: Image.network(
-                            instructor['image'],
+                            staff.avatarUrl,
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[300],
+                                child: const Icon(
+                                  Icons.person,
+                                  size: 60,
+                                  color: Colors.white,
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ),
@@ -492,7 +502,7 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                         child: Column(
                           children: [
                             Text(
-                              instructor['name'],
+                              staff.fullname,
                               style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
@@ -501,7 +511,7 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              instructor['role'],
+                              staff.categoryName,
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Colors.white.withOpacity(0.9),
@@ -524,17 +534,17 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                     _buildStatItem(
                       icon: Icons.library_books_outlined,
                       label: 'Khóa học',
-                      value: instructor['courses'].toString(),
+                      value: staff.courseCount.toString(),
                     ),
                     _buildStatItem(
                       icon: Icons.people_outline,
                       label: 'Học viên',
-                      value: instructor['students'].toString(),
+                      value: staff.totalStudents.toString(),
                     ),
                     _buildStatItem(
                       icon: Icons.star_outline,
                       label: 'Đánh giá',
-                      value: instructor['rating'].toString(),
+                      value: staff.averageRating.toString(),
                     ),
                   ],
                 ),
@@ -542,7 +552,7 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
 
               const Divider(),
 
-              // Bio
+              // Bio/Instruction
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -558,7 +568,7 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      instructor['bio'],
+                      staff.instruction,
                       style: const TextStyle(
                         fontSize: 16,
                         height: 1.5,
@@ -584,20 +594,13 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final skill in instructor['expertise'])
-                          Chip(
-                            label: Text(skill),
-                            backgroundColor: const Color(0xFFE1F5FE),
-                            labelStyle: const TextStyle(
-                              color: Color(0xFF3498DB),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                      ],
+                    Text(
+                      staff.expert,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        height: 1.5,
+                        color: Colors.black87,
+                      ),
                     ),
                   ],
                 ),
@@ -612,7 +615,7 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Xem khóa học của ${instructor['name']}'),
+                        content: Text('Xem khóa học của ${staff.fullname}'),
                         behavior: SnackBarBehavior.floating,
                       ),
                     );

@@ -10,6 +10,7 @@ import 'package:tms_app/data/repositories/my_course/course_lesson_repository_imp
 import 'package:tms_app/data/repositories/my_course/content_test_repository_impl.dart'; // Import content test repository
 import 'package:tms_app/data/repositories/my_course/comment_lession_repository_impl.dart'; // Import comment lesson repository
 import 'package:tms_app/data/repositories/payment_repository_impl.dart';
+import 'package:tms_app/data/repositories/teaching_staff_repository_impl.dart'; // Import teaching staff repository
 import 'package:tms_app/data/services/auth_service.dart'; // Import AuthService
 import 'package:tms_app/data/services/blog_service.dart';
 import 'package:tms_app/data/services/cart/cart_service.dart';
@@ -21,6 +22,7 @@ import 'package:tms_app/data/services/my_course/course_lesson_service.dart'; // 
 import 'package:tms_app/data/services/my_course/content_test_service.dart'; // Import content test service
 import 'package:tms_app/data/services/my_course/comment_lession_service.dart'; // Import comment lesson service
 import 'package:tms_app/data/services/payment_service.dart';
+import 'package:tms_app/data/services/teaching_staff/teaching_staff_service.dart'; // Import teaching staff service
 import 'package:tms_app/data/services/user_service.dart'; // Import UserService
 import 'package:tms_app/data/repositories/account_repository_impl.dart';
 import 'package:tms_app/domain/repositories/account_repository.dart';
@@ -34,6 +36,7 @@ import 'package:tms_app/domain/repositories/my_course/course_lesson_repository.d
 import 'package:tms_app/domain/repositories/my_course/content_test_repository.dart'; // Import content test repository interface
 import 'package:tms_app/domain/repositories/my_course/comment_lession_repository.dart'; // Import comment lesson repository interface
 import 'package:tms_app/domain/repositories/payment_repository.dart';
+import 'package:tms_app/domain/repositories/teaching_staff_repository.dart'; // Import teaching staff repository interface
 import 'package:tms_app/domain/usecases/blog_usecase.dart';
 import 'package:tms_app/domain/usecases/cart_usecase.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
@@ -79,6 +82,8 @@ import 'package:tms_app/domain/repositories/day_streak_repository.dart';
 import 'package:tms_app/data/services/day_streak_service.dart';
 import 'package:tms_app/domain/usecases/day_streak_usecase.dart';
 import 'package:tms_app/presentation/controller/day_streak_controller.dart';
+import 'package:tms_app/domain/usecases/teaching_staff/teaching_staff_usecase.dart'; // Import teaching staff usecase
+import 'package:tms_app/presentation/controller/teaching_staff_controller.dart'; // Import teaching staff controller
 
 // Đảm bảo các import không bị xóa bởi công cụ IDE
 // ignore: unused_element
@@ -218,6 +223,8 @@ void _registerServices() {
       dio: sl(),
     ),
   );
+  // Đăng ký TeachingStaffService
+  sl.registerLazySingleton(() => TeachingStaffService(sl()));
 }
 
 // Đăng ký tất cả các Repository
@@ -276,6 +283,11 @@ void _registerRepositories() {
   sl.registerLazySingleton<DiscountRepository>(
     () => DiscountRepositoryImpl(discountService: sl<DiscountService>()),
   );
+
+  // Đăng ký TeachingStaffRepository
+  sl.registerLazySingleton<TeachingStaffRepository>(() =>
+      TeachingStaffRepositoryImpl(
+          teachingStaffService: sl<TeachingStaffService>()));
 
   // Đăng ký DayStreakRepository
   sl.registerLazySingleton<DayStreakRepository>(
@@ -357,6 +369,10 @@ void _registerUseCases() {
   sl.registerLazySingleton<GetWeekStartDateUseCase>(
     () => GetWeekStartDateUseCase(),
   );
+
+  // Đăng ký TeachingStaffUseCase
+  sl.registerLazySingleton(
+      () => TeachingStaffUseCase(sl<TeachingStaffRepository>()));
 }
 
 // Thêm một phương thức mới riêng để đăng ký controllers
@@ -409,6 +425,11 @@ void _registerControllers() {
   // Controllers
   sl.registerLazySingleton<DiscountController>(
     () => DiscountController(discountUseCase: sl<DiscountUseCase>()),
+  );
+
+  // Đăng ký TeachingStaffController
+  sl.registerLazySingleton<TeachingStaffController>(
+    () => TeachingStaffController(),
   );
 
   // Đăng ký DayStreakController
