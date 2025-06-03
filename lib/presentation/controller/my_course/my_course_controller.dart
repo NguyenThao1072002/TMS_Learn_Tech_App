@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart' hide MaterialType;
 import 'package:tms_app/core/DI/service_locator.dart';
 import 'package:tms_app/data/models/my_course/learn_lesson_model.dart'
@@ -58,6 +60,7 @@ class MyCourseController with ChangeNotifier {
       _courseData = _convertApiDataToLocalFormat(courseLessonResponse);
       print('Đã chuyển đổi dữ liệu API: ${_courseData.length} chương');
 
+      // print('🔍 - Data khoá học nè nè: ${jsonEncode(_courseData)}');
       // Initialize expanded chapters state
       _expandedChapters =
           List.generate(_courseData.length, (index) => index == 0);
@@ -132,6 +135,7 @@ class MyCourseController with ChangeNotifier {
           testId: apiLesson.lessonTest != null
               ? apiLesson.lessonTest!.testId
               : null,
+          videoId: apiLesson.video != null ? apiLesson.video!.videoId : null,
         );
 
         lessons.add(lesson);

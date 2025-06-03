@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tms_app/presentation/screens/my_account/my_course/enroll_course.dart';
-import 'package:tms_app/presentation/widgets/my_course/comment_section_widget.dart'
-    as comment_section;
+import 'package:tms_app/presentation/widgets/my_course/comment_item_widget.dart';
 import 'package:tms_app/presentation/widgets/my_course/complete_lesson_button.dart';
 import 'package:tms_app/presentation/widgets/my_course/lesson_materials_widget.dart';
 import 'package:tms_app/presentation/widgets/my_course/lesson_summary_widget.dart';
@@ -570,6 +569,10 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
 
   // Widget nội dung bài học video
   Widget _buildVideoLessonContent(BuildContext context) {
+    // Lấy ID video và ID bài học từ currentLesson
+    final int videoId = widget.currentLesson.videoId ?? 0;
+    final int lessonId = int.parse(widget.currentLesson.id);
+
     return Container(
       color: Colors.white,
       child: Column(
@@ -588,12 +591,11 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
               child: widget.buildLessonDetailInfo!(widget.currentLesson),
             ),
 
-          // Comment section
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: comment_section.CommentSectionWidget(
-              onCommentSubmit: widget.onCommentSubmit,
-            ),
+          // Comment section - Sử dụng CommentSectionWidget mới
+          CommentSectionWidget(
+            onCommentSubmit: widget.onCommentSubmit,
+            videoId: videoId,
+            lessonId: lessonId,
           ),
         ],
       ),

@@ -24,7 +24,20 @@ class ContentTestService {
         ),
       );
 
-      return ContentTestResponse.fromJson(response.data);
+      // Chuyển đổi dữ liệu
+      final data = response.data;
+
+      // Xử lý trường hợp đặc biệt cho bài kiểm tra chương
+      if (data['data']['isChapterTest'] == true) {
+        // Chuyển đổi thời gian từ phút sang giây nếu cần
+        if (data['data']['duration'] < 60 &&
+            data['data']['isChapterTest'] == true) {
+          // Nếu thời gian < 60 và là bài kiểm tra chương, giả định thời gian được tính bằng phút
+          data['data']['duration'] = data['data']['duration'] * 60;
+        }
+      }
+
+      return ContentTestResponse.fromJson(data);
     } on DioException catch (e) {
       throw _handleError(e);
     } catch (e) {

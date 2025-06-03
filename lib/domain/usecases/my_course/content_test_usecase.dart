@@ -66,7 +66,25 @@ class ContentTestUseCase {
       throw Exception('Câu hỏi không phải loại checkbox');
     }
 
-    return question.resultCheck == answers;
+    // Chuyển đổi đáp án của người dùng từ dạng "1-2-3-4" thành danh sách
+    final userAnswers = answers.split('-')..sort();
+
+    // Chuyển đổi đáp án đúng từ API (dạng "1,2,3,4") thành danh sách
+    final correctAnswers = question.resultCheck?.split(',') ?? [];
+
+    // So sánh hai danh sách đáp án
+    if (userAnswers.length != correctAnswers.length) {
+      return false;
+    }
+
+    // Kiểm tra từng phần tử
+    for (int i = 0; i < userAnswers.length; i++) {
+      if (userAnswers[i].trim() != correctAnswers[i].trim()) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /// Kiểm tra đáp án cho câu hỏi điền khuyết
@@ -79,6 +97,16 @@ class ContentTestUseCase {
       throw Exception('Câu hỏi không phải loại điền khuyết');
     }
 
-    return question.resultCheck?.toLowerCase() == answer.toLowerCase();
+    // Nếu không có đáp án để kiểm tra
+    if (question.resultCheck == null || question.resultCheck!.isEmpty) {
+      return false;
+    }
+
+    // Chuẩn hóa cả đáp án người dùng và đáp án đúng
+    final userAnswerNormalized = answer.trim().toLowerCase();
+    final correctAnswerNormalized = question.resultCheck!.trim().toLowerCase();
+
+    // So sánh sau khi đã chuẩn hóa
+    return userAnswerNormalized == correctAnswerNormalized;
   }
 }

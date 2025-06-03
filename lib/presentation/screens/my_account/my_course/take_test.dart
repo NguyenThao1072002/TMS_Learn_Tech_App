@@ -100,6 +100,88 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
   void _submitTest() {
     if (_isSubmitted) return;
 
+    // Kiểm tra xem còn câu hỏi chưa trả lời không
+    final unansweredCount = _userAnswers.where((a) => a == null).length;
+
+    if (unansweredCount > 0) {
+      // Tìm chỉ số của câu hỏi đầu tiên chưa được trả lời
+      int firstUnansweredIndex = _userAnswers.indexOf(null);
+
+      // Hiển thị dialog xác nhận nếu còn câu hỏi chưa trả lời
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: Colors.white,
+          elevation: 24,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Xác nhận nộp bài',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.orange,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Còn $unansweredCount câu chưa được trả lời.',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Nếu nộp bài bây giờ, các câu chưa trả lời sẽ bị tính là không có điểm.',
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Bạn có muốn:',
+              ),
+            ],
+          ),
+          actions: [
+            // Nút quay lại câu hỏi chưa làm đầu tiên
+            TextButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Chuyển đến câu hỏi đầu tiên chưa làm
+                setState(() {
+                  _currentQuestionIndex = firstUnansweredIndex;
+                });
+                _pageController.jumpToPage(firstUnansweredIndex);
+              },
+              icon: const Icon(Icons.arrow_back, size: 18),
+              label: const Text('Quay lại làm tiếp'),
+              style: TextButton.styleFrom(foregroundColor: Colors.blue),
+            ),
+
+            // Nút nộp bài ngay
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _finalizeSubmission();
+              },
+              icon: const Icon(Icons.check_circle, size: 18),
+              label: const Text('Nộp bài ngay'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                elevation: 4,
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Nếu đã trả lời hết, nộp bài ngay
+      _finalizeSubmission();
+    }
+  }
+
+  // Hoàn tất quá trình nộp bài sau khi đã xác nhận
+  void _finalizeSubmission() {
     setState(() {
       _isSubmitted = true;
       _timer?.cancel();
@@ -148,9 +230,9 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
             break;
 
           case 'essay':
-            // Câu tự luận tạm tính 70% điểm nếu có nội dung
-            if (userAnswer is String && userAnswer.trim().length > 20) {
-              earnedPoints += 0.7;
+            // Câu tự luận luôn được tính là đúng nếu có nội dung
+            if (userAnswer is String && userAnswer.trim().isNotEmpty) {
+              earnedPoints += 1;
             }
             break;
         }
@@ -183,6 +265,11 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        elevation: 24,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
         title: Row(
           children: [
             Icon(
@@ -190,7 +277,13 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
               color: isPassed ? Colors.green : Colors.orange,
             ),
             const SizedBox(width: 8),
-            Text(isPassed ? 'Hoàn thành!' : 'Chưa đạt'),
+            Text(
+              isPassed ? 'Hoàn thành!' : 'Chưa đạt',
+              style: TextStyle(
+                color: isPassed ? Colors.green : Colors.orange,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
         content: SingleChildScrollView(
@@ -264,16 +357,17 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
                     _buildResultItem(
                       icon: Icons.timer,
                       label: 'Thời gian làm bài:',
-                      value:
-                          '${(widget.contentTest.duration - _timeRemaining) ~/ 60} phút ${(widget.contentTest.duration - _timeRemaining) % 60} giây',
+                      value: _formatTimeUsed(),
                     ),
                     const Divider(),
                     _buildResultItem(
                       icon: Icons.psychology,
                       label: 'Mức độ bài kiểm tra:',
-                      value: widget.contentTest.type.contains('essay')
-                          ? 'Tự luận'
-                          : 'Trắc nghiệm',
+                      value: widget.contentTest.isChapterTest
+                          ? 'Kiểm tra chương'
+                          : (widget.contentTest.type.contains('essay')
+                              ? 'Tự luận'
+                              : 'Trắc nghiệm'),
                     ),
                   ],
                 ),
@@ -327,9 +421,6 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
               child: const Text('Bài học tiếp theo'),
             ),
         ],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
       ),
     );
   }
@@ -338,29 +429,12 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
   void _navigateToNextLesson() {
     debugPrint('🔄 _navigateToNextLesson được gọi');
 
-    // Thông báo cho người dùng biết đang chuyển đến bài học tiếp theo
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đang chuyển đến bài học tiếp theo...'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 2),
-      ),
-    );
-
     // Gọi callback để chuyển đến bài học tiếp theo nếu được cung cấp
     if (widget.onNextLesson != null) {
       debugPrint('✅ Gọi callback onNextLesson');
       widget.onNextLesson!();
     } else {
       debugPrint('❌ Callback onNextLesson chưa được cung cấp!');
-      // Nếu không có callback, hiển thị thông báo
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Không thể chuyển đến bài học tiếp theo. Vui lòng quay lại và chọn thủ công.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
     }
   }
 
@@ -430,14 +504,16 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
             break;
 
           case 'essay':
-            // Bỏ qua câu tự luận khi đếm
+            // Câu tự luận luôn được tính là đúng nếu có nội dung
+            if (userAnswer is String && userAnswer.trim().isNotEmpty) {
+              count++;
+            }
             break;
         }
       } catch (e) {
-        // Bỏ qua nếu có lỗi
+        debugPrint('Lỗi khi đếm câu đúng: $e');
       }
     }
-
     return count;
   }
 
@@ -571,10 +647,53 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
     final question = widget.contentTest.questionList[index];
     final userAnswer = _userAnswers[index];
 
+    // Định dạng lại đáp án hiển thị dựa vào loại câu hỏi
+    String formattedUserAnswer = '';
+    String formattedCorrectAnswer = '';
+
+    if (question.type == 'checkbox') {
+      // Xử lý hiển thị đáp án cho câu hỏi checkbox
+      if (userAnswer != null) {
+        final selectedOptions = (userAnswer as String)
+            .split('-')
+            .where((e) => e.isNotEmpty)
+            .toList();
+        formattedUserAnswer = selectedOptions.join(', ');
+      } else {
+        formattedUserAnswer = 'Không có câu trả lời';
+      }
+
+      // Xử lý hiển thị đáp án đúng
+      if (question.resultCheck != null) {
+        final correctOptions = question.resultCheck!
+            .split(',')
+            .where((e) => e.isNotEmpty)
+            .toList();
+        formattedCorrectAnswer = correctOptions.join(', ');
+      } else {
+        formattedCorrectAnswer = 'Không có đáp án';
+      }
+    } else {
+      // Các loại câu hỏi khác
+      formattedUserAnswer = userAnswer?.toString() ?? 'Không có câu trả lời';
+      formattedCorrectAnswer = question.result ?? 'Không có đáp án';
+    }
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Câu ${index + 1}'),
+        backgroundColor: Colors.white,
+        elevation: 24,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          'Câu ${index + 1}',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.blue,
+          ),
+        ),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -592,8 +711,9 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
                 ),
-                child: Text(userAnswer?.toString() ?? 'Không có câu trả lời'),
+                child: Text(formattedUserAnswer),
               ),
               const SizedBox(height: 16),
               const Text('Đáp án đúng:'),
@@ -603,8 +723,9 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
                 decoration: BoxDecoration(
                   color: Colors.green.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green[300]!),
                 ),
-                child: Text(question.result ?? 'Không có đáp án'),
+                child: Text(formattedCorrectAnswer),
               ),
               if (question.instruction != null &&
                   question.instruction!.isNotEmpty) ...[
@@ -616,6 +737,7 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
                   decoration: BoxDecoration(
                     color: Colors.blue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue[300]!),
                   ),
                   child: Text(question.instruction!),
                 ),
@@ -624,8 +746,13 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
           ),
         ),
         actions: [
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              elevation: 4,
+            ),
             child: const Text('Đóng'),
           ),
         ],
@@ -638,6 +765,34 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
     final minutes = (_timeRemaining / 60).floor();
     final seconds = _timeRemaining % 60;
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  // Hiển thị tổng thời gian bài kiểm tra theo định dạng phù hợp
+  String get _formattedTotalTime {
+    final minutes = (widget.contentTest.duration / 60).floor();
+    final hours = (minutes / 60).floor();
+    final remainingMinutes = minutes % 60;
+
+    if (hours > 0) {
+      return '${hours}:${remainingMinutes.toString().padLeft(2, '0')}';
+    } else {
+      return '${minutes}:00';
+    }
+  }
+
+  // Định dạng thời gian đã sử dụng để làm bài
+  String _formatTimeUsed() {
+    final totalSeconds = widget.contentTest.duration - _timeRemaining;
+    final minutes = (totalSeconds / 60).floor();
+    final hours = (minutes / 60).floor();
+    final remainingMinutes = minutes % 60;
+    final seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      return '${hours}:${remainingMinutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    } else {
+      return '${minutes}:${seconds.toString().padLeft(2, '0')}';
+    }
   }
 
   // Chuyển đến câu hỏi tiếp theo
@@ -653,32 +808,6 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
       _pageController.jumpToPage(_currentQuestionIndex);
 
       debugPrint('📌 Đã chuyển đến câu hỏi: $_currentQuestionIndex');
-
-      // Hiển thị thông báo nếu đã hoàn thành tất cả câu hỏi
-      if (_currentQuestionIndex == widget.contentTest.questionList.length - 1) {
-        final unansweredCount = _userAnswers.where((a) => a == null).length;
-        if (unansweredCount > 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Còn $unansweredCount câu chưa được trả lời'),
-              backgroundColor: Colors.orange,
-              action: SnackBarAction(
-                label: 'Nộp bài',
-                onPressed: _submitTest,
-                textColor: Colors.white,
-              ),
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content:
-                  Text('Đã hoàn thành tất cả câu hỏi. Bạn có thể nộp bài.'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      }
     }
   }
 
@@ -715,8 +844,47 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
     int answeredCount = _userAnswers.where((a) => a != null).length;
     debugPrint(
         '💾 Tổng số câu đã trả lời: $answeredCount/${_userAnswers.length}');
+  }
 
-    // Đã bỏ phần hiển thị Snackbar thông báo lưu câu trả lời
+  // Hiển thị dialog xác nhận trước khi thoát
+  Future<bool> _showExitConfirmation() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        elevation: 24,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Xác nhận thoát',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.red,
+          ),
+        ),
+        content: const Text(
+          'Bạn có chắc muốn thoát? Bài làm của bạn sẽ không được lưu.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Ở lại'),
+            style: TextButton.styleFrom(foregroundColor: Colors.blue),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              elevation: 4,
+            ),
+            child: const Text('Thoát'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 
   @override
@@ -792,27 +960,7 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
       onWillPop: () async {
         // Hiển thị xác nhận trước khi thoát nếu chưa nộp bài
         if (!_isSubmitted) {
-          final shouldExit = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Xác nhận thoát'),
-              content: const Text(
-                'Bạn có chắc muốn thoát? Bài làm của bạn sẽ không được lưu.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Ở lại'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                  child: const Text('Thoát'),
-                ),
-              ],
-            ),
-          );
-          return shouldExit ?? false;
+          return await _showExitConfirmation();
         }
         return true;
       },
@@ -1444,6 +1592,13 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
   // Xây dựng câu hỏi điền khuyết
   Widget _buildFillBlankQuestion(QuestionModel question) {
     final currentAnswer = _userAnswers[_currentQuestionIndex] as String? ?? '';
+    final TextEditingController textController =
+        TextEditingController(text: currentAnswer);
+
+    // Đảm bảo vị trí con trỏ ở cuối văn bản
+    textController.selection = TextSelection.fromPosition(
+      TextPosition(offset: textController.text.length),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1462,10 +1617,40 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
           ],
         ),
         const SizedBox(height: 16),
+
+        // Hiển thị câu hỏi với định dạng rõ ràng hơn
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.teal.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.teal.withOpacity(0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Hoàn thành câu sau:',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                question.content,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
         TextField(
-          controller: TextEditingController(text: currentAnswer),
+          controller: textController,
           decoration: InputDecoration(
             hintText: 'Nhập câu trả lời của bạn...',
+            labelText: 'Câu trả lời',
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: Colors.grey[300]!),
@@ -1484,6 +1669,8 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
             _saveAnswer(value);
           },
           textInputAction: TextInputAction.done,
+          textAlign: TextAlign.left,
+          style: const TextStyle(fontSize: 16),
         ),
         const SizedBox(height: 12),
         const Text(
@@ -1494,6 +1681,34 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
             fontStyle: FontStyle.italic,
           ),
         ),
+
+        // Hiển thị gợi ý nếu có
+        if (question.instruction != null && question.instruction!.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.amber.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.lightbulb_outline,
+                    color: Colors.amber, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    question.instruction!,
+                    style: const TextStyle(
+                      fontStyle: FontStyle.italic,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }

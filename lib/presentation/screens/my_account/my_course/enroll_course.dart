@@ -74,6 +74,7 @@ class Lesson {
   final String? documentUrl; // URL tài liệu từ API
   final String? testType; // Loại bài kiểm tra (Test Bài/Test Chương)
   final int? testId; // ID bài kiểm tra (nếu có)
+  final int? videoId; // ID video từ API
 
   Lesson({
     required this.id,
@@ -86,6 +87,7 @@ class Lesson {
     this.documentUrl,
     this.testType,
     this.testId,
+    this.videoId,
   });
 }
 
@@ -100,6 +102,9 @@ class EnrollCourseScreen extends StatefulWidget {
   final String videoUrl;
   final List<MaterialItem> materials;
   final String summary;
+  final Function(String) onCommentSubmit;
+  final Lesson currentLesson;
+  final CourseChapter currentChapter;
 
   const EnrollCourseScreen({
     super.key,
@@ -113,6 +118,9 @@ class EnrollCourseScreen extends StatefulWidget {
     this.videoUrl = '',
     this.materials = const [],
     this.summary = '',
+    required this.onCommentSubmit,
+    required this.currentLesson,
+    required this.currentChapter,
   });
 
   @override
@@ -1195,10 +1203,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
       summary: widget.summary,
       videoUrl: videoUrl,
       materials: materials,
-      onCommentSubmit: (comment) {
-        // Handle comment submission
-        print('Submitted comment: $comment');
-      },
+      onCommentSubmit: widget.onCommentSubmit,
       onCompleteLesson: () {
         // Mark lesson as complete using controller
         _controller.onLessonCompleted(currentLesson.id);
@@ -1338,7 +1343,17 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
                   onCommentSubmit: (comment) {
                     // Handle comment submission
                     print('Submitted comment: $comment');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Đã gửi bình luận thành công'),
+                        backgroundColor: Colors.green,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
                   },
+                  // Cập nhật videoId và lessonId để khớp với dữ liệu API thực tế
+                  videoId: int.tryParse(lesson.id) ?? 0,
+                  lessonId: _controller.currentChapter?.id ?? 0,
                 ),
 
                 // Add space at bottom for the fixed button
@@ -1629,27 +1644,28 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
         // Nút bắt đầu làm bài
         Center(
           child: ElevatedButton.icon(
-            onPressed: _completedLessons[lesson.id] == true
+            onPressed: _completedLessons[widget.currentLesson.id] == true
                 ? () {
                     // Xem lại kết quả
-                    _showTestResults(lesson);
+                    _showTestResults(widget.currentLesson);
                   }
                 : () {
                     // Bắt đầu bài kiểm tra
-                    _startTest(lesson);
+                    _startTest(widget.currentLesson);
                   },
-            icon: Icon(_completedLessons[lesson.id] == true
+            icon: Icon(_completedLessons[widget.currentLesson.id] == true
                 ? Icons.assessment
                 : Icons.play_arrow),
             label: Text(
-              _completedLessons[lesson.id] == true
+              _completedLessons[widget.currentLesson.id] == true
                   ? 'Xem lại kết quả'
                   : 'Bắt đầu làm bài',
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _completedLessons[lesson.id] == true
-                  ? Colors.blue
-                  : Colors.orange,
+              backgroundColor:
+                  _completedLessons[widget.currentLesson.id] == true
+                      ? Colors.blue
+                      : Colors.orange,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(
                 horizontal: 32,
