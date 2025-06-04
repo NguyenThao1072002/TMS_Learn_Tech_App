@@ -54,7 +54,7 @@ class MaterialItem {
 
 // Course chapter model
 class CourseChapter {
-  final int id;
+  final String id;
   final String title;
   final List<Lesson> lessons;
 
@@ -183,8 +183,8 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
       print(
           '🔄 Đang gọi API khởi tạo tiến trình học tập với accountId=$accountId, courseId=${widget.courseId}');
 
-      final result = await addCourseProgressUseCase.execute(
-          accountId.toString(), courseId);
+      final result =
+          await addCourseProgressUseCase.execute(accountId, courseId);
 
       print('✅ Đã khởi tạo tiến trình học tập thành công: ${result.message}');
     } catch (e) {
@@ -224,6 +224,23 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
   Future<void> _loadCourseData() async {
     try {
       await _controller.initialize(widget.courseId);
+
+      // In ra thông tin về các bài học đã hoàn thành
+      print(
+          '📋 EnrollCourseScreen: Danh sách bài học đã hoàn thành sau khi khởi tạo:');
+      _controller.completedLessons.forEach((key, value) {
+        print('   - Bài học ID: $key, Hoàn thành: $value');
+      });
+
+      // Kiểm tra bài học hiện tại có được đánh dấu hoàn thành không
+      if (_controller.currentLesson != null) {
+        final currentLessonId = _controller.currentLesson!.id;
+        print('🔍 Bài học hiện tại: ${_controller.currentLesson!.title}');
+        print('   - ID: $currentLessonId');
+        print(
+            '   - Đã hoàn thành: ${_controller.completedLessons[currentLessonId] == true}');
+      }
+
       // Force rebuild UI after data loaded successfully
       if (mounted) setState(() {});
     } catch (e) {
@@ -545,7 +562,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
 
       // Tạo đối tượng CourseChapter
       final courseChapter = CourseChapter(
-        id: chapter.chapterId,
+        id: chapter.chapterId.toString(),
         title: chapter.chapterTitle,
         lessons: lessons,
       );
@@ -570,7 +587,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
     // Dữ liệu giả lập
     _courseData = [
       CourseChapter(
-        id: 1,
+        id: "1",
         title: "Chương 1: Giới thiệu khóa học (Dữ liệu mẫu)",
         lessons: [
           Lesson(
@@ -610,7 +627,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
         ],
       ),
       CourseChapter(
-        id: 2,
+        id: "2",
         title: "Chương 2: Kiến thức nền tảng (Dữ liệu mẫu)",
         lessons: [
           Lesson(
@@ -980,7 +997,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
                       ),
                       child: Center(
                         child: Text(
-                          chapter.id.toString(),
+                          chapter.id,
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -1039,16 +1056,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
 
                   return InkWell(
                     onTap: lesson.isUnlocked
-                        ? () {
-                            setState(() {
-                              _controller.selectLesson(
-                                  chapterIndex, lessonIndex);
-                              // Nếu đang ở chế độ điện thoại, chuyển sang tab nội dung
-                              if (MediaQuery.of(context).size.width <= 600) {
-                                _controller.setSidebarVisibility(false);
-                              }
-                            });
-                          }
+                        ? () => _onLessonSelected(chapterIndex, lessonIndex)
                         : null,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -1179,6 +1187,22 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
     print('🔍 currentLesson: ${currentLesson?.title}');
     print('🔍 selectedChapterIndex: ${_controller.selectedChapterIndex}');
     print('🔍 selectedLessonIndex: ${_controller.selectedLessonIndex}');
+
+    // Kiểm tra trạng thái hoàn thành
+    if (currentLesson != null) {
+      final lessonId = currentLesson.id;
+      print('🔍 Kiểm tra trạng thái hoàn thành bài học: $lessonId');
+      print(
+          '   - Đã hoàn thành: ${_controller.completedLessons[lessonId] == true}');
+      print('   - Kiểu dữ liệu của lessonId: ${lessonId.runtimeType}');
+
+      // In ra toàn bộ danh sách bài học đã hoàn thành
+      print('   - Danh sách bài học đã hoàn thành trong controller:');
+      _controller.completedLessons.forEach((key, value) {
+        print(
+            '     + Bài học ID: $key (${key.runtimeType}), Hoàn thành: $value');
+      });
+    }
 
     if (currentChapter == null) {
       return const Center(
@@ -1384,7 +1408,8 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
                   },
                   // Cập nhật videoId và lessonId để khớp với dữ liệu API thực tế
                   videoId: int.tryParse(lesson.id) ?? 0,
-                  lessonId: _controller.currentChapter?.id ?? 0,
+                  lessonId:
+                      int.tryParse(_controller.currentChapter?.id ?? "0") ?? 0,
                 ),
 
                 // Add space at bottom for the fixed button
@@ -3606,6 +3631,100 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
               contentPadding: EdgeInsets.zero,
             ),
         ],
+      ),
+    );
+  }
+
+  // Phương thức được gọi khi người dùng chọn một bài học
+  void _onLessonSelected(int chapterIndex, int lessonIndex) {
+    print(
+        '🔍 _onLessonSelected: Chọn bài học tại chương $chapterIndex, bài học $lessonIndex');
+
+    // Lấy thông tin bài học được chọn
+    final chapter = _controller.courseData[chapterIndex];
+    final lesson = chapter.lessons[lessonIndex];
+
+    print('   - Chương: ${chapter.title}');
+    print('   - Bài học: ${lesson.title}');
+    print('   - ID bài học: ${lesson.id}');
+    print(
+        '   - Đã hoàn thành: ${_controller.completedLessons[lesson.id] == true}');
+
+    // Cập nhật chỉ số bài học được chọn trong controller
+    _controller.selectLesson(chapterIndex, lessonIndex);
+
+    // Ẩn sidebar trên thiết bị di động khi chọn bài học
+    if (MediaQuery.of(context).size.width < 768) {
+      _controller.setSidebarVisibility(false);
+    }
+
+    // Chuyển tab về video nếu là bài học video
+    if (lesson.type == LessonType.video && _tabController.length > 0) {
+      _tabController.animateTo(0);
+    }
+  }
+
+  // Widget xây dựng mục bài học trong sidebar
+  Widget _buildLessonItem(
+      Lesson lesson, int chapterIndex, int lessonIndex, bool isSelected) {
+    // Kiểm tra trạng thái hoàn thành
+    final bool isCompleted = _controller.completedLessons[lesson.id] == true;
+
+    // Lấy icon phù hợp cho loại bài học
+    final IconData lessonIcon = _controller.getLessonIcon(lesson);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 2),
+      decoration: BoxDecoration(
+        color: isSelected ? Colors.orange.withOpacity(0.1) : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ListTile(
+        dense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.orange
+                : isCompleted
+                    ? Colors.green
+                    : Colors.grey[300],
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Icon(
+              isCompleted ? Icons.check : lessonIcon,
+              color: Colors.white,
+              size: 16,
+            ),
+          ),
+        ),
+        title: Text(
+          lesson.title,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? Colors.orange : Colors.black87,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          lesson.duration,
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.grey[600],
+          ),
+        ),
+        onTap: () {
+          print('👆 Nhấn vào bài học: ${lesson.title}');
+          print('   - ID: ${lesson.id}');
+          print('   - Đã hoàn thành: $isCompleted');
+
+          _onLessonSelected(chapterIndex, lessonIndex);
+        },
       ),
     );
   }

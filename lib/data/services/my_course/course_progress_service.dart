@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:tms_app/data/models/course_progress_model.dart';
 import 'package:tms_app/core/utils/constants.dart';
+import 'package:tms_app/data/models/my_course/completed_lession_model.dart';
 
 /// Service xử lý các API liên quan đến tiến trình học tập
 class CourseProgressService {
@@ -26,6 +27,64 @@ class CourseProgressService {
       );
 
       return CourseProgressResponse.fromJson(response.data);
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Mở khóa bài học tiếp theo khi người dùng hoàn thành bài học hiện tại
+  ///
+  /// [accountId] ID của tài khoản người dùng
+  /// [courseId] ID của khóa học
+  /// [chapterId] ID của chương học
+  /// [lessonId] ID của bài học hiện tại
+  Future<UnlockNextLessonResponse> unlockNextLesson(
+      String accountId, int courseId, int chapterId, int lessonId) async {
+    try {
+      print(
+          '🔄 Đang gọi API mở khóa bài học tiếp theo với accountId=$accountId, courseId=$courseId, chapterId=$chapterId, lessonId=$lessonId');
+
+      final response = await _dio.post(
+        '${baseUrl}/api/progress/unlock-next',
+        queryParameters: {
+          'accountId': accountId,
+          'courseId': courseId,
+          'chapterId': chapterId,
+          'lessonId': lessonId,
+        },
+      );
+
+      print('✅ Đã mở khóa bài học tiếp theo thành công');
+      return UnlockNextLessonResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      // Kiểm tra lỗi kết nối và thử lại
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.receiveTimeout) {
+        print('⚠️ Lỗi kết nối khi mở khóa bài học tiếp theo, đang thử lại...');
+
+        // Đợi 2 giây và thử lại
+        await Future.delayed(const Duration(seconds: 2));
+
+        try {
+          final retryResponse = await _dio.post(
+            '${baseUrl}/api/progress/unlock-next',
+            queryParameters: {
+              'accountId': accountId,
+              'courseId': courseId,
+              'chapterId': chapterId,
+              'lessonId': lessonId,
+            },
+          );
+
+          print('✅ Đã mở khóa bài học tiếp theo thành công sau khi thử lại');
+          return UnlockNextLessonResponse.fromJson(retryResponse.data);
+        } catch (retryError) {
+          throw _handleError(retryError);
+        }
+      }
+
+      throw _handleError(e);
     } catch (e) {
       throw _handleError(e);
     }

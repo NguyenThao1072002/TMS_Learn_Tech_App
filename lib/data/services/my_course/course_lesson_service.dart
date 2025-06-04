@@ -17,6 +17,9 @@ class CourseLessonService {
       // Get the auth token
       final token = await SharedPrefs.getJwtToken();
 
+      // Lấy accountId từ SharedPrefs
+      final accountId = await SharedPrefs.getUserId();
+
       // Set headers with token
       final options = Options(
         headers: {
@@ -26,13 +29,17 @@ class CourseLessonService {
         },
       );
 
-      print('Đang gọi API để lấy dữ liệu khóa học với ID: $courseId');
+      print(
+          'Đang gọi API để lấy dữ liệu khóa học với ID: $courseId và accountId: $accountId');
       final String apiUrl = '$baseUrl/courses/take-course/$courseId';
       print('URL API: $apiUrl');
 
-      // Make API call to get course lessons
+      // Make API call to get course lessons with accountId parameter
       final response = await _dio.get(
         apiUrl,
+        queryParameters: {
+          'accountId': accountId,
+        },
         options: options,
       );
 
@@ -55,6 +62,24 @@ class CourseLessonService {
                 response.data.containsKey('course_title') &&
                 response.data.containsKey('chapters')) {
               print('Cấu trúc API phù hợp với mô hình dữ liệu');
+
+              // Kiểm tra dữ liệu completedLesson
+              print('🔍 Kiểm tra dữ liệu completedLesson từ API:');
+              if (response.data['chapters'] is List) {
+                for (var chapter in response.data['chapters']) {
+                  if (chapter['lessons'] is List) {
+                    for (var lesson in chapter['lessons']) {
+                      print(
+                          '   - Bài học ID: ${lesson['lesson_id']}, completedLesson: ${lesson['completedLesson']}');
+                    }
+                  }
+                  if (chapter['chapter_test'] != null) {
+                    print(
+                        '   - Bài kiểm tra chương ID: ${chapter['chapter_id']}, completedTestChapter: ${chapter['completedTestChapter']}');
+                  }
+                }
+              }
+
               return CourseLessonResponse.fromJson(response.data);
             } else {
               print(
@@ -110,7 +135,8 @@ class CourseLessonService {
                           "document_url":
                               "https://firebasestorage.googleapis.com/v0/b/learn-with-tms-4cc08.appspot.com/o/document%2F1745929404292_2001216111_TranNgocThanhSon.docx?alt=media"
                         },
-                        "lesson_test": null
+                        "lesson_test": null,
+                        "completedLesson": true
                       },
                       {
                         "lesson_id": 2,
@@ -132,14 +158,16 @@ class CourseLessonService {
                           "test_title":
                               "Bài 2. Câu Lệnh Print Trong Python  In ra màn hình trong Python",
                           "test_type": "Test Bài"
-                        }
+                        },
+                        "completedLesson": false
                       }
                     ],
                     "chapter_test": {
                       "test_id": 22,
                       "test_title": "Bài kiểm tra chương 1",
                       "test_type": "Test Chương"
-                    }
+                    },
+                    "completedTestChapter": false
                   }
                 ]
               });
@@ -204,14 +232,16 @@ class CourseLessonService {
                   "document_short": "",
                   "document_url": "https://example.com/doc1.pdf"
                 },
-                "lesson_test": null
+                "lesson_test": null,
+                "completedLesson": true
               }
             ],
             "chapter_test": {
               "test_id": 22,
               "test_title": "Bài kiểm tra chương 1 (Dữ liệu mẫu)",
               "test_type": "Test Chương"
-            }
+            },
+            "completedTestChapter": false
           }
         ]
       });

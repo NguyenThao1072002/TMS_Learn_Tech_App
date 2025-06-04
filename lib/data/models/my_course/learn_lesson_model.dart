@@ -32,12 +32,14 @@ class Chapter {
   final String chapterTitle;
   final List<Lesson> lessons;
   final Test? chapterTest;
+  final bool? completedTestChapter;
 
   Chapter({
     required this.chapterId,
     required this.chapterTitle,
     required this.lessons,
     this.chapterTest,
+    this.completedTestChapter,
   });
 
   factory Chapter.fromJson(Map<String, dynamic> json) {
@@ -50,6 +52,7 @@ class Chapter {
       chapterTest: json['chapter_test'] != null
           ? Test.fromJson(json['chapter_test'] as Map<String, dynamic>)
           : null,
+      completedTestChapter: json['completedTestChapter'] as bool?,
     );
   }
 
@@ -58,6 +61,7 @@ class Chapter {
         'chapter_title': chapterTitle,
         'lessons': lessons.map((e) => e.toJson()).toList(),
         'chapter_test': chapterTest?.toJson(),
+        'completedTestChapter': completedTestChapter,
       };
 }
 
@@ -67,6 +71,7 @@ class Lesson {
   final int lessonDuration;
   final Video? video;
   final Test? lessonTest;
+  final bool? completedLesson;
 
   Lesson({
     required this.lessonId,
@@ -74,6 +79,7 @@ class Lesson {
     required this.lessonDuration,
     this.video,
     this.lessonTest,
+    this.completedLesson,
   });
 
   factory Lesson.fromJson(Map<String, dynamic> json) {
@@ -87,6 +93,7 @@ class Lesson {
       lessonTest: json['lesson_test'] != null
           ? Test.fromJson(json['lesson_test'] as Map<String, dynamic>)
           : null,
+      completedLesson: json['completedLesson'] as bool?,
     );
   }
 
@@ -96,6 +103,7 @@ class Lesson {
         'lesson_duration': lessonDuration,
         'video': video?.toJson(),
         'lesson_test': lessonTest?.toJson(),
+        'completedLesson': completedLesson,
       };
 }
 

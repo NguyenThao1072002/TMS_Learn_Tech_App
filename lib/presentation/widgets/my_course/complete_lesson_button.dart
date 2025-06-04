@@ -6,6 +6,7 @@ class CompleteLessonButton extends StatefulWidget {
   final VoidCallback? onStartTest;
   final VoidCallback? onNextLesson;
   final bool hasTest;
+  final String? errorMessage;
 
   const CompleteLessonButton({
     Key? key,
@@ -14,6 +15,7 @@ class CompleteLessonButton extends StatefulWidget {
     this.onStartTest,
     this.onNextLesson,
     this.hasTest = false,
+    this.errorMessage,
   }) : super(key: key);
 
   @override
@@ -42,47 +44,78 @@ class _CompleteLessonButtonState extends State<CompleteLessonButton> {
         ],
       ),
       child: SafeArea(
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: widget.isCompleted ? Colors.green : Colors.grey[300],
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                widget.isCompleted ? Icons.check : Icons.play_arrow,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    widget.isCompleted
-                        ? 'Đã hoàn thành bài học'
-                        : 'Chưa hoàn thành bài học',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (!widget.isCompleted)
-                    const Text(
-                      'Hãy hoàn thành bài học để mở khóa bài tiếp theo',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
+            // Hiển thị thông báo lỗi nếu có
+            if (widget.errorMessage != null && widget.errorMessage!.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline,
+                        color: Colors.red, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        widget.errorMessage!,
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
-                ],
+                  ],
+                ),
               ),
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: widget.isCompleted ? Colors.green : Colors.grey[300],
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    widget.isCompleted ? Icons.check : Icons.play_arrow,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        widget.isCompleted
+                            ? 'Đã hoàn thành bài học'
+                            : 'Chưa hoàn thành bài học',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (!widget.isCompleted)
+                        const Text(
+                          'Hãy hoàn thành bài học để mở khóa bài tiếp theo',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                // Phần này là nội dung nút phải
+                _buildActionButton(),
+              ],
             ),
-            // Phần này là nội dung nút phải
-            _buildActionButton(),
           ],
         ),
       ),

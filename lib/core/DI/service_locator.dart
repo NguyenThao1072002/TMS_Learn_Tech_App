@@ -87,7 +87,8 @@ import 'package:tms_app/data/services/day_streak_service.dart';
 import 'package:tms_app/domain/usecases/day_streak_usecase.dart';
 import 'package:tms_app/presentation/controller/day_streak_controller.dart';
 import 'package:tms_app/domain/usecases/teaching_staff/teaching_staff_usecase.dart'; // Import teaching staff usecase
-import 'package:tms_app/presentation/controller/teaching_staff_controller.dart'; // Import teaching staff controller
+import 'package:tms_app/presentation/controller/teaching_staff_controller.dart';
+import 'package:tms_app/presentation/controller/my_course/course_progress_controller.dart'; // Import course progress controller
 
 // Đảm bảo các import không bị xóa bởi công cụ IDE
 // ignore: unused_element
@@ -341,6 +342,8 @@ void _registerUseCases() {
   // Course Progress
   sl.registerLazySingleton(
       () => AddCourseProgressUseCase(sl<CourseProgressRepository>()));
+  sl.registerLazySingleton(
+      () => UnlockNextLessonUseCase(sl<CourseProgressRepository>()));
   // Content Test
   sl.registerLazySingleton(
       () => ContentTestUseCase(sl<ContentTestRepository>()));
@@ -406,6 +409,14 @@ void _registerControllers() {
   sl.registerLazySingleton(() => MyCourseController(
         courseLessonUseCase: sl<CourseLessonUseCase>(),
       ));
+
+  // Đăng ký CourseProgressController
+  sl.registerLazySingleton<CourseProgressController>(
+    () => CourseProgressController(
+      addCourseProgressUseCase: sl<AddCourseProgressUseCase>(),
+      unlockNextLessonUseCase: sl<UnlockNextLessonUseCase>(),
+    ),
+  );
 
   // Đảm bảo ForgotPasswordController được đăng ký trước khi đăng ký các controller khác phụ thuộc vào nó
   if (!sl.isRegistered<ForgotPasswordController>()) {

@@ -6,6 +6,7 @@ import 'package:tms_app/data/models/my_course/learn_lesson_model.dart'
     hide Lesson, LessonType;
 import 'package:tms_app/domain/usecases/my_course/course_lesson_usecase.dart';
 import 'package:tms_app/presentation/screens/my_account/my_course/enroll_course.dart';
+import 'package:tms_app/core/utils/shared_prefs.dart';
 
 class MyCourseController with ChangeNotifier {
   // Dependencies
@@ -51,8 +52,11 @@ class MyCourseController with ChangeNotifier {
     print('Bắt đầu tải dữ liệu khóa học từ API với ID: $courseId');
 
     try {
-      final courseLessonResponse =
-          await _courseLessonUseCase.getCourseLessons(courseId);
+      // Lấy accountId từ SharedPrefs
+      final accountId = await SharedPrefs.getUserId();
+
+      final courseLessonResponse = await _courseLessonUseCase
+          .getCourseLessons(courseId, accountId: accountId);
       _courseLessonResponse = courseLessonResponse;
       print('Đã nhận dữ liệu từ API thành công');
 
@@ -60,7 +64,6 @@ class MyCourseController with ChangeNotifier {
       _courseData = _convertApiDataToLocalFormat(courseLessonResponse);
       print('Đã chuyển đổi dữ liệu API: ${_courseData.length} chương');
 
-      // print('🔍 - Data khoá học nè nè: ${jsonEncode(_courseData)}');
       // Initialize expanded chapters state
       _expandedChapters =
           List.generate(_courseData.length, (index) => index == 0);
@@ -79,14 +82,23 @@ class MyCourseController with ChangeNotifier {
         _selectedLessonIndex = -1;
       }
 
-      // Initialize completed lessons (empty at start)
-      _completedLessons = {};
+      // Kiểm tra trạng thái hoàn thành sau khi tải dữ liệu
+      if (_courseData.isNotEmpty &&
+          _selectedChapterIndex >= 0 &&
+          _selectedLessonIndex >= 0) {
+        final currentLesson =
+            _courseData[_selectedChapterIndex].lessons[_selectedLessonIndex];
+        print(
+            '🔍 Kiểm tra trạng thái hoàn thành bài học hiện tại sau khi tải dữ liệu:');
+        print('   - ID: ${currentLesson.id}');
+        print(
+            '   - Đã hoàn thành: ${_completedLessons[currentLesson.id] == true}');
+      }
     } catch (e) {
       print('Lỗi tải dữ liệu khóa học: $e');
       // Initialize with empty data to avoid null errors
       _courseData = [];
       _expandedChapters = [];
-      _completedLessons = {};
       _selectedChapterIndex = -1;
       _selectedLessonIndex = -1;
     } finally {
@@ -101,11 +113,28 @@ class MyCourseController with ChangeNotifier {
       CourseLessonResponse apiData) {
     final List<CourseChapter> chapters = [];
 
-    for (final chapter in apiData.chapters) {
+    // Khởi tạo lại Map completedLessons - chỉ khởi tạo nếu chưa có dữ liệu
+    if (_completedLessons.isEmpty) {
+      _completedLessons = {};
+    }
+
+    print('🔄 Bắt đầu chuyển đổi dữ liệu API');
+    print('   - Số chương: ${apiData.chapters.length}');
+    print(
+        '   - Trạng thái _completedLessons trước khi chuyển đổi: $_completedLessons');
+
+    for (final apiChapter in apiData.chapters) {
       final List<Lesson> lessons = [];
 
+      print('   - Đang xử lý chương: ${apiChapter.chapterTitle}');
+      print('   - Số bài học trong chương: ${apiChapter.lessons.length}');
+
       // Convert lessons
-      for (final apiLesson in chapter.lessons) {
+      for (final apiLesson in apiChapter.lessons) {
+        print('     + Đang xử lý bài học: ${apiLesson.lessonTitle}');
+        print('     + ID bài học: ${apiLesson.lessonId}');
+        print('     + completedLesson từ API: ${apiLesson.completedLesson}');
+
         // Determine lesson type - prioritize video content if available
         final LessonType lessonType = (apiLesson.video != null &&
                 apiLesson.video!.videoUrl != null &&
@@ -139,35 +168,61 @@ class MyCourseController with ChangeNotifier {
         );
 
         lessons.add(lesson);
+
+        // Cập nhật trạng thái hoàn thành từ API
+        final String lessonId = apiLesson.lessonId.toString();
+        if (apiLesson.completedLesson == true) {
+          _completedLessons[lessonId] = true;
+          print('     ✅ Đánh dấu bài học $lessonId đã hoàn thành');
+        } else {
+          print('     ❌ Bài học $lessonId chưa hoàn thành');
+        }
       }
 
       // Add chapter test if available
-      if (chapter.chapterTest != null) {
+      if (apiChapter.chapterTest != null) {
         final chapterTest = Lesson(
-          id: "chapter_test_${chapter.chapterId}",
-          title: chapter.chapterTest!.testTitle,
+          id: "chapter_test_${apiChapter.chapterId}",
+          title: apiChapter.chapterTest!.testTitle,
           duration: "30 phút",
           type: LessonType.test,
           isUnlocked: true,
           questionCount: 15,
           videoUrl: null,
           documentUrl: null,
-          testType: chapter.chapterTest!.testType,
-          testId: chapter.chapterTest!.testId,
+          testType: apiChapter.chapterTest!.testType,
+          testId: apiChapter.chapterTest!.testId,
         );
 
         lessons.add(chapterTest);
+
+        // Cập nhật trạng thái hoàn thành bài kiểm tra chương từ API
+        final String chapterTestId = "chapter_test_${apiChapter.chapterId}";
+        if (apiChapter.completedTestChapter == true) {
+          _completedLessons[chapterTestId] = true;
+          print(
+              '     ✅ Đánh dấu bài kiểm tra chương ${apiChapter.chapterId} đã hoàn thành');
+        } else {
+          print(
+              '     ❌ Bài kiểm tra chương ${apiChapter.chapterId} chưa hoàn thành');
+        }
       }
 
       // Create CourseChapter object
       final courseChapter = CourseChapter(
-        id: chapter.chapterId,
-        title: chapter.chapterTitle,
+        id: apiChapter.chapterId.toString(),
+        title: apiChapter.chapterTitle,
         lessons: lessons,
       );
 
       chapters.add(courseChapter);
     }
+
+    // In ra toàn bộ danh sách bài học đã hoàn thành để kiểm tra
+    print('📋 Danh sách bài học đã hoàn thành:');
+    _completedLessons.forEach((key, value) {
+      print('   - Bài học ID: $key, Hoàn thành: $value');
+    });
 
     return chapters;
   }
@@ -499,6 +554,17 @@ class MyCourseController with ChangeNotifier {
     _completedLessons[lessonId] = true;
     print(
         '  ✅ Đã đặt _completedLessons[$lessonId] = ${_completedLessons[lessonId]}');
+
+    // Kiểm tra lại giá trị sau khi cập nhật
+    print(
+        '  🔍 Kiểm tra lại giá trị: _completedLessons[$lessonId] = ${_completedLessons[lessonId]}');
+    print('  🔍 Kiểu dữ liệu của lessonId: ${lessonId.runtimeType}');
+
+    // In ra toàn bộ danh sách bài học đã hoàn thành để kiểm tra
+    print('  📋 Danh sách bài học đã hoàn thành sau khi cập nhật:');
+    _completedLessons.forEach((key, value) {
+      print('    - Bài học ID: $key (${key.runtimeType}), Hoàn thành: $value');
+    });
 
     // Unlock next lesson
     _unlockNextLesson(lessonId);

@@ -10,7 +10,8 @@ class CourseLessonRepositoryImpl implements CourseLessonRepository {
   CourseLessonRepositoryImpl(this._service);
 
   @override
-  Future<CourseLessonResponse> getCourseLessons(int courseId) async {
+  Future<CourseLessonResponse> getCourseLessons(int courseId,
+      {int? accountId}) async {
     try {
       final result = await _service.getCourseLessons(courseId);
       return result;

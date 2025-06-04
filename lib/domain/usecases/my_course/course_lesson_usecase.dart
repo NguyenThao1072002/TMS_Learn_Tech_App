@@ -6,7 +6,8 @@ class CourseLessonUseCase {
 
   CourseLessonUseCase(this._repository);
 
-  Future<CourseLessonResponse> getCourseLessons(int courseId) async {
-    return await _repository.getCourseLessons(courseId);
+  Future<CourseLessonResponse> getCourseLessons(int courseId,
+      {int? accountId}) async {
+    return await _repository.getCourseLessons(courseId, accountId: accountId);
   }
 }

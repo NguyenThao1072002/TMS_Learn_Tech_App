@@ -8,6 +8,15 @@ import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chewie/chewie.dart';
 import 'package:tms_app/core/services/video_player_service.dart';
+import 'package:get_it/get_it.dart';
+import 'package:tms_app/presentation/controller/my_course/course_progress_controller.dart';
+import 'package:tms_app/core/auth/auth_manager.dart';
+import 'package:tms_app/core/utils/shared_prefs.dart';
+import 'package:tms_app/data/services/my_course/course_progress_service.dart';
+// import 'package:tms_app/data/repositories/course_progress_repository.dart';
+import 'package:dio/dio.dart';
+import 'package:tms_app/core/utils/constants.dart';
+import 'package:tms_app/domain/repositories/my_course/course_progress_repository.dart';
 
 class LessonContentWidget extends StatefulWidget {
   final CourseChapter currentChapter;
@@ -91,6 +100,12 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
     print('   - Có thể chuyển bài tiếp: ${widget.canNavigateToNext}');
     print(
         '   - Đã hoàn thành: ${widget.completedLessons[widget.currentLesson.id] == true}');
+
+    // In ra toàn bộ danh sách bài học đã hoàn thành
+    print('   - Danh sách bài học đã hoàn thành:');
+    widget.completedLessons.forEach((key, value) {
+      print('     + Bài học ID: $key, Hoàn thành: $value');
+    });
   }
 
   // Khởi tạo video player
@@ -213,6 +228,21 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
     print('   - Có thể chuyển bài tiếp: ${widget.canNavigateToNext}');
     print(
         '   - Đã hoàn thành: ${widget.completedLessons[widget.currentLesson.id] == true}');
+    print('   - ID bài học hiện tại: ${widget.currentLesson.id}');
+
+    // Kiểm tra xem ID bài học có đúng định dạng không
+    final lessonId = widget.currentLesson.id;
+    print('   - Kiểu dữ liệu của lessonId: ${lessonId.runtimeType}');
+
+    // Kiểm tra completedLessons có chứa lessonId không
+    print(
+        '   - completedLessons có chứa lessonId không: ${widget.completedLessons.containsKey(lessonId)}');
+
+    // In ra toàn bộ danh sách bài học đã hoàn thành
+    print('   - Danh sách bài học đã hoàn thành:');
+    widget.completedLessons.forEach((key, value) {
+      print('     + Bài học ID: $key, Hoàn thành: $value');
+    });
 
     return DefaultTabController(
       length: 3,
@@ -824,8 +854,12 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
 
   // Widget để hiển thị nút hoàn thành bài học
   Widget _buildCompleteLessonButton() {
-    final bool isCompleted =
-        widget.completedLessons[widget.currentLesson.id] == true;
+    // Lấy ID bài học hiện tại
+    final String lessonId = widget.currentLesson.id;
+
+    // Kiểm tra trạng thái hoàn thành
+    final bool isCompleted = widget.completedLessons[lessonId] == true;
+
     final bool hasTest = widget.currentLesson.testType != null;
     final bool canNavigate = widget.canNavigateToNext;
 
@@ -833,17 +867,63 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
     print('   - isCompleted: $isCompleted');
     print('   - hasTest: $hasTest');
     print('   - canNavigateToNext: $canNavigate');
-    print('   - currentLessonId: ${widget.currentLesson.id}');
+    print('   - currentLessonId: $lessonId');
+    print('   - completedLessons: ${widget.completedLessons}');
 
     return CompleteLessonButton(
       isCompleted: isCompleted,
-      onComplete: () {
+      onComplete: () async {
         print('📢 LessonContentWidget: Gọi onCompleteLesson từ UI');
+
+        if (!isCompleted && !hasTest) {
+          // Gọi API mở khóa bài học tiếp theo
+          try {
+            // Lấy thông tin người dùng từ SharedPrefs
+            final accountId =
+                await SharedPrefs.getUserId().then((id) => id.toString());
+
+            // Lấy ID khóa học từ context
+            final enrollCourse =
+                context.findAncestorWidgetOfExactType<EnrollCourseScreen>();
+            if (enrollCourse == null) {
+              print('❌ Không thể lấy courseId từ EnrollCourseScreen');
+              return;
+            }
+
+            // Gọi API trực tiếp bằng Dio
+            final dio = GetIt.instance<Dio>();
+            final baseUrl = Constants.BASE_URL;
+
+            print(
+                '🔄 Gọi API mở khóa bài học tiếp theo: accountId=$accountId, courseId=${enrollCourse.courseId}, chapterId=${widget.currentChapter.id}, lessonId=$lessonId');
+
+            await dio.post(
+              '$baseUrl/api/progress/unlock-next',
+              queryParameters: {
+                'accountId': accountId,
+                'courseId': enrollCourse.courseId.toString(),
+                'chapterId': widget.currentChapter.id,
+                'lessonId': lessonId,
+              },
+            );
+
+            print('✅ Đã mở khóa bài học tiếp theo thành công');
+          } catch (e) {
+            print('❌ Lỗi khi mở khóa bài học tiếp theo: $e');
+          }
+        }
+
+        // Đánh dấu hoàn thành bài học trong UI
         widget.onCompleteLesson();
+
+        // Cập nhật UI
+        setState(() {});
       },
       hasTest: hasTest,
       onStartTest: hasTest ? () => widget.startTest() : null,
       onNextLesson: canNavigate ? widget.onNextLesson : null,
+      // Không cần truyền thông báo lỗi vì không dùng controller
+      errorMessage: null,
     );
   }
 }

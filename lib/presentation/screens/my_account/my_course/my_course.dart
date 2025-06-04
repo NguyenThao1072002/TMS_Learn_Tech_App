@@ -1068,14 +1068,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
           startVideo: startVideo,
           showMaterials: showMaterials,
           showLessonContent: showLessonContent,
-          onCommentSubmit: (comment) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Đã gửi bình luận: $comment'),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          },
+          onCommentSubmit: (_) {}, // Hàm rỗng, không làm gì cả
           currentLesson: Lesson(
             id: "1",
             title: "Bài học mẫu",
@@ -1084,7 +1077,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
             isUnlocked: true,
           ),
           currentChapter: CourseChapter(
-            id: 1,
+            id: "1",
             title: "Chương 1",
             lessons: [],
           ),
