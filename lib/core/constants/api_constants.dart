@@ -1,7 +1,7 @@
 /// Các hằng số URL API cho ứng dụng
 class ApiConstants {
   /// URL cơ sở của API
-  static const String baseUrl = 'https://api.tmsapp.com';
+  // static const String baseUrl = 'https://api.tmsapp.com';
 
   // Auth API endpoints
   static const String login = '/api/auth/login';

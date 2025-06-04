@@ -19,6 +19,9 @@ import 'package:tms_app/presentation/controller/my_course/my_course_controller.d
 import 'package:provider/provider.dart';
 import 'package:tms_app/domain/usecases/my_course/content_test_usecase.dart';
 import 'package:tms_app/data/models/my_course/test/content_test_model.dart';
+import 'package:tms_app/domain/usecases/my_course/course_progress_usecase.dart'; // Import CourseProgressUseCase
+import 'package:tms_app/core/utils/shared_prefs.dart'; // Import SharedPrefs để lấy accountId
+import 'dart:convert'; // Import cho base64, utf8 và json
 
 // Enum for lesson types
 enum LessonType { video, test }
@@ -165,6 +168,34 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
 
     // Load course data using the controller
     _loadCourseData();
+
+    // Gọi API để khởi tạo tiến trình học tập khi vào khóa học lần đầu
+    _initCourseProgress();
+  }
+
+  // Khởi tạo tiến trình học tập khi vào khóa học lần đầu
+  Future<void> _initCourseProgress() async {
+    try {
+      int accountId = await SharedPrefs.getUserId();
+      // Gọi UseCase để khởi tạo tiến trình học tập
+      final addCourseProgressUseCase = sl<AddCourseProgressUseCase>();
+      int courseId = int.parse(widget.courseId.toString());
+      print(
+          '🔄 Đang gọi API khởi tạo tiến trình học tập với accountId=$accountId, courseId=${widget.courseId}');
+
+      final result = await addCourseProgressUseCase.execute(
+          accountId.toString(), courseId);
+
+      print('✅ Đã khởi tạo tiến trình học tập thành công: ${result.message}');
+    } catch (e) {
+      // Xử lý lỗi, nhưng không hiển thị thông báo lỗi cho người dùng
+      // vì đây là quá trình ngầm
+      print('❌ Lỗi khi khởi tạo tiến trình học tập: $e');
+
+      // Ghi log chi tiết hơn để debug
+      print('🔍 Chi tiết lỗi: ${e.toString()}');
+      print('🔍 courseId: ${widget.courseId}');
+    }
   }
 
   // Phương thức để đảm bảo UI luôn hiển thị bài học hiện tại chính xác

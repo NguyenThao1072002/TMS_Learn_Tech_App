@@ -7,6 +7,7 @@ import 'package:tms_app/data/repositories/discount_repository_impl.dart';
 import 'package:tms_app/data/repositories/document_repository_impl.dart';
 import 'package:tms_app/data/repositories/my_course/my_course_list_repository_impl.dart';
 import 'package:tms_app/data/repositories/my_course/course_lesson_repository_impl.dart'; // Import course lesson repository
+import 'package:tms_app/data/repositories/my_course/course_progress_repository_impl.dart'; // Import course progress repository
 import 'package:tms_app/data/repositories/my_course/content_test_repository_impl.dart'; // Import content test repository
 import 'package:tms_app/data/repositories/my_course/comment_lession_repository_impl.dart'; // Import comment lesson repository
 import 'package:tms_app/data/repositories/payment_repository_impl.dart';
@@ -19,6 +20,7 @@ import 'package:tms_app/data/services/discount_service.dart';
 import 'package:tms_app/data/services/document/document_service.dart';
 import 'package:tms_app/data/services/my_course/my_course_list_service.dart';
 import 'package:tms_app/data/services/my_course/course_lesson_service.dart'; // Import course lesson service
+import 'package:tms_app/data/services/my_course/course_progress_service.dart'; // Import course progress service
 import 'package:tms_app/data/services/my_course/content_test_service.dart'; // Import content test service
 import 'package:tms_app/data/services/my_course/comment_lession_service.dart'; // Import comment lesson service
 import 'package:tms_app/data/services/payment_service.dart';
@@ -33,6 +35,7 @@ import 'package:tms_app/domain/repositories/discount_repository.dart';
 import 'package:tms_app/domain/repositories/document_repository.dart';
 import 'package:tms_app/domain/repositories/my_course/my_course_list_repository.dart';
 import 'package:tms_app/domain/repositories/my_course/course_lesson_repository.dart'; // Import course lesson repository interface
+import 'package:tms_app/domain/repositories/my_course/course_progress_repository.dart'; // Import course progress repository interface
 import 'package:tms_app/domain/repositories/my_course/content_test_repository.dart'; // Import content test repository interface
 import 'package:tms_app/domain/repositories/my_course/comment_lession_repository.dart'; // Import comment lesson repository interface
 import 'package:tms_app/domain/repositories/payment_repository.dart';
@@ -46,6 +49,7 @@ import 'package:tms_app/domain/usecases/forgot_password_usecase.dart';
 import 'package:tms_app/domain/usecases/login_usecase.dart';
 import 'package:tms_app/domain/usecases/my_course/my_course_list_usecase.dart';
 import 'package:tms_app/domain/usecases/my_course/course_lesson_usecase.dart'; // Import course lesson usecase
+import 'package:tms_app/domain/usecases/my_course/course_progress_usecase.dart'; // Import course progress usecase
 import 'package:tms_app/domain/usecases/my_course/content_test_usecase.dart'; // Import content test usecase
 import 'package:tms_app/domain/usecases/my_course/comment_lession_usecase.dart'; // Import comment lesson usecase
 import 'package:tms_app/domain/usecases/payment_usecase.dart';
@@ -210,6 +214,8 @@ void _registerServices() {
   sl.registerLazySingleton(() => MyCourseListService(sl()));
   // Đăng ký CourseLessonService
   sl.registerLazySingleton(() => CourseLessonService(sl()));
+  // Đăng ký CourseProgressService
+  sl.registerLazySingleton(() => CourseProgressService(sl()));
   // Đăng ký ContentTestService
   sl.registerLazySingleton(() => ContentTestService(sl()));
   // Đăng ký CommentLessonService
@@ -266,6 +272,11 @@ void _registerRepositories() {
   // Đăng ký CourseLessonRepository
   sl.registerLazySingleton<CourseLessonRepository>(
       () => CourseLessonRepositoryImpl(sl<CourseLessonService>()));
+
+  // Đăng ký CourseProgressRepository
+  sl.registerLazySingleton<CourseProgressRepository>(() =>
+      CourseProgressRepositoryImpl(
+          courseProgressService: sl<CourseProgressService>()));
 
   // Đăng ký ContentTestRepository
   sl.registerLazySingleton<ContentTestRepository>(() =>
@@ -327,6 +338,9 @@ void _registerUseCases() {
   // Course Lessons
   sl.registerLazySingleton(
       () => CourseLessonUseCase(sl<CourseLessonRepository>()));
+  // Course Progress
+  sl.registerLazySingleton(
+      () => AddCourseProgressUseCase(sl<CourseProgressRepository>()));
   // Content Test
   sl.registerLazySingleton(
       () => ContentTestUseCase(sl<ContentTestRepository>()));

@@ -35,20 +35,13 @@ class SharedPrefs {
     await prefs.setInt(KEY_USER_ID, userId);
   }
 
-  static Future<int?> getUserId() async {
+  static Future<int> getUserId() async {
     final prefs = await SharedPreferences.getInstance();
-    // Thử lấy dưới dạng int
-    final intId = prefs.getInt(KEY_USER_ID);
-    if (intId != null) {
-      return intId;
-    }
 
-    // Nếu không có, thử lấy dưới dạng String và chuyển đổi
+    // Lấy giá trị chuỗi từ SharedPreferences
     final stringId = prefs.getString(KEY_USER_ID);
-    if (stringId != null) {
-      return int.tryParse(stringId);
-    }
 
-    return null;
+    // Chuyển đổi chuỗi thành int, nếu không thể thì trả về 0
+    return int.tryParse(stringId ?? '') ?? 0; // Nếu không thể chuyển, trả về 0
   }
 }
