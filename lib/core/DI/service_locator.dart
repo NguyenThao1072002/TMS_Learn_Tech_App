@@ -10,6 +10,7 @@ import 'package:tms_app/data/repositories/my_course/course_lesson_repository_imp
 import 'package:tms_app/data/repositories/my_course/course_progress_repository_impl.dart'; // Import course progress repository
 import 'package:tms_app/data/repositories/my_course/content_test_repository_impl.dart'; // Import content test repository
 import 'package:tms_app/data/repositories/my_course/comment_lession_repository_impl.dart'; // Import comment lesson repository
+import 'package:tms_app/data/repositories/my_course/test_submission_repository_impl.dart'; // Import test submission repository
 import 'package:tms_app/data/repositories/payment_repository_impl.dart';
 import 'package:tms_app/data/repositories/teaching_staff_repository_impl.dart'; // Import teaching staff repository
 import 'package:tms_app/data/services/auth_service.dart'; // Import AuthService
@@ -38,6 +39,7 @@ import 'package:tms_app/domain/repositories/my_course/course_lesson_repository.d
 import 'package:tms_app/domain/repositories/my_course/course_progress_repository.dart'; // Import course progress repository interface
 import 'package:tms_app/domain/repositories/my_course/content_test_repository.dart'; // Import content test repository interface
 import 'package:tms_app/domain/repositories/my_course/comment_lession_repository.dart'; // Import comment lesson repository interface
+import 'package:tms_app/domain/repositories/my_course/test_submission_repository.dart'; // Import test submission repository interface
 import 'package:tms_app/domain/repositories/payment_repository.dart';
 import 'package:tms_app/domain/repositories/teaching_staff_repository.dart'; // Import teaching staff repository interface
 import 'package:tms_app/domain/usecases/blog_usecase.dart';
@@ -52,6 +54,7 @@ import 'package:tms_app/domain/usecases/my_course/course_lesson_usecase.dart'; /
 import 'package:tms_app/domain/usecases/my_course/course_progress_usecase.dart'; // Import course progress usecase
 import 'package:tms_app/domain/usecases/my_course/content_test_usecase.dart'; // Import content test usecase
 import 'package:tms_app/domain/usecases/my_course/comment_lession_usecase.dart'; // Import comment lesson usecase
+import 'package:tms_app/domain/usecases/my_course/test_submission_usecase.dart'; // Import test submission usecase
 import 'package:tms_app/domain/usecases/payment_usecase.dart';
 import 'package:tms_app/domain/usecases/register_usecase.dart';
 import 'package:tms_app/domain/usecases/update_account_usecase.dart';
@@ -89,6 +92,7 @@ import 'package:tms_app/presentation/controller/day_streak_controller.dart';
 import 'package:tms_app/domain/usecases/teaching_staff/teaching_staff_usecase.dart'; // Import teaching staff usecase
 import 'package:tms_app/presentation/controller/teaching_staff_controller.dart';
 import 'package:tms_app/presentation/controller/my_course/course_progress_controller.dart'; // Import course progress controller
+import 'package:tms_app/presentation/controller/my_course/test_submission_controller.dart'; // Import test submission controller
 
 // Đảm bảo các import không bị xóa bởi công cụ IDE
 // ignore: unused_element
@@ -288,6 +292,10 @@ void _registerRepositories() {
       CommentLessonRepositoryImpl(
           commentLessonService: sl<CommentLessonService>()));
 
+  // Đăng ký TestSubmissionRepository
+  sl.registerLazySingleton<TestSubmissionRepository>(
+      () => TestSubmissionRepositoryImpl(sl<CourseProgressService>()));
+
   // Đăng ký PaymentRepository
   sl.registerLazySingleton<PaymentRepository>(
     () => PaymentRepositoryImpl(paymentService: sl<PaymentService>()),
@@ -350,6 +358,9 @@ void _registerUseCases() {
   // Comment Lesson
   sl.registerLazySingleton(
       () => CommentLessonUseCase(sl<CommentLessonRepository>()));
+  // Test Submission
+  sl.registerLazySingleton(
+      () => TestSubmissionUseCase(sl<TestSubmissionRepository>()));
   // Payment
   sl.registerLazySingleton(() => PaymentUseCase(sl<PaymentRepository>()));
 
@@ -415,6 +426,13 @@ void _registerControllers() {
     () => CourseProgressController(
       addCourseProgressUseCase: sl<AddCourseProgressUseCase>(),
       unlockNextLessonUseCase: sl<UnlockNextLessonUseCase>(),
+    ),
+  );
+
+  // Đăng ký TestSubmissionController
+  sl.registerLazySingleton<TestSubmissionController>(
+    () => TestSubmissionController(
+      testSubmissionUseCase: sl<TestSubmissionUseCase>(),
     ),
   );
 

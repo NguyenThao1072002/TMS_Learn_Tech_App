@@ -1702,7 +1702,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
           child: ElevatedButton.icon(
             onPressed: _completedLessons[widget.currentLesson.id] == true
                 ? () {
-                    // Xem lại kết quả
+                    // Xem lại kết quả - Vẫn giữ chức năng này vì người dùng có thể muốn xem lại
                     _showTestResults(widget.currentLesson);
                   }
                 : () {
@@ -3397,20 +3397,67 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
                     ),
                   );
                 } else {
-                  // Thông báo không thể chuyển
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Không thể chuyển đến bài học tiếp theo'),
-                      backgroundColor: Colors.orange,
-                    ),
-                  );
+                  // Cập nhật trạng thái hoàn thành trong bộ nhớ local trước khi thử chuyển tiếp
+                  _controller.completedLessons[lesson.id] = true;
+                  // Thử lại việc chuyển đến bài học tiếp theo sau khi đã cập nhật trạng thái
+                  if (_controller.canNavigateToNextLesson()) {
+                    _controller.navigateToNextLesson();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Đã chuyển đến bài học tiếp theo'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else {
+                    // Thông báo không thể chuyển và tải lại dữ liệu
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Đang cập nhật tiến trình học tập...'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                    // Tải lại dữ liệu khóa học để cập nhật trạng thái từ server
+                    _controller.loadCourseData(widget.courseId).then((_) {
+                      // Sau khi tải xong, thử chuyển tiếp một lần nữa
+                      Future.delayed(Duration(milliseconds: 500), () {
+                        if (_controller.canNavigateToNextLesson()) {
+                          _controller.navigateToNextLesson();
+                        }
+                      });
+                    });
+                  }
                 }
               },
               onTestCompleted: (double score) {
-                // Cập nhật kết quả và đánh dấu hoàn thành nếu đạt điểm
+                // Cập nhật kết quả điểm số
                 _controller.setTestResult(score);
+
+                // Đảm bảo cập nhật trạng thái local
                 if (_controller.isTestPassed()) {
-                  _controller.onLessonCompleted(lesson.id);
+                  // Cập nhật trạng thái hoàn thành trong bộ nhớ local
+                  _controller.completedLessons[lesson.id] = true;
+
+                  // Hiển thị thông báo đang cập nhật
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Đang cập nhật tiến trình học tập...'),
+                      backgroundColor: Colors.blue,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+
+                  // Tải lại dữ liệu khóa học từ server để cập nhật UI
+                  Future.delayed(Duration(seconds: 1), () {
+                    _controller.loadCourseData(widget.courseId).then((_) {
+                      // Hiển thị thông báo hoàn thành
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Bài học đã được đánh dấu hoàn thành!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    });
+                  });
                 }
               },
             );
@@ -3418,10 +3465,11 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
         ),
       ).then((result) {
         // Xử lý kết quả khi quay lại từ màn hình kiểm tra
-        if (result != null && result is double) {
-          // Hiển thị kết quả
-          _showTestResults(lesson);
-        }
+        // Không hiển thị popup kết quả lần nữa vì đã hiển thị trong TakeTestScreen
+        // if (result != null && result is double) {
+        //   // Hiển thị kết quả
+        //   _showTestResults(lesson);
+        // }
       });
     }).catchError((error) {
       // Tắt trạng thái đang tải và hiển thị thông báo lỗi

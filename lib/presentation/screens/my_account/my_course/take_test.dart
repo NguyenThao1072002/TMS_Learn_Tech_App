@@ -3,6 +3,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:tms_app/data/models/my_course/test/content_test_model.dart';
 import 'package:tms_app/domain/usecases/my_course/content_test_usecase.dart';
+import 'package:tms_app/data/models/my_course/test_submission_model.dart';
+import 'package:tms_app/presentation/controller/my_course/test_submission_controller.dart';
+import 'package:tms_app/core/utils/shared_prefs.dart';
 
 class TakeTestScreen extends StatefulWidget {
   final ContentTestModel contentTest;
@@ -42,6 +45,13 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
 
   // Điểm số khi nộp bài
   double _score = 0;
+
+  // Thông tin chi tiết từ API
+  int _correctAnswers = 0;
+  int _incorrectAnswers = 0;
+  double _rateTesting = 0.0;
+  String _resultTest = '';
+  bool _hasApiResult = false;
 
   @override
   void initState() {
@@ -185,11 +195,151 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
     setState(() {
       _isSubmitted = true;
       _timer?.cancel();
-      _calculateScore();
     });
 
-    // Hiển thị kết quả
-    _showResultDialog();
+    // Gửi bài kiểm tra lên API
+    _submitTestToAPI();
+  }
+
+  // Gửi bài kiểm tra lên API
+  Future<void> _submitTestToAPI() async {
+    // Hiển thị loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      // Chuẩn bị danh sách câu trả lời
+      final List<QuestionAnswer> questionAnswers = [];
+
+      for (int i = 0; i < widget.contentTest.questionList.length; i++) {
+        final question = widget.contentTest.questionList[i];
+        final userAnswer = _userAnswers[i];
+
+        if (userAnswer != null) {
+          questionAnswers.add(
+            QuestionAnswer(
+              questionId: question.questionId,
+              result: userAnswer is String ? userAnswer : '',
+              resultCheck: userAnswer is String ? userAnswer : '',
+              type: question.type,
+            ),
+          );
+        }
+      }
+
+      // Lấy accountId từ SharedPrefs
+      final accountId = await SharedPrefs.getUserId();
+
+      // Tạo request
+      final request = TestSubmissionRequest(
+        testId: widget.contentTest.testId,
+        totalQuestion: widget.contentTest.totalQuestion,
+        type: widget.contentTest.type,
+        durationTest: widget.contentTest.duration -
+            _timeRemaining, // Thời gian đã sử dụng
+        courseId: widget.contentTest.courseId,
+        accountId: accountId,
+        chapterId: widget.contentTest.isChapterTest
+            ? widget.contentTest.courseId
+            : 15, // Cần lấy từ contentTest
+        isChapterTest: widget.contentTest.isChapterTest,
+        questionResponsiveList: questionAnswers,
+      );
+
+      // Gọi API để gửi bài kiểm tra
+      final testSubmissionController = TestSubmissionController();
+      TestSubmissionResponse? response;
+      bool isLastChapterTest = false;
+
+      if (widget.contentTest.isChapterTest) {
+        final chapterResponse =
+            await testSubmissionController.submitChapterTest(
+          testId: request.testId,
+          totalQuestion: request.totalQuestion,
+          questionTypes: request.type,
+          durationTest: request.durationTest,
+          courseId: request.courseId,
+          chapterId: request.chapterId,
+          answers: request.questionResponsiveList,
+        );
+
+        // Kiểm tra nếu là bài kiểm tra chương cuối cùng?
+
+        if (chapterResponse?.status == 200 &&
+            chapterResponse?.message.contains("Khóa học đã hoàn thành") ==
+                true) {
+          isLastChapterTest = true;
+          print('🎉 Đã hoàn thành khóa học!');
+          // Tính điểm cục bộ cho hiển thị
+          _calculateScore();
+          _hasApiResult = false;
+        } else {
+          // Không có response data cho bài kiểm tra chương
+          _hasApiResult = false;
+          _calculateScore();
+        }
+      } else {
+        response = await testSubmissionController.submitLessonTest(
+          testId: request.testId,
+          totalQuestion: request.totalQuestion,
+          questionTypes: request.type,
+          durationTest: request.durationTest,
+          courseId: request.courseId,
+          chapterId: request.chapterId,
+          answers: request.questionResponsiveList,
+        );
+      }
+
+      // Đóng dialog loading
+      Navigator.pop(context);
+
+      // Cập nhật điểm số từ API response
+      if (response?.data != null) {
+        setState(() {
+          _score = response!.data!.score ?? 0.0;
+          _correctAnswers = response!.data!.correctQuestion ?? 0;
+          _incorrectAnswers = response!.data!.incorrectQuestion ?? 0;
+          _rateTesting = response!.data!.rateTesting ?? 0.0;
+          _resultTest = response!.data!.resultTest ?? '';
+          _hasApiResult = true;
+
+          // Log thông tin response để debug
+          print('✅ Nhận kết quả từ API:');
+          print('   - Điểm số: ${response!.data!.score}');
+          print(
+              '   - Câu đúng: ${response!.data!.correctQuestion}/${response!.data!.totalQuestion}');
+          print('   - Kết quả: ${response!.data!.resultTest}');
+          print('   - Tỷ lệ: ${response!.data!.rateTesting}%');
+        });
+      } else {
+        // Nếu không có response hoặc data, fallback về cách tính điểm cũ
+        print(
+            '⚠️ Không nhận được kết quả từ API, fallback về tính điểm cục bộ');
+        setState(() {
+          _hasApiResult = false;
+          _calculateScore();
+        });
+      }
+
+      // Hiển thị kết quả
+      _showResultDialog(isLastChapterTest);
+    } catch (e) {
+      // Đóng dialog loading
+      Navigator.pop(context);
+
+      // Xử lý lỗi - fallback về cách tính điểm cũ nếu API bị lỗi
+      print('❌ Lỗi khi gửi bài kiểm tra lên API: $e');
+      setState(() {
+        _hasApiResult = false;
+        _calculateScore(); // Fallback về cách tính điểm cũ
+      });
+      _showResultDialog(false);
+    }
   }
 
   // Tính điểm bài thi
@@ -247,11 +397,16 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
   }
 
   // Hiển thị dialog kết quả
-  void _showResultDialog() {
+  void _showResultDialog([bool isLastChapterTest = false]) {
     final bool isPassed = _score >= 7.0; // Điểm đạt thường là 7.0/10
-    final correctCount = _getCorrectAnswersCount();
-    final totalQuestions = widget.contentTest.questionList.length;
-    final correctPercentage = (correctCount / totalQuestions * 100).round();
+
+    // Tính toán số câu đúng nếu không có dữ liệu từ API
+    final int correctCount =
+        _hasApiResult ? _correctAnswers : _getCorrectAnswersCount();
+    final int totalQuestions = widget.contentTest.questionList.length;
+    final int correctPercentage = _hasApiResult
+        ? _rateTesting.round()
+        : (correctCount / totalQuestions * 100).round();
 
     // Gọi callback khi hoàn thành bài kiểm tra
     if (widget.onTestCompleted != null) {
@@ -273,14 +428,19 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
         title: Row(
           children: [
             Icon(
-              isPassed ? Icons.check_circle : Icons.error,
-              color: isPassed ? Colors.green : Colors.orange,
+              isLastChapterTest || isPassed ? Icons.check_circle : Icons.error,
+              color:
+                  isLastChapterTest || isPassed ? Colors.green : Colors.orange,
             ),
             const SizedBox(width: 8),
             Text(
-              isPassed ? 'Hoàn thành!' : 'Chưa đạt',
+              isLastChapterTest
+                  ? 'Hoàn thành khóa học!'
+                  : (isPassed ? 'Hoàn thành!' : 'Chưa đạt'),
               style: TextStyle(
-                color: isPassed ? Colors.green : Colors.orange,
+                color: isLastChapterTest || isPassed
+                    ? Colors.green
+                    : Colors.orange,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -290,88 +450,135 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Hiển thị điểm số
+              // Hiển thị điểm số hoặc biểu tượng hoàn thành
               Container(
                 width: 100,
                 height: 100,
                 decoration: BoxDecoration(
-                  color: isPassed
+                  color: isLastChapterTest || isPassed
                       ? Colors.green.withOpacity(0.1)
                       : Colors.orange.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '${_score.toStringAsFixed(1)}',
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          color: isPassed ? Colors.green : Colors.orange,
+                  child: isLastChapterTest
+                      ? Icon(
+                          Icons.emoji_events,
+                          size: 50,
+                          color: Colors.amber,
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '${_score.toStringAsFixed(1)}',
+                              style: TextStyle(
+                                fontSize: 30,
+                                fontWeight: FontWeight.bold,
+                                color: isPassed ? Colors.green : Colors.orange,
+                              ),
+                            ),
+                            Text(
+                              '/10',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: isPassed ? Colors.green : Colors.orange,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      Text(
-                        '/10',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: isPassed ? Colors.green : Colors.orange,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
               const SizedBox(height: 16),
 
               // Thông báo kết quả
               Text(
-                isPassed
-                    ? 'Chúc mừng! Bạn đã vượt qua bài kiểm tra.'
-                    : 'Bạn chưa vượt qua bài kiểm tra. Hãy xem lại bài học và thử lại.',
+                isLastChapterTest
+                    ? 'Chúc mừng! Bạn đã hoàn thành toàn bộ khóa học.'
+                    : (isPassed
+                        ? 'Chúc mừng! Bạn đã vượt qua bài kiểm tra.'
+                        : 'Bạn chưa vượt qua bài kiểm tra. Hãy xem lại bài học và thử lại.'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: isPassed ? Colors.green : Colors.orange,
+                  color: isLastChapterTest || isPassed
+                      ? Colors.green
+                      : Colors.orange,
                 ),
               ),
               const SizedBox(height: 16),
 
-              // Thông tin chi tiết
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(8),
+              // Thông tin chi tiết - chỉ hiển thị nếu không phải là bài kiểm tra chương cuối
+              if (!isLastChapterTest)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildResultItem(
+                        icon: Icons.question_answer,
+                        label: 'Số câu đúng:',
+                        value:
+                            '$correctCount/$totalQuestions ($correctPercentage%)',
+                      ),
+                      const Divider(),
+                      _buildResultItem(
+                        icon: Icons.timer,
+                        label: 'Thời gian làm bài:',
+                        value: _formatTimeUsed(),
+                      ),
+                      const Divider(),
+                      _buildResultItem(
+                        icon: Icons.psychology,
+                        label: 'Mức độ bài kiểm tra:',
+                        value: widget.contentTest.isChapterTest
+                            ? 'Kiểm tra chương'
+                            : (widget.contentTest.type.contains('essay')
+                                ? 'Tự luận'
+                                : 'Trắc nghiệm'),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    _buildResultItem(
-                      icon: Icons.question_answer,
-                      label: 'Số câu đúng:',
-                      value:
-                          '$correctCount/$totalQuestions ($correctPercentage%)',
-                    ),
-                    const Divider(),
-                    _buildResultItem(
-                      icon: Icons.timer,
-                      label: 'Thời gian làm bài:',
-                      value: _formatTimeUsed(),
-                    ),
-                    const Divider(),
-                    _buildResultItem(
-                      icon: Icons.psychology,
-                      label: 'Mức độ bài kiểm tra:',
-                      value: widget.contentTest.isChapterTest
-                          ? 'Kiểm tra chương'
-                          : (widget.contentTest.type.contains('essay')
-                              ? 'Tự luận'
-                              : 'Trắc nghiệm'),
-                    ),
-                  ],
+
+              // Thông báo hoàn thành khóa học
+              if (isLastChapterTest)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(top: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.withOpacity(0.5)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.stars, color: Colors.amber),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Bạn đã hoàn thành toàn bộ khóa học!',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.amber,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Chúc mừng bạn đã hoàn thành tất cả các bài học và bài kiểm tra trong khóa học này. Bạn có thể tiếp tục học các khóa học khác hoặc xem lại nội dung của khóa học này bất cứ lúc nào.',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -383,24 +590,25 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
               Navigator.pop(
                   context, _score); // Trở về màn hình trước với kết quả
             },
-            child: const Text('Trở về bài học'),
+            child: Text(isLastChapterTest ? 'Đóng' : 'Trở về bài học'),
           ),
 
-          // Nút xem chi tiết kết quả
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Đóng dialog
-              // Hiển thị chi tiết bài làm
-              _showDetailedResults();
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.blue,
+          // Nút xem chi tiết kết quả - chỉ hiển thị nếu không phải bài kiểm tra chương cuối
+          if (!isLastChapterTest)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Đóng dialog
+                // Hiển thị chi tiết bài làm
+                _showDetailedResults();
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue,
+              ),
+              child: const Text('Xem chi tiết'),
             ),
-            child: const Text('Xem chi tiết'),
-          ),
 
-          // Nút chuyển đến bài học tiếp theo - chỉ hiển thị khi đạt đủ điểm
-          if (isPassed)
+          // Nút chuyển đến bài học tiếp theo - chỉ hiển thị khi đạt đủ điểm hoặc hoàn thành khóa học
+          if (isPassed || isLastChapterTest)
             ElevatedButton(
               onPressed: () {
                 // Gọi phương thức để chuyển đến bài học tiếp theo trước
@@ -418,7 +626,9 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text('Bài học tiếp theo'),
+              child: Text(isLastChapterTest
+                  ? 'Xem khóa học khác'
+                  : 'Bài học tiếp theo'),
             ),
         ],
       ),
@@ -1668,6 +1878,8 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
           onChanged: (value) {
             _saveAnswer(value);
           },
+          textDirection:
+              TextDirection.ltr, // Đảm bảo hướng văn bản từ trái sang phải
           textInputAction: TextInputAction.done,
           textAlign: TextAlign.left,
           style: const TextStyle(fontSize: 16),
@@ -1716,6 +1928,13 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
   // Xây dựng câu hỏi tự luận
   Widget _buildEssayQuestion(QuestionModel question) {
     final currentAnswer = _userAnswers[_currentQuestionIndex] as String? ?? '';
+    final TextEditingController textController =
+        TextEditingController(text: currentAnswer);
+
+    // Đảm bảo vị trí con trỏ ở cuối văn bản
+    textController.selection = TextSelection.fromPosition(
+      TextPosition(offset: textController.text.length),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1735,7 +1954,7 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
         ),
         const SizedBox(height: 16),
         TextField(
-          controller: TextEditingController(text: currentAnswer),
+          controller: textController,
           decoration: InputDecoration(
             hintText: 'Nhập câu trả lời chi tiết của bạn...',
             border: OutlineInputBorder(
@@ -1755,7 +1974,10 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
           onChanged: (value) {
             _saveAnswer(value);
           },
+          textDirection:
+              TextDirection.ltr, // Đảm bảo hướng văn bản từ trái sang phải
           textInputAction: TextInputAction.newline,
+          textAlign: TextAlign.left, // Đảm bảo căn lề trái
         ),
         const SizedBox(height: 12),
         const Text(

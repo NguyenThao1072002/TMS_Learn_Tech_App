@@ -27,6 +27,7 @@ class MyCourseScreen extends StatefulWidget {
 class _MyCourseScreenState extends State<MyCourseScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  PageController _pageController = PageController(initialPage: 0);
   int _currentPage = 0;
   int _pageSize = 10;
   String _searchQuery = '';
@@ -60,11 +61,23 @@ class _MyCourseScreenState extends State<MyCourseScreen>
 
   // Filtered courses based on search and current tab
   List<MyCourseItem> get _filteredCourses {
-    // Khi API đã lọc theo status, chỉ cần lọc theo tìm kiếm
-    return _courseListResponse.content
-        .where((course) =>
-            course.title.toLowerCase().contains(_searchQuery.toLowerCase()))
-        .toList();
+    List<MyCourseItem> filteredList = _courseListResponse.content;
+
+    // Lọc thêm theo tiến trình cho tab Studying (nếu tiến trình = 0, không hiển thị trong tab Đang học)
+    if (_currentStatus == 'Studying') {
+      filteredList =
+          filteredList.where((course) => course.progress > 0).toList();
+    }
+
+    // Lọc theo tìm kiếm nếu có
+    if (_searchQuery.isNotEmpty) {
+      filteredList = filteredList
+          .where((course) =>
+              course.title.toLowerCase().contains(_searchQuery.toLowerCase()))
+          .toList();
+    }
+
+    return filteredList;
   }
 
   // Recent courses (last viewed)
@@ -79,16 +92,27 @@ class _MyCourseScreenState extends State<MyCourseScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+
+    // Xử lý sự kiện khi tab thay đổi (bấm vào tab)
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
-        setState(() {
-          _currentPage = 0; // Reset page when changing tabs
-          _updateCurrentStatus();
-          _loadCourses();
-        });
+        _pageController.animateToPage(
+          _tabController.index,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+        _handleTabChange();
       }
     });
 
+    _loadCourses();
+  }
+
+  // Xử lý khi tab thay đổi (cả khi bấm vào tab hoặc vuốt ngang)
+  void _handleTabChange() {
+    _currentPage = 0; // Reset page when changing tabs
+    _updateCurrentStatus();
+    // Gọi lại API khi chuyển tab để lấy dữ liệu mới
     _loadCourses();
   }
 
@@ -125,12 +149,13 @@ class _MyCourseScreenState extends State<MyCourseScreen>
         userId = 105; // Fallback to default
       }
 
-      // Call the API using the usecase
+      // Call the API using the usecase với status tương ứng với tab hiện tại
+      print('Đang gọi API với status: $_currentStatus');
       final response = await useCase.getEnrolledCourses(
         accountId: userId,
         page: _currentPage,
         size: _pageSize,
-        status: _currentStatus,
+        status: _currentStatus, // Sử dụng status tương ứng với tab hiện tại
         title: _searchQuery.isNotEmpty ? _searchQuery : null,
       );
 
@@ -157,6 +182,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _pageController.dispose();
     _confettiController.dispose();
     super.dispose();
   }
@@ -240,8 +266,16 @@ class _MyCourseScreenState extends State<MyCourseScreen>
             child: _isLoading
                 ? const Center(
                     child: CircularProgressIndicator(color: Colors.orange))
-                : TabBarView(
-                    controller: _tabController,
+                : PageView(
+                    controller: _pageController,
+                    onPageChanged: (index) {
+                      if (_tabController.index != index) {
+                        setState(() {
+                          _tabController.animateTo(index);
+                          _handleTabChange();
+                        });
+                      }
+                    },
                     children: [
                       _buildCoursesTab(_filteredCourses),
                       _buildCoursesTab(_filteredCourses),
@@ -466,6 +500,11 @@ class _MyCourseScreenState extends State<MyCourseScreen>
   Widget _buildCourseListItem(MyCourseItem course) {
     // Xác định tab hiện tại
     final bool isCompletedTab = _currentStatus == 'Completed';
+    final bool isStudyingTab = _currentStatus == 'Studying';
+
+    // Debug logging
+    print(
+        '📊 Course: ${course.title}, Progress: ${course.progress}, Display: ${(course.progress * 100).clamp(0, 100).toInt()}%, Tab: $_currentStatus, Status: ${course.statusCompleted}');
 
     return Card(
       margin: const EdgeInsets.only(bottom: 20),
@@ -570,7 +609,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                                   color: Colors.amber[700], size: 20),
                               const SizedBox(width: 4),
                               Text(
-                                'Hoàn thành',
+                                'Hoàn thành 100%',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.green[700],
@@ -601,15 +640,14 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                             percent:
                                 course.progress > 1.0 ? 1.0 : course.progress,
                             center: Text(
-                              '${(course.progress * 100).toInt()}%',
+                              '${(course.progress * 100).clamp(0, 100).toInt()}%',
                               style: const TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            progressColor: _currentStatus == 'Studying'
-                                ? Colors.orange
-                                : Colors.blue,
+                            progressColor:
+                                isStudyingTab ? Colors.orange : Colors.blue,
                             backgroundColor: Colors.grey[300]!,
                           ),
                         ],
@@ -954,7 +992,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                       Icon(Icons.schedule, color: Colors.orange[700], size: 16),
                       const SizedBox(width: 4),
                       Text(
-                        'Tiến độ: ${(course.progress * 100).toInt()}%',
+                        'Tiến độ: ${(course.progress * 100).clamp(0, 100).toInt()}%',
                         style: TextStyle(
                           color: Colors.orange[700],
                           fontWeight: FontWeight.w600,

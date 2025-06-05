@@ -113,6 +113,7 @@ class MyCourseItem {
   final DateTime deletedDate;
   final String author;
   final double progress;
+  final String? statusCompleted; // Actived, Studying, Completed
 
   // Additional fields for completed courses
   final String? certificateUrl;
@@ -130,11 +131,29 @@ class MyCourseItem {
     required this.deletedDate,
     required this.author,
     required this.progress,
+    this.statusCompleted,
     this.certificateUrl,
     this.completedDate,
   });
 
   factory MyCourseItem.fromJson(Map<String, dynamic> json) {
+    // Parse progress value
+    double progressValue = 0.0;
+    if (json['progress'] != null) {
+      String rawProgress = json['progress'].toString();
+      progressValue = double.tryParse(rawProgress) ?? 0.0;
+      print(
+          '📊 Raw progress value from API: "$rawProgress", parsed as: $progressValue');
+
+      // If progress is greater than 1, assume it's a percentage and convert to a fraction
+      if (progressValue > 1.0) {
+        double originalValue = progressValue;
+        progressValue = progressValue / 100.0;
+        print(
+            '📊 Converting progress from $originalValue% to fraction: $progressValue');
+      }
+    }
+
     return MyCourseItem(
       id: json['id'] is String
           ? int.tryParse(json['id']) ?? 0
@@ -146,6 +165,7 @@ class MyCourseItem {
           : json['duration'] ?? 0,
       type: json['type'] ?? 'FREE',
       status: json['status'] ?? true,
+      statusCompleted: json['statusCompleted'],
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
@@ -156,9 +176,7 @@ class MyCourseItem {
           ? DateTime.parse(json['deletedDate'])
           : DateTime.now(),
       author: json['author'] ?? '',
-      progress: json['progress'] != null
-          ? double.tryParse(json['progress'].toString()) ?? 0.0
-          : 0.0,
+      progress: progressValue,
       certificateUrl: json['certificateUrl'],
       completedDate: json['completedDate'] != null
           ? DateTime.parse(json['completedDate'])
