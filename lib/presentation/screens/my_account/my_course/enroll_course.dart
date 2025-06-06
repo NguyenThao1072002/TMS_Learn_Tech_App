@@ -2250,24 +2250,24 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
     // Get materials from API data
     List<MaterialItem> materials = _getMaterialsForLesson(lesson);
 
-    // If no materials found in API, use sample data
-    if (materials.isEmpty) {
-      // Sample material data as fallback
-      materials = [
-        const MaterialItem(
-          title: 'Tài liệu giới thiệu khóa học',
-          description: 'Tổng quan về các nội dung và mục tiêu của khóa học',
-          type: MaterialType.pdf,
-          url: 'https://example.com/intro.pdf',
-        ),
-        const MaterialItem(
-          title: 'Hướng dẫn thực hành',
-          description: 'Các bước thực hành chi tiết cho bài học này',
-          type: MaterialType.document,
-          url: 'https://example.com/guide.docx',
-        ),
-      ];
-    }
+    // // If no materials found in API, use sample data
+    // if (materials.isEmpty) {
+    //   // Sample material data as fallback
+    //   materials = [
+    //     const MaterialItem(
+    //       title: 'Tài liệu giới thiệu khóa học',
+    //       description: 'Tổng quan về các nội dung và mục tiêu của khóa học',
+    //       type: MaterialType.pdf,
+    //       url: 'https://example.com/intro.pdf',
+    //     ),
+    //     const MaterialItem(
+    //       title: 'Hướng dẫn thực hành',
+    //       description: 'Các bước thực hành chi tiết cho bài học này',
+    //       type: MaterialType.document,
+    //       url: 'https://example.com/guide.docx',
+    //     ),
+    //   ];
+    // }
 
     // Use the extracted widget
     return LessonMaterialsWidget(
@@ -3409,13 +3409,6 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
                       ),
                     );
                   } else {
-                    // Thông báo không thể chuyển và tải lại dữ liệu
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Đang cập nhật tiến trình học tập...'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
                     // Tải lại dữ liệu khóa học để cập nhật trạng thái từ server
                     _controller.loadCourseData(widget.courseId).then((_) {
                       // Sau khi tải xong, thử chuyển tiếp một lần nữa
@@ -3437,26 +3430,9 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
                   // Cập nhật trạng thái hoàn thành trong bộ nhớ local
                   _controller.completedLessons[lesson.id] = true;
 
-                  // Hiển thị thông báo đang cập nhật
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Đang cập nhật tiến trình học tập...'),
-                      backgroundColor: Colors.blue,
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-
                   // Tải lại dữ liệu khóa học từ server để cập nhật UI
                   Future.delayed(Duration(seconds: 1), () {
-                    _controller.loadCourseData(widget.courseId).then((_) {
-                      // Hiển thị thông báo hoàn thành
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Bài học đã được đánh dấu hoàn thành!'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    });
+                    _controller.loadCourseData(widget.courseId);
                   });
                 }
               },
@@ -3464,12 +3440,6 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
           },
         ),
       ).then((result) {
-        // Xử lý kết quả khi quay lại từ màn hình kiểm tra
-        // Không hiển thị popup kết quả lần nữa vì đã hiển thị trong TakeTestScreen
-        // if (result != null && result is double) {
-        //   // Hiển thị kết quả
-        //   _showTestResults(lesson);
-        // }
       });
     }).catchError((error) {
       // Tắt trạng thái đang tải và hiển thị thông báo lỗi
@@ -3478,14 +3448,6 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
       });
 
       debugPrint('❌ Lỗi khi lấy bài kiểm tra: $error');
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Không thể tải bài kiểm tra: $error'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     });
   }
 
@@ -3499,12 +3461,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
       ),
       child: InkWell(
         onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Downloading: ${material.title}'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          // Handle material tap
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(

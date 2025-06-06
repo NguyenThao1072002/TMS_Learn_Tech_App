@@ -145,12 +145,10 @@ class _MyCourseScreenState extends State<MyCourseScreen>
         userId = await SharedPrefs.getUserId() ??
             105; // Sử dụng phương thức đã được cải tiến
       } catch (e) {
-        print('Lỗi khi lấy userId: $e');
         userId = 105; // Fallback to default
       }
 
       // Call the API using the usecase với status tương ứng với tab hiện tại
-      print('Đang gọi API với status: $_currentStatus');
       final response = await useCase.getEnrolledCourses(
         accountId: userId,
         page: _currentPage,
@@ -164,18 +162,12 @@ class _MyCourseScreenState extends State<MyCourseScreen>
         _isLoading = false;
       });
     } catch (e) {
-      print('Lỗi khi tải khóa học: $e');
       setState(() {
         _isLoading = false;
       });
 
-      // Show error message to user
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Không thể tải danh sách khóa học: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      // Log error
+      debugPrint('❌ Error loading courses: ${e.toString()}');
     }
   }
 
@@ -501,10 +493,6 @@ class _MyCourseScreenState extends State<MyCourseScreen>
     // Xác định tab hiện tại
     final bool isCompletedTab = _currentStatus == 'Completed';
     final bool isStudyingTab = _currentStatus == 'Studying';
-
-    // Debug logging
-    print(
-        '📊 Course: ${course.title}, Progress: ${course.progress}, Display: ${(course.progress * 100).clamp(0, 100).toInt()}%, Tab: $_currentStatus, Status: ${course.statusCompleted}');
 
     return Card(
       margin: const EdgeInsets.only(bottom: 20),
@@ -1604,24 +1592,6 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                       onPressed: () {
                         // Sao chép đường dẫn vào clipboard
                         Clipboard.setData(ClipboardData(text: certificateUrl));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Row(
-                              children: [
-                                Icon(Icons.check_circle,
-                                    color: Colors.white, size: 16),
-                                const SizedBox(width: 10),
-                                const Text('Đã sao chép đường dẫn'),
-                              ],
-                            ),
-                            behavior: SnackBarBehavior.floating,
-                            duration: const Duration(seconds: 2),
-                            backgroundColor: Colors.green,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        );
                         Navigator.pop(context);
                       },
                       icon: const Icon(Icons.copy_rounded, size: 18),
@@ -1650,27 +1620,6 @@ class _MyCourseScreenState extends State<MyCourseScreen>
   // Download certificate function
   Future<void> _downloadCertificate(String certificateUrl) async {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-    // Show downloading indicator
-    scaffoldMessenger.showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            ),
-            SizedBox(width: 16),
-            Text('Đang tải tài liệu...'),
-          ],
-        ),
-        duration: Duration(seconds: 2),
-      ),
-    );
 
     try {
       // Kiểm tra quyền lưu trữ trước khi tải
@@ -1731,11 +1680,6 @@ class _MyCourseScreenState extends State<MyCourseScreen>
 
       final String filePath = path.join(dirPath, fileName);
 
-      print('Đang tải xuống tệp: $certificateUrl');
-      print('Đường dẫn lưu: $filePath');
-      print(
-          'Loại file: ${isPdf ? "PDF" : isImage ? "Ảnh" : isDocument ? "Tài liệu" : "Không xác định"}');
-
       // Download file
       final Dio dio = Dio(); // Create a new Dio instance
 
@@ -1745,58 +1689,22 @@ class _MyCourseScreenState extends State<MyCourseScreen>
         if (total != -1) {
           // Update progress if needed in future
           final progress = (received / total * 100).toStringAsFixed(0);
-          print('Tiến độ tải xuống: $progress%');
         }
       });
-
-      print(
-          'Tải xuống hoàn tất. Kích thước file: ${File(filePath).lengthSync()} bytes');
 
       // Thông báo Media Scanner về file mới (chỉ cần đối với ảnh)
       if (Platform.isAndroid && isImage) {
         try {
           await _scanFile(filePath);
-          print('Đã thêm file vào thư viện media');
         } catch (e) {
-          print('Lỗi khi thông báo Media Scanner: $e');
+          // Error handling media scan
         }
       }
 
-      // Show success message
-      scaffoldMessenger.hideCurrentSnackBar();
-
-      // Hiển thị thông báo thành công
-      String fileType = isPdf
-          ? "PDF"
-          : isImage
-              ? "ảnh"
-              : isDocument
-                  ? "tài liệu"
-                  : "file";
-      String successMessage = 'Đã lưu $fileType vào thư mục TMS_Documents';
-
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text(successMessage),
-          action: SnackBarAction(
-            label: 'MỞ',
-            onPressed: () {
-              _openDownloadedFile(filePath);
-            },
-          ),
-          duration: const Duration(seconds: 6),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      // Open the file after download
+      _openDownloadedFile(filePath);
     } catch (e) {
-      print('Lỗi khi tải tài liệu: $e');
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Lỗi: Không thể tải tài liệu. ${e.toString()}'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      debugPrint('❌ Error downloading certificate: ${e.toString()}');
     }
   }
 
@@ -1896,13 +1804,6 @@ class _MyCourseScreenState extends State<MyCourseScreen>
     if (status.isGranted) {
       return true;
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cần cấp quyền lưu trữ để tải tài liệu'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
       return false;
     }
   }
@@ -1915,10 +1816,8 @@ class _MyCourseScreenState extends State<MyCourseScreen>
       final nomediaFile = File(nomediaPath);
       await nomediaFile.writeAsString('trigger media scan');
       await nomediaFile.delete();
-
-      print('Đã quét file: $filePath');
     } catch (e) {
-      print('Lỗi khi quét file: $e');
+      // Error handling media scan
     }
   }
 
@@ -1944,74 +1843,25 @@ class _MyCourseScreenState extends State<MyCourseScreen>
   // Open downloaded file
   Future<void> _openDownloadedFile(String filePath) async {
     try {
-      print('Đang mở file: $filePath');
       File file = File(filePath);
       if (!await file.exists()) {
-        print('File không tồn tại: $filePath');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Lỗi: File không tồn tại'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        debugPrint('❌ Error: File does not exist - $filePath');
         return;
       }
 
       // Thử mở file bằng intent mặc định
       try {
         final result = await OpenFile.open(filePath);
-        print('Kết quả mở file: ${result.type}, ${result.message}');
 
         if (result.type != ResultType.done) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Lỗi khi mở file: ${result.message}'),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          debugPrint('❌ Error opening file: ${result.message}');
         }
       } catch (e) {
-        print('Ngoại lệ khi mở file: $e');
-        // Thông báo chi tiết hơn về lỗi
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Không thể mở file: $e'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(
-              label: 'CHI TIẾT',
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Thông tin lỗi'),
-                    content: SingleChildScrollView(
-                      child: Text('Đường dẫn: $filePath\nLỗi: $e'),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('ĐÓNG'),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        );
+        // Log error
+        debugPrint('❌ Cannot open file: $e');
       }
     } catch (e) {
-      print('Lỗi tổng quát: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Không thể mở file: $e'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      debugPrint('❌ File operation error: $e');
     }
   }
 }
