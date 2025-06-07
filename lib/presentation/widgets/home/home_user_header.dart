@@ -69,6 +69,9 @@ class _HomeUserHeaderState extends State<HomeUserHeader> {
 
   @override
   Widget build(BuildContext context) {
+    // Kiểm tra xem thiết bị đang sử dụng chế độ tối hay không
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       padding: const EdgeInsets.only(
         left: AppDimensions.screenPadding / 1.5,
@@ -77,7 +80,9 @@ class _HomeUserHeaderState extends State<HomeUserHeader> {
         bottom: AppDimensions.headingSpacing,
       ),
       decoration: BoxDecoration(
-        color: AppStyles.primaryColor.withOpacity(0.05),
+        color: isDarkMode 
+            ? AppStyles.primaryColor.withOpacity(0.15) 
+            : AppStyles.primaryColor.withOpacity(0.05),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(AppDimensions.radiusRounded),
           bottomRight: Radius.circular(AppDimensions.radiusRounded),
@@ -87,14 +92,14 @@ class _HomeUserHeaderState extends State<HomeUserHeader> {
         children: [
           // Avatar của người dùng
           isLoading
-              ? const CircleAvatar(
+              ? CircleAvatar(
                   radius: 25,
-                  backgroundColor: Colors.white,
+                  backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : CircleAvatar(
                   radius: 25,
-                  backgroundColor: Colors.white,
+                  backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
                   backgroundImage: userImage != null && userImage!.isNotEmpty
                       ? NetworkImage(userImage!)
                       : null,
@@ -103,7 +108,7 @@ class _HomeUserHeaderState extends State<HomeUserHeader> {
                           userName?.isNotEmpty == true
                               ? userName![0].toUpperCase()
                               : "U",
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: AppStyles.primaryColor,
@@ -114,29 +119,29 @@ class _HomeUserHeaderState extends State<HomeUserHeader> {
           const SizedBox(width: AppDimensions.formSpacing),
           Expanded(
             child: isLoading
-                ? const Text(
+                ? Text(
                     'Đang tải...',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF333333),
+                      color: isDarkMode ? Colors.white : Color(0xFF333333),
                     ),
                   )
                 : errorMessage != null
                     ? Text(
                         'Xin chào!',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF333333),
+                          color: isDarkMode ? Colors.white : Color(0xFF333333),
                         ),
                       )
                     : Text(
                         'Xin chào, $userName!',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF333333),
+                          color: isDarkMode ? Colors.white : Color(0xFF333333),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

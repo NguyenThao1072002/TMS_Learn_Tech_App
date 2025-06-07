@@ -93,21 +93,28 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Kiểm tra xem thiết bị đang sử dụng chế độ tối hay không
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Đội ngũ giảng viên',
           style: TextStyle(
             fontWeight: FontWeight.bold,
+            color: Theme.of(context).appBarTheme.foregroundColor,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.info_outline),
+            icon: Icon(
+              Icons.info_outline,
+              color: Theme.of(context).iconTheme.color,
+            ),
             onPressed: () {
               // Show information about instructors
               _showInfoDialog();
@@ -208,13 +215,19 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
               decoration: InputDecoration(
                 hintText: 'Tìm kiếm giảng viên...',
                 filled: true,
-                fillColor: Colors.grey[100],
+                fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[100],
                 prefixIcon: const Icon(Icons.search, color: Color(0xFF3498DB)),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide.none,
                 ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                hintStyle: TextStyle(
+                  color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                ),
+              ),
+              style: TextStyle(
+                color: isDarkMode ? Colors.white : Colors.black,
               ),
             ),
           ),
@@ -236,14 +249,14 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                     label: Text(
                       category['name'],
                       style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black87,
+                        color: isSelected ? Colors.white : isDarkMode ? Colors.white : Colors.black87,
                         fontWeight:
                             isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                     selected: isSelected,
                     selectedColor: const Color(0xFF3498DB),
-                    backgroundColor: Colors.grey[100],
+                    backgroundColor: isDarkMode ? Colors.grey[700] : Colors.grey[100],
                     onSelected: (_) => _selectCategory(category['id']),
                   ),
                 );
@@ -271,6 +284,8 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
 
   // Helper methods for UI components
   Widget _buildTeachingStaffGrid() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     if (_controller.isLoading && _controller.teachingStaffs.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -296,12 +311,12 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
     }
 
     if (_controller.teachingStaffs.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'Không tìm thấy giảng viên phù hợp',
           style: TextStyle(
             fontSize: 16,
-            color: Colors.grey,
+            color: isDarkMode ? Colors.grey[400] : Colors.grey,
           ),
         ),
       );
@@ -345,17 +360,21 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
   }
 
   Widget _buildInstructorCard(TeachingStaff staff) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return GestureDetector(
       onTap: () => _showInstructorDetails(staff),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDarkMode ? Color(0xFF2A2D3E) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 6,
+              color: isDarkMode 
+                  ? Colors.black.withOpacity(0.3)
+                  : Colors.grey.withOpacity(0.1),
+              spreadRadius: isDarkMode ? 2 : 1,
+              blurRadius: isDarkMode ? 8 : 6,
               offset: const Offset(0, 3),
             ),
           ],
@@ -387,11 +406,11 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
-                      color: Colors.grey[200],
-                      child: const Icon(
+                      color: isDarkMode ? Colors.grey[700] : Colors.grey[200],
+                      child: Icon(
                         Icons.person,
                         size: 50,
-                        color: Colors.grey,
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey,
                       ),
                     );
                   },
@@ -408,9 +427,10 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                   children: [
                     Text(
                       staff.fullname,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : Colors.black87,
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 1,
@@ -421,7 +441,7 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                       staff.categoryName,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 2,
@@ -441,9 +461,10 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                             const SizedBox(width: 2),
                             Text(
                               staff.averageRating.toString(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
+                                color: isDarkMode ? Colors.white : Colors.black87,
                               ),
                             ),
                           ],
@@ -459,8 +480,9 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                             const SizedBox(width: 2),
                             Text(
                               '${staff.courseCount} khóa',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
+                                color: isDarkMode ? Colors.white : Colors.black87,
                               ),
                             ),
                           ],
@@ -487,15 +509,17 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
   }
 
   Widget _buildInstructorDetailsSheet(TeachingStaff staff) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return DraggableScrollableSheet(
       initialChildSize: 0.9,
       maxChildSize: 0.95,
       minChildSize: 0.5,
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
+          decoration: BoxDecoration(
+            color: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
             ),
@@ -648,7 +672,9 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                 ),
               ),
 
-              const Divider(),
+              Divider(
+                color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+              ),
 
               // Bio/Instruction
               Padding(
@@ -667,10 +693,10 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                     const SizedBox(height: 12),
                     Text(
                       staff.instruction,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         height: 1.5,
-                        color: Colors.black87,
+                        color: isDarkMode ? Colors.white : Colors.black87,
                       ),
                     ),
                   ],
@@ -694,10 +720,10 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                     const SizedBox(height: 12),
                     Text(
                       staff.expert,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         height: 1.5,
-                        color: Colors.black87,
+                        color: isDarkMode ? Colors.white : Colors.black87,
                       ),
                     ),
                   ],
@@ -719,7 +745,7 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Xem khóa học',
                     style: TextStyle(
                       fontSize: 16,
@@ -753,6 +779,7 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
   Widget _buildTeachingStaffCoursesSheet(TeachingStaff staff) {
     // Lấy accountId từ đối tượng staff
     final int accountId = staff.accountId;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.9,
@@ -760,9 +787,9 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
       minChildSize: 0.5,
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
+          decoration: BoxDecoration(
+            color: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
             ),
@@ -855,7 +882,7 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.error_outline,
                               color: Colors.red,
                               size: 48,
@@ -884,13 +911,13 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                         data['courses'];
 
                     if (courses.isEmpty) {
-                      return const Center(
+                      return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.school_outlined,
-                              color: Colors.grey,
+                              color: isDarkMode ? Colors.grey[400] : Colors.grey,
                               size: 48,
                             ),
                             SizedBox(height: 16),
@@ -898,7 +925,7 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                               'Giảng viên chưa có khóa học nào',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.grey,
+                                color: isDarkMode ? Colors.grey[400] : Colors.grey,
                               ),
                             ),
                           ],
@@ -966,6 +993,8 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
     required String label,
     required String value,
   }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Column(
       children: [
         Icon(
@@ -976,9 +1005,10 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.white : Colors.black87,
           ),
         ),
         const SizedBox(height: 4),
@@ -986,7 +1016,7 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
           label,
           style: TextStyle(
             fontSize: 14,
-            color: Colors.grey[600],
+            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
           ),
         ),
       ],
@@ -994,6 +1024,8 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
   }
 
   void _showInfoDialog() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1004,8 +1036,8 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
             color: Color(0xFF3498DB),
           ),
         ),
-        backgroundColor: Colors.white,
-        content: const SingleChildScrollView(
+        backgroundColor: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
+        content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -1015,17 +1047,24 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
+                  color: isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 'Đội ngũ giảng viên của chúng tôi bao gồm các chuyên gia hàng đầu trong nhiều lĩnh vực công nghệ khác nhau. Tất cả giảng viên đều có kinh nghiệm thực tế phong phú và kỹ năng giảng dạy xuất sắc.',
-                style: TextStyle(height: 1.5),
+                style: TextStyle(
+                  height: 1.5,
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                ),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Text(
                 'Các giảng viên được tuyển chọn kỹ lưỡng và đào tạo bài bản để đảm bảo chất lượng giảng dạy tốt nhất cho học viên. Họ không chỉ là những người hướng dẫn mà còn là người cố vấn, sẵn sàng hỗ trợ học viên trong suốt quá trình học tập.',
-                style: TextStyle(height: 1.5),
+                style: TextStyle(
+                  height: 1.5,
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                ),
               ),
             ],
           ),
@@ -1047,6 +1086,8 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
   }
 
   void _showSuggestInstructorDialog() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1057,13 +1098,16 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
             color: Color(0xFF3498DB),
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'Chúng tôi có thể giúp bạn tìm giảng viên phù hợp với nhu cầu học tập của bạn.',
-              style: TextStyle(height: 1.5),
+              style: TextStyle(
+                height: 1.5,
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
             ),
             const SizedBox(height: 20),
             TextField(
@@ -1074,7 +1118,13 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 filled: true,
-                fillColor: Colors.grey[100],
+                fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[100],
+                hintStyle: TextStyle(
+                  color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                ),
+              ),
+              style: TextStyle(
+                color: isDarkMode ? Colors.white : Colors.black87,
               ),
             ),
           ],
@@ -1082,10 +1132,10 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
+            child: Text(
               'Hủy',
               style: TextStyle(
-                color: Colors.grey,
+                color: isDarkMode ? Colors.grey[400] : Colors.grey,
               ),
             ),
           ),

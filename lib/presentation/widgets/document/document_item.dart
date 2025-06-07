@@ -39,6 +39,8 @@ class _DocumentItemState extends State<DocumentItem>
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return MouseRegion(
       onEnter: (_) => _controller.forward(),
       onExit: (_) => _controller.reverse(),
@@ -49,13 +51,13 @@ class _DocumentItemState extends State<DocumentItem>
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           elevation: 4,
           shadowColor: Colors.black.withOpacity(0.3),
-          color: Colors.white,
+          color: isDarkMode ? Color(0xFF2A2D3E) : Colors.white,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Stack(
                 children: [
-                  _buildImage(),
+                  _buildImage(isDarkMode),
                   Positioned(
                     top: 10,
                     left: 10,
@@ -70,7 +72,7 @@ class _DocumentItemState extends State<DocumentItem>
                     Positioned(
                       bottom: 10,
                       left: 10,
-                      child: _buildCategoryWidget(),
+                      child: _buildCategoryWidget(isDarkMode),
                     ),
                 ],
               ),
@@ -81,15 +83,16 @@ class _DocumentItemState extends State<DocumentItem>
                   children: [
                     Text(
                       widget.document.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
+                        color: isDarkMode ? Colors.white : Colors.black87,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
-                    _buildInfoRow(),
+                    _buildInfoRow(isDarkMode),
                   ],
                 ),
               ),
@@ -100,11 +103,11 @@ class _DocumentItemState extends State<DocumentItem>
     );
   }
 
-  Widget _buildImage() {
+  Widget _buildImage(bool isDarkMode) {
     return Container(
       height: 180,
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(8),
           topRight: Radius.circular(8),
@@ -190,11 +193,13 @@ class _DocumentItemState extends State<DocumentItem>
     );
   }
 
-  Widget _buildCategoryWidget() {
+  Widget _buildCategoryWidget(bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.8),
+        color: isDarkMode 
+            ? Colors.grey[800]!.withOpacity(0.8) 
+            : Colors.white.withOpacity(0.8),
         borderRadius: BorderRadius.circular(5),
         boxShadow: [
           BoxShadow(
@@ -209,13 +214,13 @@ class _DocumentItemState extends State<DocumentItem>
           Icon(
             _getCategoryIcon(),
             size: 14,
-            color: Colors.grey[800],
+            color: isDarkMode ? Colors.grey[300] : Colors.grey[800],
           ),
           const SizedBox(width: 4),
           Text(
             widget.document.categoryName!,
             style: TextStyle(
-              color: Colors.grey[800],
+              color: isDarkMode ? Colors.grey[300] : Colors.grey[800],
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -289,19 +294,23 @@ class _DocumentItemState extends State<DocumentItem>
     );
   }
 
-  Widget _buildInfoRow() {
+  Widget _buildInfoRow(bool isDarkMode) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
           children: [
-            Icon(Icons.download, size: 14, color: Colors.grey[500]),
+            Icon(
+              Icons.download, 
+              size: 14, 
+              color: isDarkMode ? Colors.grey[400] : Colors.grey[500]
+            ),
             const SizedBox(width: 4),
             Text(
               '${widget.document.downloads}',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey[500],
+                color: isDarkMode ? Colors.grey[400] : Colors.grey[500],
               ),
             ),
           ],

@@ -49,17 +49,21 @@ class _CategoryWidgetState extends State<CategoryWidget> {
 
   @override
   Widget build(BuildContext context) {
-    double itemWidth =
-        MediaQuery.of(context).size.width * 0.52; // Tăng kích thước mỗi item
+    double itemWidth = MediaQuery.of(context).size.width * 0.52;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "Danh mục khoá học",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 18, 
+              fontWeight: FontWeight.bold,
+              color: isDarkMode ? Colors.white : Colors.black,
+            ),
           ),
           FutureBuilder<List<CourseCategory>>(
             future: _categoriesFuture,
@@ -75,15 +79,22 @@ class _CategoryWidgetState extends State<CategoryWidget> {
                   child: Center(
                     child: Text(
                       "Lỗi: ${snapshot.error}",
-                      style: const TextStyle(color: Colors.red),
+                      style: TextStyle(
+                        color: Colors.red,
+                      ),
                     ),
                   ),
                 );
               } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return const SizedBox(
+                return SizedBox(
                   height: 260,
                   child: Center(
-                    child: Text("Không có danh mục nào"),
+                    child: Text(
+                      "Không có danh mục nào",
+                      style: TextStyle(
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                    ),
                   ),
                 );
               }
@@ -149,13 +160,18 @@ class _CategoryWidgetState extends State<CategoryWidget> {
                                 decoration: BoxDecoration(
                                   borderRadius:
                                       BorderRadius.circular(12), // Tăng bo góc
-                                  color: isSelected
-                                      ? const Color.fromARGB(255, 171, 213, 248)
-                                      : const Color.fromARGB(
-                                          255, 225, 239, 250),
+                                  color: isDarkMode
+                                      ? isSelected
+                                          ? const Color(0xFF1E5B8D) // Màu xanh đậm khi chọn trong chế độ tối
+                                          : const Color(0xFF223243) // Màu xanh-xám đậm cho chế độ tối
+                                      : isSelected
+                                          ? const Color.fromARGB(255, 171, 213, 248)
+                                          : const Color.fromARGB(255, 225, 239, 250),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.grey.withOpacity(0.3),
+                                      color: isDarkMode
+                                          ? Colors.black.withOpacity(0.3)
+                                          : Colors.grey.withOpacity(0.3),
                                       spreadRadius: 1,
                                       blurRadius: 3,
                                       offset: const Offset(0, 3),
@@ -175,9 +191,13 @@ class _CategoryWidgetState extends State<CategoryWidget> {
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,
                                         overflow: TextOverflow.ellipsis,
-                                        color: isSelected
-                                            ? Colors.white
-                                            : Colors.black87, // Màu đen nhẹ hơn
+                                        color: isDarkMode
+                                            ? isSelected
+                                                ? Colors.white
+                                                : Colors.grey[300]
+                                            : isSelected
+                                                ? Colors.white
+                                                : Colors.black87,
                                         fontFamily: 'Roboto',
                                         height: 1.3, // Tăng chiều cao dòng
                                         letterSpacing:
@@ -193,11 +213,13 @@ class _CategoryWidgetState extends State<CategoryWidget> {
                                       style: TextStyle(
                                         fontSize: 13, // Tăng kích thước
                                         fontWeight: FontWeight.w500,
-                                        color: isSelected
-                                            ? Colors.white.withOpacity(
-                                                0.9) // Màu trắng đục
-                                            : Colors
-                                                .grey[600], // Màu xám đậm hơn
+                                        color: isDarkMode
+                                            ? isSelected
+                                                ? Colors.white.withOpacity(0.9)
+                                                : Colors.grey[400]
+                                            : isSelected
+                                                ? Colors.white.withOpacity(0.9)
+                                                : Colors.grey[600],
                                         fontFamily: 'Roboto',
                                       ),
                                     ),

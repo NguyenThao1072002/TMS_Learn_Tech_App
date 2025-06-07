@@ -60,6 +60,8 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Column(
       children: [
         // Tiêu đề
@@ -100,7 +102,7 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
               ? const Center(child: CircularProgressIndicator())
               : _error != null
                   ? _buildErrorWidget()
-                  : _buildTeachingStaffList(),
+                  : _buildTeachingStaffList(isDarkMode),
         ),
       ],
     );
@@ -126,16 +128,16 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
     );
   }
 
-  Widget _buildTeachingStaffList() {
+  Widget _buildTeachingStaffList(bool isDarkMode) {
     final staffList = _controller.featuredTeachingStaffs;
 
     if (staffList.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'Chưa có giảng viên nào',
           style: TextStyle(
             fontSize: 14,
-            color: Colors.grey,
+            color: isDarkMode ? Colors.grey[400] : Colors.grey,
           ),
         ),
       );
@@ -151,6 +153,7 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
         return _buildTeamMemberCard(
           staff: staff,
           context: context,
+          isDarkMode: isDarkMode,
         );
       },
     );
@@ -159,6 +162,7 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
   Widget _buildTeamMemberCard({
     required TeachingStaff staff,
     required BuildContext context,
+    required bool isDarkMode,
   }) {
     return GestureDetector(
       onTap: () {
@@ -169,13 +173,15 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
         width: 150,
         margin: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDarkMode ? Color(0xFF2A2D3E) : Colors.white,
           borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              spreadRadius: 2,
-              blurRadius: 10,
+              color: isDarkMode 
+                  ? Colors.black.withOpacity(0.3)
+                  : Colors.grey.withOpacity(0.2),
+              spreadRadius: isDarkMode ? 1 : 2,
+              blurRadius: isDarkMode ? 8 : 10,
               offset: const Offset(0, 3),
             ),
           ],
@@ -196,11 +202,11 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
                   return Container(
                     height: 100,
                     width: double.infinity,
-                    color: Colors.grey[200],
-                    child: const Icon(
+                    color: isDarkMode ? Colors.grey[700] : Colors.grey[200],
+                    child: Icon(
                       Icons.person,
                       size: 50,
-                      color: Colors.grey,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey,
                     ),
                   );
                 },
@@ -215,10 +221,10 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
                     Text(
                       staff.fullname,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: isDarkMode ? Colors.white : Colors.black87,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -229,7 +235,7 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
                       textAlign: TextAlign.center,
                       style: AppStyles.subText.copyWith(
                         fontSize: 12,
-                        color: Colors.black54,
+                        color: isDarkMode ? Colors.grey[400] : Colors.black54,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -249,6 +255,7 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
+                            color: isDarkMode ? Colors.white : Colors.black87,
                           ),
                         ),
                         SizedBox(width: 8),
@@ -256,7 +263,7 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
                           '${staff.courseCount} khóa',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                           ),
                         ),
                       ],
@@ -307,15 +314,17 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
   
   // Widget hiển thị chi tiết giảng viên trong bottom sheet
   Widget _buildInstructorDetailsSheet(BuildContext context, TeachingStaff staff) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return DraggableScrollableSheet(
       initialChildSize: 0.9,
       maxChildSize: 0.95,
       minChildSize: 0.5,
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
+          decoration: BoxDecoration(
+            color: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
             ),
@@ -450,16 +459,19 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildStatItem(
+                      context: context,
                       icon: Icons.library_books_outlined,
                       label: 'Khóa học',
                       value: staff.courseCount.toString(),
                     ),
                     _buildStatItem(
+                      context: context,
                       icon: Icons.people_outline,
                       label: 'Học viên',
                       value: staff.totalStudents.toString(),
                     ),
                     _buildStatItem(
+                      context: context,
                       icon: Icons.star_outline,
                       label: 'Đánh giá',
                       value: staff.averageRating.toString(),
@@ -468,7 +480,9 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
                 ),
               ),
 
-              const Divider(),
+              Divider(
+                color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+              ),
 
               // Bio/Instruction
               Padding(
@@ -487,10 +501,10 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
                     const SizedBox(height: 12),
                     Text(
                       staff.instruction,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         height: 1.5,
-                        color: Colors.black87,
+                        color: isDarkMode ? Colors.white : Colors.black87,
                       ),
                     ),
                   ],
@@ -514,10 +528,10 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
                     const SizedBox(height: 12),
                     Text(
                       staff.expert,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         height: 1.5,
-                        color: Colors.black87,
+                        color: isDarkMode ? Colors.white : Colors.black87,
                       ),
                     ),
                   ],
@@ -567,10 +581,13 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
   }
   
   Widget _buildStatItem({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required String value,
   }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Column(
       children: [
         Icon(
@@ -581,9 +598,10 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.white : Colors.black87,
           ),
         ),
         const SizedBox(height: 4),
@@ -591,7 +609,7 @@ class _TeachingStaffListState extends State<TeachingStaffList> {
           label,
           style: TextStyle(
             fontSize: 14,
-            color: Colors.grey[600],
+            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
           ),
         ),
       ],

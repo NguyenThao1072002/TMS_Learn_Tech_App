@@ -57,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
       valueListenable: _controller.selectedIndex,
       builder: (context, index, _) {
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: _screens[index],
           bottomNavigationBar: BottomNavBar(
             selectedIndex: index,
@@ -113,8 +113,10 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: const HomeAppBarWidget(
         unreadNotifications: 3,
       ),
@@ -242,11 +244,12 @@ class _HomePageState extends State<HomePage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Blog công nghệ',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
+                              color: Theme.of(context).textTheme.titleLarge?.color,
                             ),
                           ),
                           TextButton(
@@ -258,7 +261,11 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               );
                             },
-                            child: const Text('Xem tất cả'),
+                            child: Text('Xem tất cả', 
+                              style: TextStyle(
+                                color: Theme.of(context).primaryColor,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -293,11 +300,13 @@ class _HomePageState extends State<HomePage> {
                               },
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: Theme.of(context).cardColor,
                                   borderRadius: BorderRadius.circular(12),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.grey.withOpacity(0.2),
+                                      color: isDarkMode 
+                                        ? Colors.black.withOpacity(0.3)
+                                        : Colors.grey.withOpacity(0.2),
                                       spreadRadius: 1,
                                       blurRadius: 8,
                                       offset: const Offset(0, 2),
@@ -320,11 +329,15 @@ class _HomePageState extends State<HomePage> {
                                             (context, error, stackTrace) {
                                           return Container(
                                             height: 150,
-                                            color: Colors.grey.shade200,
-                                            child: const Center(
+                                            color: isDarkMode 
+                                              ? Colors.grey.shade800 
+                                              : Colors.grey.shade200,
+                                            child: Center(
                                               child: Icon(
                                                 Icons.image_not_supported,
-                                                color: Colors.grey,
+                                                color: isDarkMode 
+                                                  ? Colors.grey.shade600 
+                                                  : Colors.grey,
                                                 size: 50,
                                               ),
                                             ),
@@ -340,9 +353,10 @@ class _HomePageState extends State<HomePage> {
                                         children: [
                                           Text(
                                             featuredBlog.title,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
+                                              color: Theme.of(context).textTheme.titleMedium?.color,
                                             ),
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
@@ -352,7 +366,7 @@ class _HomePageState extends State<HomePage> {
                                             featuredBlog.sumary,
                                             style: TextStyle(
                                               fontSize: 14,
-                                              color: Colors.grey.shade600,
+                                              color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8),
                                             ),
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
@@ -362,8 +376,9 @@ class _HomePageState extends State<HomePage> {
                                             children: [
                                               CircleAvatar(
                                                 radius: 12,
-                                                backgroundColor:
-                                                    Colors.grey.shade200,
+                                                backgroundColor: isDarkMode
+                                                  ? Colors.grey.shade700
+                                                  : Colors.grey.shade200,
                                                 child: Text(
                                                   featuredBlog
                                                           .authorName.isNotEmpty
@@ -374,30 +389,33 @@ class _HomePageState extends State<HomePage> {
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.bold,
-                                                    color: Colors.grey.shade700,
+                                                    color: isDarkMode
+                                                      ? Colors.grey.shade300
+                                                      : Colors.grey.shade700,
                                                   ),
                                                 ),
                                               ),
                                               const SizedBox(width: 8),
                                               Text(
                                                 featuredBlog.authorName,
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontSize: 13,
                                                   fontWeight: FontWeight.w500,
+                                                  color: Theme.of(context).textTheme.bodyMedium?.color,
                                                 ),
                                               ),
                                               const Spacer(),
                                               Icon(
                                                 Icons.access_time,
                                                 size: 14,
-                                                color: Colors.grey.shade600,
+                                                color: Theme.of(context).textTheme.bodySmall?.color,
                                               ),
                                               const SizedBox(width: 4),
                                               Text(
                                                 '${featuredBlog.views} lượt xem',
                                                 style: TextStyle(
                                                   fontSize: 12,
-                                                  color: Colors.grey.shade600,
+                                                  color: Theme.of(context).textTheme.bodySmall?.color,
                                                 ),
                                               ),
                                             ],

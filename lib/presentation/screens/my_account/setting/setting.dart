@@ -63,7 +63,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         title: Text(
-          "Cài đặt",
+          context.tr('settings'),
           style: TextStyle(
             color: Theme.of(context).appBarTheme.foregroundColor,
             fontWeight: FontWeight.w500,
@@ -79,7 +79,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               Navigator.of(context).pop();
             },
             child: Text(
-              "Xong",
+              context.tr('done'),
               style: TextStyle(
                 color: Theme.of(context).primaryColor,
                 fontWeight: FontWeight.bold,
@@ -96,9 +96,9 @@ class _SettingsScreenState extends State<SettingsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSectionTitle('Tài khoản'),
+                _buildSectionTitle(context.tr('accountSettings')),
                 _buildAnimatedSettingItem(
-                  'Cập nhật thông tin tài khoản',
+                  context.tr('updateAccount'),
                   icon: Icons.person,
                   delay: 100,
                   onTap: () {
@@ -113,7 +113,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   isDarkMode: isDarkMode,
                 ),
                 _buildAnimatedSettingItem(
-                  'Đổi mật khẩu',
+                  context.tr('changePassword'),
                   icon: Icons.lock,
                   delay: 200,
                   onTap: () {
@@ -128,7 +128,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   isDarkMode: isDarkMode,
                 ),
                 _buildAnimatedSettingItem(
-                  'Thông báo',
+                  context.tr('notifications'),
                   icon: Icons.notifications,
                   delay: 300,
                   onTap: () {
@@ -145,7 +145,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 ),
                 
                 _buildAnimatedSettingItem(
-                  'Giao diện & Ngôn ngữ',
+                  context.tr('appearanceAndLanguage'),
                   icon: Icons.language_outlined,
                   delay: 350,
                   onTap: () {
@@ -160,9 +160,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                   isDarkMode: isDarkMode,
                 ),
 
-                _buildSectionTitle('Nâng cấp tài khoản'),
+                _buildSectionTitle(context.tr('upgradeAccount')),
                 _buildAnimatedSettingItem(
-                  'Nâng cấp tài khoản',
+                  context.tr('upgradeAccount'),
                   icon: Icons.workspace_premium,
                   delay: 400,
                   isHighlighted: true,
@@ -178,9 +178,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                   isDarkMode: isDarkMode,
                 ),
 
-                _buildSectionTitle('Hỗ trợ'),
+                _buildSectionTitle(context.tr('support')),
                 _buildAnimatedSettingItem(
-                  'Trung tâm trợ giúp',
+                  context.tr('helpCenter'),
                   icon: Icons.help_outline,
                   delay: 500,
                   onTap: () {
@@ -194,7 +194,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   isDarkMode: isDarkMode,
                 ),
                 _buildAnimatedSettingItem(
-                  'Liên hệ với chúng tôi',
+                  context.tr('contactUs'),
                   icon: Icons.phone_outlined,
                   delay: 600,
                   onTap: () {
@@ -208,7 +208,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   isDarkMode: isDarkMode,
                 ),
                 _buildAnimatedSettingItem(
-                  'Báo cáo sự cố',
+                  context.tr('reportIssue'),
                   icon: Icons.bug_report_outlined,
                   delay: 700,
                   onTap: () {
@@ -371,7 +371,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   _showLogoutConfirmDialog(context);
                 },
                 child: Text(
-                  "Đăng xuất",
+                  context.tr('logout'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -406,7 +406,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Text(
-                "Phiên bản 1.0.0",
+                context.tr('version'),
                 style: TextStyle(
                   color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
                   fontSize: 14,
@@ -465,7 +465,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 const SizedBox(height: 20),
                 // Tiêu đề
                 Text(
-                  "Đăng xuất",
+                  context.tr('logout'),
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -475,7 +475,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 const SizedBox(height: 12),
                 // Nội dung
                 Text(
-                  "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?",
+                  context.tr('logoutConfirmation'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
@@ -500,7 +500,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                           ),
                         ),
                         child: Text(
-                          "Hủy",
+                          context.tr('cancel'),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -528,9 +528,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                           ),
                           elevation: 0,
                         ),
-                        child: const Text(
-                          "Đăng xuất",
-                          style: TextStyle(
+                        child: Text(
+                          context.tr('logout'),
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,

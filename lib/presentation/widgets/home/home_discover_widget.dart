@@ -8,6 +8,9 @@ class HomeDiscoverWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Kiểm tra xem thiết bị đang sử dụng chế độ tối hay không
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(
         vertical: AppDimensions.blockSpacing,
@@ -18,16 +21,18 @@ class HomeDiscoverWidget extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text('Khám phá', style: AppStyles.sectionTitle),
+              Text('Khám phá', style: AppStyles.sectionTitle.copyWith(
+                color: isDarkMode ? Colors.white : Colors.black87
+              )),
               const Spacer(),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: Colors.blue.withOpacity(isDarkMode ? 0.2 : 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
@@ -62,6 +67,7 @@ class HomeDiscoverWidget extends StatelessWidget {
                     title: 'Khóa học mới',
                     startColor: const Color(0xFF6E8CF7),
                     endColor: const Color(0xFF4C6EF5),
+                    isDarkMode: isDarkMode,
                     onTap: () {},
                   ),
                 ),
@@ -73,6 +79,7 @@ class HomeDiscoverWidget extends StatelessWidget {
                     title: 'Giảm giá',
                     startColor: const Color(0xFFFF6B6B),
                     endColor: const Color(0xFFE03131),
+                    isDarkMode: isDarkMode,
                     onTap: () {},
                   ),
                 ),
@@ -92,6 +99,7 @@ class HomeDiscoverWidget extends StatelessWidget {
                     title: 'Nổi bật',
                     startColor: const Color(0xFFC471ED),
                     endColor: const Color(0xFF9C46B0),
+                    isDarkMode: isDarkMode,
                     onTap: () {},
                   ),
                 ),
@@ -103,6 +111,7 @@ class HomeDiscoverWidget extends StatelessWidget {
                     title: 'Mới xem',
                     startColor: const Color(0xFF69DB7C),
                     endColor: const Color(0xFF2F9E44),
+                    isDarkMode: isDarkMode,
                     onTap: () {},
                   ),
                 ),
@@ -120,6 +129,7 @@ class HomeDiscoverWidget extends StatelessWidget {
     required String title,
     required Color startColor,
     required Color endColor,
+    required bool isDarkMode,
     required VoidCallback onTap,
   }) {
     return _FloatingParticleButton(
@@ -127,6 +137,7 @@ class HomeDiscoverWidget extends StatelessWidget {
       title: title,
       startColor: startColor,
       endColor: endColor,
+      isDarkMode: isDarkMode,
       onTap: onTap,
     );
   }
@@ -137,6 +148,7 @@ class _FloatingParticleButton extends StatefulWidget {
   final String title;
   final Color startColor;
   final Color endColor;
+  final bool isDarkMode;
   final VoidCallback onTap;
 
   const _FloatingParticleButton({
@@ -144,6 +156,7 @@ class _FloatingParticleButton extends StatefulWidget {
     required this.title,
     required this.startColor,
     required this.endColor,
+    required this.isDarkMode,
     required this.onTap,
   });
 
@@ -231,29 +244,39 @@ class _FloatingParticleButtonState extends State<_FloatingParticleButton>
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      Colors.white,
-                      Color.lerp(Colors.white, themeColor,
-                          0.08 * (_isPressed ? 1.5 : 1))!,
-                    ],
+                    colors: widget.isDarkMode 
+                      ? [
+                          Color.lerp(Colors.grey[900], themeColor, 0.1)!,
+                          Color.lerp(Colors.grey[800], themeColor, 0.2)!,
+                        ]
+                      : [
+                          Colors.white,
+                          Color.lerp(Colors.white, themeColor,
+                              0.08 * (_isPressed ? 1.5 : 1))!,
+                        ],
                   ),
                   borderRadius: BorderRadius.circular(28),
                   boxShadow: [
                     BoxShadow(
-                      color: themeColor.withOpacity(_isPressed ? 0.25 : 0.18),
+                      color: widget.isDarkMode
+                          ? themeColor.withOpacity(_isPressed ? 0.3 : 0.25)
+                          : themeColor.withOpacity(_isPressed ? 0.25 : 0.18),
                       blurRadius: _isPressed ? 10 : 15,
                       spreadRadius: _isPressed ? 0 : 1,
                       offset: Offset(0, _isPressed ? 2 : 5),
                     ),
-                    BoxShadow(
-                      color: Colors.white,
-                      blurRadius: 15,
-                      spreadRadius: -5,
-                      offset: const Offset(0, 10),
-                    ),
+                    if (!widget.isDarkMode)
+                      BoxShadow(
+                        color: Colors.white,
+                        blurRadius: 15,
+                        spreadRadius: -5,
+                        offset: const Offset(0, 10),
+                      ),
                   ],
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.8),
+                    color: widget.isDarkMode
+                        ? Colors.grey[700]!.withOpacity(0.8)
+                        : Colors.white.withOpacity(0.8),
                     width: 2,
                   ),
                 ),
@@ -278,7 +301,9 @@ class _FloatingParticleButtonState extends State<_FloatingParticleButton>
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: Colors.black.withOpacity(0.8),
+                        color: widget.isDarkMode
+                            ? Colors.white.withOpacity(0.9)
+                            : Colors.black.withOpacity(0.8),
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -384,7 +409,9 @@ class _FloatingParticleButtonState extends State<_FloatingParticleButton>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: themeColor.withOpacity(_isPressed ? 0.15 : 0.1),
+        color: themeColor.withOpacity(widget.isDarkMode
+            ? (_isPressed ? 0.25 : 0.2)
+            : (_isPressed ? 0.15 : 0.1)),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -403,7 +430,9 @@ class _FloatingParticleButtonState extends State<_FloatingParticleButton>
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: themeColor.withOpacity(_isPressed ? 0.3 : 0.2),
+              color: themeColor.withOpacity(widget.isDarkMode
+                  ? (_isPressed ? 0.4 : 0.3)
+                  : (_isPressed ? 0.3 : 0.2)),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(

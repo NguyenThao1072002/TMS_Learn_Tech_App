@@ -238,13 +238,14 @@ class _DocumentListScreenState extends State<DocumentListScreen>
   }
 
   void _showComprehensiveFilterDialog() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     String tempFormat = _selectedFormat;
     String tempCategory = _selectedCategory;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -262,11 +263,12 @@ class _DocumentListScreenState extends State<DocumentListScreen>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Lọc tài liệu',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -277,11 +279,12 @@ class _DocumentListScreenState extends State<DocumentListScreen>
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Định dạng',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              color: isDarkMode ? Colors.white : Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -298,11 +301,11 @@ class _DocumentListScreenState extends State<DocumentListScreen>
                                     tempFormat = selected ? format : 'Tất cả';
                                   });
                                 },
-                                backgroundColor: Colors.grey.shade200,
+                                backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey[200],
                                 selectedColor: Colors.lightBlue,
                                 labelStyle: TextStyle(
                                   color:
-                                      isSelected ? Colors.white : Colors.black,
+                                      isSelected ? Colors.white : (isDarkMode ? Colors.white70 : Colors.black87),
                                   fontWeight: isSelected
                                       ? FontWeight.bold
                                       : FontWeight.normal,
@@ -318,11 +321,12 @@ class _DocumentListScreenState extends State<DocumentListScreen>
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Danh mục',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              color: isDarkMode ? Colors.white : Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -340,11 +344,11 @@ class _DocumentListScreenState extends State<DocumentListScreen>
                                         selected ? category : 'Tất cả';
                                   });
                                 },
-                                backgroundColor: Colors.grey.shade200,
+                                backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey[200],
                                 selectedColor: Colors.lightBlue,
                                 labelStyle: TextStyle(
                                   color:
-                                      isSelected ? Colors.white : Colors.black,
+                                      isSelected ? Colors.white : (isDarkMode ? Colors.white70 : Colors.black87),
                                   fontWeight: isSelected
                                       ? FontWeight.bold
                                       : FontWeight.normal,
@@ -432,11 +436,13 @@ class _DocumentListScreenState extends State<DocumentListScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: isDarkMode ? Color(0xFF121212) : Colors.grey[100],
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
         title: const Text(
           'Tài liệu',
           style: TextStyle(
@@ -444,17 +450,6 @@ class _DocumentListScreenState extends State<DocumentListScreen>
             fontWeight: FontWeight.bold,
           ),
         ),
-        // leading: IconButton(
-        //   icon: const Icon(Icons.arrow_back, color: Colors.lightBlue),
-        //   onPressed: () {
-        //     if (Navigator.of(context).canPop()) {
-        //       Navigator.of(context).pop();
-        //     } else {
-        //       // Trở về trang Home
-        //       Navigator.of(context).pushReplacementNamed('/home');
-        //     }
-        //   },
-        // ),
         actions: [
           // Add refresh button
           _isRefreshing
@@ -524,19 +519,19 @@ class _DocumentListScreenState extends State<DocumentListScreen>
         controller: _tabController,
         children: [
           // Popular tab
-          _buildTabContent(),
+          _buildTabContent(isDarkMode),
 
           // New tab
-          _buildTabContent(),
+          _buildTabContent(isDarkMode),
 
           // Recommended tab
-          _buildTabContent(),
+          _buildTabContent(isDarkMode),
         ],
       ),
     );
   }
 
-  Widget _buildTabContent() {
+  Widget _buildTabContent(bool isDarkMode) {
     return RefreshIndicator(
       onRefresh: _handleRefresh,
       child: SingleChildScrollView(
@@ -624,7 +619,7 @@ class _DocumentListScreenState extends State<DocumentListScreen>
                                                 errorBuilder: (context, error,
                                                     stackTrace) {
                                                   return Container(
-                                                    color: Colors.grey.shade300,
+                                                    color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
                                                     child: const Center(
                                                       child: Icon(
                                                           Icons.broken_image,
@@ -790,7 +785,12 @@ class _DocumentListScreenState extends State<DocumentListScreen>
                         children: [
                           if (_selectedFormat != 'Tất cả')
                             Chip(
-                              label: Text('Định dạng: $_selectedFormat'),
+                              label: Text(
+                                'Định dạng: $_selectedFormat',
+                                style: TextStyle(
+                                  color: isDarkMode ? Colors.white : Colors.black87,
+                                ),
+                              ),
                               onDeleted: () {
                                 setState(() {
                                   _selectedFormat = 'Tất cả';
@@ -808,12 +808,17 @@ class _DocumentListScreenState extends State<DocumentListScreen>
                                   _reloadCurrentTabData();
                                 }
                               },
-                              backgroundColor: Colors.grey.shade200,
-                              deleteIconColor: Colors.black54,
+                              backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey[200],
+                              deleteIconColor: isDarkMode ? Colors.white70 : Colors.black54,
                             ),
                           if (_selectedCategory != 'Tất cả')
                             Chip(
-                              label: Text('Danh mục: $_selectedCategory'),
+                              label: Text(
+                                'Danh mục: $_selectedCategory',
+                                style: TextStyle(
+                                  color: isDarkMode ? Colors.white : Colors.black87,
+                                ),
+                              ),
                               onDeleted: () {
                                 setState(() {
                                   _selectedCategory = 'Tất cả';
@@ -827,8 +832,8 @@ class _DocumentListScreenState extends State<DocumentListScreen>
                                   _reloadCurrentTabData();
                                 }
                               },
-                              backgroundColor: Colors.grey.shade200,
-                              deleteIconColor: Colors.black54,
+                              backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey[200],
+                              deleteIconColor: isDarkMode ? Colors.white70 : Colors.black54,
                             ),
                         ],
                       ),
@@ -841,7 +846,7 @@ class _DocumentListScreenState extends State<DocumentListScreen>
                   child: Text(
                     'Bộ lọc tài liệu',
                     style: TextStyle(
-                      color: Colors.grey.shade600,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -875,14 +880,17 @@ class _DocumentListScreenState extends State<DocumentListScreen>
                                     ? Icons.search_off
                                     : Icons.book,
                                 size: 80,
-                                color: Colors.grey,
+                                color: isDarkMode ? Colors.grey[500] : Colors.grey,
                               ),
                               const SizedBox(height: 16),
                               Text(
                                 _searchController.text.isNotEmpty
                                     ? 'Không tìm thấy kết quả cho "${_searchController.text}"'
                                     : 'Không có tài liệu',
-                                style: const TextStyle(fontSize: 16),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                ),
                               ),
                             ],
                           ),

@@ -21,6 +21,16 @@ class CourseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     bool isSelected = selectedIndex == course.id;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    // Màu nền và màu chữ dựa vào chế độ
+    final cardBgColor = isDarkMode 
+        ? isSelected 
+            ? Color(0xFF1E3A5F) // Màu xanh tối khi được chọn
+            : Color(0xFF2A2D3E) // Màu xám đen khi không được chọn
+        : isSelected 
+            ? const Color.fromARGB(255, 231, 244, 255) 
+            : Colors.white;
 
     return GestureDetector(
       onTap: () => onTap?.call(course),
@@ -30,22 +40,26 @@ class CourseCard extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(15),
-          color: isSelected
-              ? const Color.fromARGB(255, 231, 244, 255)
-              : Colors.white,
+          color: cardBgColor,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 10,
-              spreadRadius: 0,
+              color: isDarkMode
+                  ? Colors.black.withOpacity(0.5)
+                  : Colors.black.withOpacity(0.15),
+              blurRadius: isDarkMode ? 12 : 10,
+              spreadRadius: isDarkMode ? 2 : 0,
               offset: const Offset(0, 5),
             ),
           ],
           border: Border.all(
             color: isSelected
-                ? const Color(0xFF3498DB)
-                : Colors.grey.withOpacity(0.1),
-            width: 1,
+                ? isDarkMode 
+                    ? Color(0xFF4D88E0) 
+                    : const Color(0xFF3498DB)
+                : isDarkMode
+                    ? Colors.grey[700]!
+                    : Colors.grey.withOpacity(0.1),
+            width: 1.2,
           ),
         ),
         child: Column(
@@ -128,8 +142,10 @@ class CourseCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           course.categoryName,
-                          style:
-                              const TextStyle(fontSize: 12, color: Colors.blue),
+                          style: TextStyle(
+                            fontSize: 12, 
+                            color: isDarkMode ? Colors.lightBlue[300] : Colors.blue
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -137,8 +153,10 @@ class CourseCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         "GV: ${course.author}",
-                        style:
-                            const TextStyle(fontSize: 12, color: Colors.grey),
+                        style: TextStyle(
+                          fontSize: 12, 
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -149,23 +167,42 @@ class CourseCard extends StatelessWidget {
                     course.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.white : Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.book, size: 14, color: Colors.grey),
+                      Icon(
+                        Icons.book, 
+                        size: 14, 
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey
+                      ),
                       const SizedBox(width: 4),
-                      Text("${course.totalLessons} Bài học",
-                          style: const TextStyle(fontSize: 12)),
+                      Text(
+                        "${course.totalLessons} Bài học",
+                        style: TextStyle(
+                          fontSize: 12, 
+                          color: isDarkMode ? Colors.grey[300] : Colors.black87
+                        )
+                      ),
                       const SizedBox(width: 10),
-                      const Icon(Icons.person, size: 14, color: Colors.grey),
+                      Icon(
+                        Icons.person, 
+                        size: 14, 
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey
+                      ),
                       const SizedBox(width: 4),
-                      Text("${course.numberOfStudents} Học viên",
-                          style: const TextStyle(fontSize: 12)),
+                      Text(
+                        "${course.numberOfStudents} Học viên",
+                        style: TextStyle(
+                          fontSize: 12, 
+                          color: isDarkMode ? Colors.grey[300] : Colors.black87
+                        )
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -175,26 +212,28 @@ class CourseCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         "${course.averageRating}",
-                        style: const TextStyle(fontSize: 12),
+                        style: TextStyle(
+                          fontSize: 12, 
+                          color: isDarkMode ? Colors.grey[300] : Colors.black87
+                        ),
                       ),
                       const Spacer(),
                       if (course.cost > 0)
                         Text(
-                          currencyFormatter.format(
-                              course.cost.toInt()), // ✅ Hiển thị có dấu chấm
-                          style: const TextStyle(
+                          currencyFormatter.format(course.cost.toInt()),
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey,
+                            color: isDarkMode ? Colors.grey[500] : Colors.grey,
                             decoration: TextDecoration.lineThrough,
                           ),
                         ),
                       const SizedBox(width: 6),
                       Text(
                         currencyFormatter.format(course.price.toInt()),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: Colors.red,
+                          color: isDarkMode ? Colors.redAccent[100] : Colors.red,
                         ),
                       ),
                     ],

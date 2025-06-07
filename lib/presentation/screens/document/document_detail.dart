@@ -301,7 +301,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   }
 
   // Hàm cập nhật để xem trước tài liệu từ URL
-  Widget _buildDocumentPreviewPage(int pageNumber) {
+  Widget _buildDocumentPreviewPage(int pageNumber, bool isDarkMode) {
     // Nếu đang tải, hiển thị biểu tượng tải
     if (_isLoading) {
       return const Center(
@@ -334,7 +334,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     return Stack(
       children: [
         // Nội dung tài liệu (dùng cách hiển thị tạm thời)
-        _buildDocumentViewerByType(pageNumber),
+        _buildDocumentViewerByType(pageNumber, isDarkMode),
 
         // Watermark - chỉ hiển thị khi không phải là xem đầy đủ
         if (!_isFullView)
@@ -346,7 +346,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                 style: TextStyle(
                   fontSize: 40,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey.withOpacity(0.1),
+                  color: isDarkMode 
+                      ? Colors.white.withOpacity(0.05) 
+                      : Colors.grey.withOpacity(0.1),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -361,7 +363,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
             '$pageNumber / ${_getViewablePageCount()}',
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey[600],
+              color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
             ),
           ),
         ),
@@ -370,7 +372,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   }
 
   // Hiển thị tài liệu dựa vào loại định dạng
-  Widget _buildDocumentViewerByType(int pageNumber) {
+  Widget _buildDocumentViewerByType(int pageNumber, bool isDarkMode) {
     // Đây là nơi bạn sẽ tích hợp với thư viện thực tế để hiển thị tài liệu
     // Hiện tại chúng ta sẽ sử dụng phương thức giả để mô phỏng
     final format = widget.document.format.toLowerCase();
@@ -379,33 +381,33 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
       case 'pdf':
         // Dùng SyncfusionFlutterPdfViewer trong phiên bản thực tế
         // Trong ví dụ này, chúng ta sẽ hiển thị chế độ xem giả
-        return _buildPdfPreview(pageNumber);
+        return _buildPdfPreview(pageNumber, isDarkMode);
 
       case 'word':
       case 'doc':
       case 'docx':
         // Nếu đã nhấn "Xem thêm", hiển thị thông báo xem trên website
         if (_isFullView) {
-          return _buildWebsiteRedirectView(format);
+          return _buildWebsiteRedirectView(format, isDarkMode);
         }
-        return _buildWordPreview(pageNumber);
+        return _buildWordPreview(pageNumber, isDarkMode);
 
       case 'ppt':
       case 'pptx':
       case 'powerpoint':
         // Nếu đã nhấn "Xem thêm", hiển thị thông báo xem trên website
         if (_isFullView) {
-          return _buildWebsiteRedirectView(format);
+          return _buildWebsiteRedirectView(format, isDarkMode);
         }
-        return _buildPowerPointPreview(pageNumber);
+        return _buildPowerPointPreview(pageNumber, isDarkMode);
 
       default:
-        return _buildFallbackPreviewPage(pageNumber);
+        return _buildFallbackPreviewPage(pageNumber, isDarkMode);
     }
   }
 
   // Widget hiển thị thông báo điều hướng đến website
-  Widget _buildWebsiteRedirectView(String format) {
+  Widget _buildWebsiteRedirectView(String format, bool isDarkMode) {
     String formatName = format.toUpperCase();
     if (format.contains('word') || format.contains('doc')) {
       formatName = 'Word';
@@ -452,8 +454,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   }
 
   // Hiển thị PDF
-  Widget _buildPdfPreview(int pageNumber) {
-    if (_localFile == null) return _buildFallbackPreviewPage(pageNumber);
+  Widget _buildPdfPreview(int pageNumber, bool isDarkMode) {
+    if (_localFile == null) return _buildFallbackPreviewPage(pageNumber, isDarkMode);
 
     // Sử dụng flutter_pdfview thay vì SyncfusionFlutterPdfViewer
     return PDFView(
@@ -475,8 +477,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   }
 
   // Hiển thị Word
-  Widget _buildWordPreview(int pageNumber) {
-    if (_localFile == null) return _buildFallbackPreviewPage(pageNumber);
+  Widget _buildWordPreview(int pageNumber, bool isDarkMode) {
+    if (_localFile == null) return _buildFallbackPreviewPage(pageNumber, isDarkMode);
 
     // Trong phiên bản thực tế, bạn cần tìm thư viện thích hợp để hiển thị Word
     // Hiển thị mẫu tạm thời
@@ -560,8 +562,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   }
 
   // Hiển thị PowerPoint
-  Widget _buildPowerPointPreview(int pageNumber) {
-    if (_localFile == null) return _buildFallbackPreviewPage(pageNumber);
+  Widget _buildPowerPointPreview(int pageNumber, bool isDarkMode) {
+    if (_localFile == null) return _buildFallbackPreviewPage(pageNumber, isDarkMode);
 
     // Trong phiên bản thực tế, bạn cần tìm thư viện thích hợp để hiển thị PowerPoint
     // Hiển thị mẫu tạm thời
@@ -615,7 +617,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   }
 
   // Trang xem trước thay thế khi không thể hiển thị tài liệu
-  Widget _buildFallbackPreviewPage(int pageNumber) {
+  Widget _buildFallbackPreviewPage(int pageNumber, bool isDarkMode) {
     // Mô phỏng nội dung trang
     String pageContent = 'Nội dung trang $pageNumber';
     if (pageNumber == 1) {
@@ -726,8 +728,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkMode ? Color(0xFF121212) : Colors.white,
       appBar: DocumentHeader(
         document: widget.document,
         onBackPressed: () => Navigator.of(context).pop(),
@@ -753,13 +757,13 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
                 children: [
-                  _buildInfoItem(Icons.description, '$_totalPages'),
+                  _buildInfoItem(Icons.description, '$_totalPages', isDarkMode),
                   const SizedBox(width: 24),
                   _buildInfoItem(
-                      Icons.remove_red_eye, '${widget.document.view}'),
+                      Icons.remove_red_eye, '${widget.document.view}', isDarkMode),
                   const SizedBox(width: 24),
                   _buildInfoItem(
-                      Icons.download, '${widget.document.downloads}'),
+                      Icons.download, '${widget.document.downloads}', isDarkMode),
                 ],
               ),
             ),
@@ -771,7 +775,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
               height: 450,
               width: double.infinity,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -781,9 +785,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: isDarkMode ? Colors.grey[850] : Colors.grey[100],
                       border: Border(
-                          bottom: BorderSide(color: Colors.grey.shade300)),
+                          bottom: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -802,13 +806,14 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                                     }
                                   : null,
                               color:
-                                  _currentPage > 1 ? Colors.black : Colors.grey,
+                                  _currentPage > 1 ? (isDarkMode ? Colors.white : Colors.black) : Colors.grey,
                             ),
                             Text(
                               '$_currentPage / ${_getViewablePageCount()}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
+                                color: isDarkMode ? Colors.white : Colors.black87,
                               ),
                             ),
                             IconButton(
@@ -824,7 +829,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                                     }
                                   : null,
                               color: _currentPage < _getViewablePageCount()
-                                  ? Colors.black
+                                  ? (isDarkMode ? Colors.white : Colors.black)
                                   : Colors.grey,
                             ),
                           ],
@@ -834,7 +839,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                               ? 'Xem đầy đủ'
                               : 'Xem trước ${_maxPreviewPages} trang',
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                             fontStyle: FontStyle.italic,
                           ),
                         ),
@@ -852,7 +857,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                         });
                       },
                       itemBuilder: (context, index) {
-                        return _buildDocumentPreviewPage(index + 1);
+                        return _buildDocumentPreviewPage(index + 1, isDarkMode);
                       },
                     ),
                   ),
@@ -897,7 +902,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                 _isFullView
                     ? 'Bạn đang xem đầy đủ tài liệu'
                     : 'Tài liệu hạn chế xem trước, để xem đầy đủ mời bạn chọn Xem Thêm hoặc Tải xuống',
-                style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                style: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[600], fontSize: 14),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -909,18 +914,18 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                 margin:
                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: isDarkMode ? Colors.blue.shade900.withOpacity(0.3) : Colors.blue.shade50,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.shade200),
+                  border: Border.all(color: isDarkMode ? Colors.blue.shade700 : Colors.blue.shade200),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.blue.shade700),
+                    Icon(Icons.info_outline, color: isDarkMode ? Colors.blue.shade300 : Colors.blue.shade700),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Tài liệu định dạng ${widget.document.format.toUpperCase()} cần được mở trên trang web để xem đầy đủ.',
-                        style: TextStyle(color: Colors.blue.shade700),
+                        style: TextStyle(color: isDarkMode ? Colors.blue.shade300 : Colors.blue.shade700),
                       ),
                     ),
                   ],
@@ -928,13 +933,14 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
               ),
 
             // Thông tin tài liệu
-            const Padding(
-              padding: EdgeInsets.all(16.0),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Text(
                 'THÔNG TIN TÀI LIỆU',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
             ),
@@ -942,29 +948,29 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
             // Bảng thông tin
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: _buildInfoTable(),
+              child: _buildInfoTable(isDarkMode),
             ),
 
             const SizedBox(height: 24),
             
             // Thêm phần tài liệu liên quan
-            _buildRelatedDocumentsSection(),
+            _buildRelatedDocumentsSection(isDarkMode),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoItem(IconData icon, String text) {
+  Widget _buildInfoItem(IconData icon, String text, bool isDarkMode) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: Colors.grey[600]),
+        Icon(icon, size: 18, color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
         const SizedBox(width: 4),
         Text(
           text,
           style: TextStyle(
             fontSize: 14,
-            color: Colors.grey[600],
+            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
           ),
         ),
       ],
@@ -994,10 +1000,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     );
   }
 
-  Widget _buildInfoTable() {
+  Widget _buildInfoTable(bool isDarkMode) {
     return Table(
       border: TableBorder.all(
-        color: Colors.grey.shade300,
+        color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
         width: 1,
       ),
       columnWidths: const {
@@ -1005,8 +1011,35 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         1: FlexColumnWidth(3),
       },
       children: [
-        _buildTableRow('Định dạng', _buildFileTypeRow()),
-        _buildTableRow('Dung lượng', Text(_formatFileSize(widget.document.size))),
+        _buildTableRow('Định dạng', _buildFileTypeRow(isDarkMode), isDarkMode),
+        _buildTableRow('Dung lượng', Text(
+          _formatFileSize(widget.document.size),
+          style: TextStyle(
+            color: isDarkMode ? Colors.white : Colors.black87,
+          ),
+        ), isDarkMode),
+      ],
+    );
+  }
+
+  TableRow _buildTableRow(String label, Widget content, bool isDarkMode) {
+    return TableRow(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: isDarkMode ? Colors.white : Colors.black87,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: content,
+        ),
       ],
     );
   }
@@ -1061,28 +1094,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     }
   }
 
-  TableRow _buildTableRow(String label, Widget content) {
-    return TableRow(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: content,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFileTypeRow() {
+  Widget _buildFileTypeRow(bool isDarkMode) {
     String format = widget.document.format.toLowerCase();
 
     // Default colors (gray for inactive badges)
@@ -1176,17 +1188,18 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   }
 
   // Tạo section tài liệu liên quan
-  Widget _buildRelatedDocumentsSection() {
+  Widget _buildRelatedDocumentsSection(bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'TÀI LIỆU LIÊN QUAN',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
+              color: isDarkMode ? Colors.white : Colors.black87,
             ),
           ),
           const SizedBox(height: 16),
@@ -1199,13 +1212,13 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                   .toList();
                   
               if (filteredDocs.isEmpty) {
-                return const Center(
+                return Center(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16.0),
+                    padding: const EdgeInsets.symmetric(vertical: 16.0),
                     child: Text(
                       'Không có tài liệu liên quan',
                       style: TextStyle(
-                        color: Colors.grey,
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey,
                         fontSize: 16,
                       ),
                     ),
@@ -1217,7 +1230,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: filteredDocs.length > 5 ? 5 : filteredDocs.length,
-                separatorBuilder: (context, index) => const Divider(),
+                separatorBuilder: (context, index) => Divider(
+                  color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                ),
                 itemBuilder: (context, index) {
                   final document = filteredDocs[index];
                   return InkWell(
@@ -1237,6 +1252,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                       document.format,
                       document.view,
                       document.downloads,
+                      isDarkMode,
                     ),
                   );
                 },
@@ -1253,6 +1269,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     String type,
     int views,
     int downloads,
+    bool isDarkMode,
   ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -1281,9 +1298,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : Colors.black87,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -1291,9 +1309,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _buildInfoItem(Icons.remove_red_eye, '$views'),
+                    _buildInfoItem(Icons.remove_red_eye, '$views', isDarkMode),
                     const SizedBox(width: 16),
-                    _buildInfoItem(Icons.download, '$downloads'),
+                    _buildInfoItem(Icons.download, '$downloads', isDarkMode),
                   ],
                 ),
               ],
