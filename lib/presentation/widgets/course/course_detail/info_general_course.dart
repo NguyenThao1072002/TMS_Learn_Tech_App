@@ -10,6 +10,7 @@ class InfoGeneralCourse extends StatelessWidget {
   final OverviewCourseModel? overviewCourse;
   final bool isLoadingOverview;
   final String totalDuration;
+  final bool isDarkMode;
 
   const InfoGeneralCourse({
     Key? key,
@@ -17,10 +18,13 @@ class InfoGeneralCourse extends StatelessWidget {
     this.overviewCourse,
     this.isLoadingOverview = false,
     this.totalDuration = "0",
+    this.isDarkMode = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final isDark = isDarkMode || Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       width: double.infinity,
       height: AppDimensions.headerHeight,

@@ -11,6 +11,7 @@ class OverviewCourseTab extends StatefulWidget {
   final bool isLoadingOverview;
   final bool isLoadingReviews;
   final String totalDuration;
+  final bool isDarkMode;
 
   const OverviewCourseTab({
     Key? key,
@@ -20,6 +21,7 @@ class OverviewCourseTab extends StatefulWidget {
     required this.isLoadingOverview,
     required this.isLoadingReviews,
     required this.totalDuration,
+    this.isDarkMode = false,
   }) : super(key: key);
 
   @override
@@ -31,6 +33,8 @@ class _OverviewCourseTabState extends State<OverviewCourseTab> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = widget.isDarkMode || Theme.of(context).brightness == Brightness.dark;
+
     if (widget.isLoadingOverview) {
       return Center(child: CircularProgressIndicator());
     }

@@ -11,15 +11,23 @@ import 'package:tms_app/presentation/widgets/course/course_card.dart';
 // Widget để hiển thị danh sách khóa học, được sử dụng trong CourseScreen
 class CourseList extends StatelessWidget {
   final List<CourseCardModel> courses;
+  final bool isDarkMode;
 
-  const CourseList({super.key, required this.courses});
+  const CourseList({super.key, required this.courses, this.isDarkMode = false});
 
   @override
   Widget build(BuildContext context) {
+    final isDark = isDarkMode || Theme.of(context).brightness == Brightness.dark;
+    
     return courses.isEmpty
-        ? const Center(
-            child:
-                Text('Không có khóa học nào', style: TextStyle(fontSize: 16)),
+        ? Center(
+            child: Text(
+              'Không có khóa học nào', 
+              style: TextStyle(
+                fontSize: 16,
+                color: isDark ? Colors.grey[400] : Colors.grey[700],
+              ),
+            ),
           )
         : ListView.builder(
             shrinkWrap: true,

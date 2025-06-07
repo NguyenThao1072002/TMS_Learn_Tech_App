@@ -9,6 +9,7 @@ class StructuredCourseTab extends StatefulWidget {
   final bool isPurchased;
   final String totalDuration;
   final Function navigateToCart;
+  final bool isDarkMode;
 
   const StructuredCourseTab({
     Key? key,
@@ -18,6 +19,7 @@ class StructuredCourseTab extends StatefulWidget {
     required this.isPurchased,
     required this.totalDuration,
     required this.navigateToCart,
+    this.isDarkMode = false,
   }) : super(key: key);
 
   @override
@@ -27,6 +29,8 @@ class StructuredCourseTab extends StatefulWidget {
 class _StructuredCourseTabState extends State<StructuredCourseTab> {
   @override
   Widget build(BuildContext context) {
+    final isDark = widget.isDarkMode || Theme.of(context).brightness == Brightness.dark;
+
     if (widget.isLoading) {
       return Center(child: CircularProgressIndicator());
     }

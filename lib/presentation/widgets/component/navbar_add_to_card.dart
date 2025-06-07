@@ -7,6 +7,7 @@ class NavbarAddToCard extends StatelessWidget {
   final VoidCallback onAddToCart;
   final VoidCallback onPurchase;
   final VoidCallback onContinueLearning;
+  final bool isDarkMode;
 
   const NavbarAddToCard({
     Key? key,
@@ -15,10 +16,13 @@ class NavbarAddToCard extends StatelessWidget {
     required this.onAddToCart,
     required this.onPurchase,
     required this.onContinueLearning,
+    this.isDarkMode = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final isDark = isDarkMode || Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(

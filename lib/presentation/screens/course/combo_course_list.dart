@@ -152,6 +152,8 @@ class _ComboCourseListScreenState extends State<ComboCourseListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     print(
         'Build ComboCourseListScreen - isLoading: $_isLoading, Courses: ${_comboCourses.length}');
 
@@ -162,7 +164,7 @@ class _ComboCourseListScreenState extends State<ComboCourseListScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkMode ? Color(0xFF121212) : Colors.white,
       appBar: AppBar(
         title: const Text(
           'Combo Khóa Học',
@@ -171,7 +173,7 @@ class _ComboCourseListScreenState extends State<ComboCourseListScreen> {
             color: Colors.lightBlue,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.lightBlue),
         actions: [
@@ -188,8 +190,8 @@ class _ComboCourseListScreenState extends State<ComboCourseListScreen> {
           : RefreshIndicator(
               onRefresh: _loadComboCourses,
               child: _comboCourses.isEmpty
-                  ? _buildEmptyState()
-                  : _buildComboCourseList(_comboCourses),
+                  ? _buildEmptyState(isDarkMode)
+                  : _buildComboCourseList(_comboCourses, isDarkMode),
             ),
     );
   }
@@ -309,7 +311,7 @@ class _ComboCourseListScreenState extends State<ComboCourseListScreen> {
   }
 
   Widget _buildComboCard(BuildContext context,
-      {required CourseCardModel course}) {
+      {required CourseCardModel course, required bool isDarkMode}) {
     // Tính toán phần trăm giảm giá thực tế
     int discountPercent = course.discountPercent;
     if (course.cost > course.price && discountPercent == 0) {
@@ -333,7 +335,7 @@ class _ComboCourseListScreenState extends State<ComboCourseListScreen> {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDarkMode ? Color(0xFF2A2D3E) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -359,10 +361,10 @@ class _ComboCourseListScreenState extends State<ComboCourseListScreen> {
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Container(
                       height: 180,
-                      color: Colors.grey.shade200,
-                      child: const Center(
+                      color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                      child: Center(
                         child: Icon(Icons.broken_image,
-                            size: 50, color: Colors.grey),
+                            size: 50, color: isDarkMode ? Colors.grey[600] : Colors.grey),
                       ),
                     ),
                   ),
@@ -402,10 +404,10 @@ class _ComboCourseListScreenState extends State<ComboCourseListScreen> {
                 children: [
                   Text(
                     course.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF333333),
+                      color: isDarkMode ? Colors.white : Color(0xFF333333),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -415,7 +417,7 @@ class _ComboCourseListScreenState extends State<ComboCourseListScreen> {
                     course.description,
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.grey.shade600,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                       height: 1.3,
                     ),
                     maxLines: 2,
@@ -447,7 +449,7 @@ class _ComboCourseListScreenState extends State<ComboCourseListScreen> {
                                 style: TextStyle(
                                   fontSize: 13,
                                   decoration: TextDecoration.lineThrough,
-                                  color: Colors.grey.shade600,
+                                  color: isDarkMode ? Colors.grey[500] : Colors.grey[600],
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -494,16 +496,32 @@ class _ComboCourseListScreenState extends State<ComboCourseListScreen> {
   }
 
   void _showSearchDialog(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final TextEditingController controller = TextEditingController();
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Tìm kiếm combo khóa học'),
+        backgroundColor: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
+        title: Text(
+          'Tìm kiếm combo khóa học',
+          style: TextStyle(
+            color: isDarkMode ? Colors.white : Colors.black87,
+          ),
+        ),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
+          style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87),
+          decoration: InputDecoration(
             hintText: 'Nhập tên combo khóa học...',
-            prefixIcon: Icon(Icons.search),
+            hintStyle: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+            prefixIcon: Icon(Icons.search, color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.lightBlue),
+            ),
           ),
           onSubmitted: (value) {
             if (value.isNotEmpty) {
@@ -515,7 +533,7 @@ class _ComboCourseListScreenState extends State<ComboCourseListScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Hủy'),
+            child: Text('Hủy', style: TextStyle(color: Colors.lightBlue)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -524,6 +542,10 @@ class _ComboCourseListScreenState extends State<ComboCourseListScreen> {
                 Navigator.of(context).pop();
               }
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.lightBlue,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Tìm kiếm'),
           ),
         ],
@@ -564,13 +586,18 @@ class _ComboCourseListScreenState extends State<ComboCourseListScreen> {
     }
   }
 
-  Widget _buildEmptyState() {
-    return const Center(
-      child: Text('Không có combo khóa học nào!'),
+  Widget _buildEmptyState(bool isDarkMode) {
+    return Center(
+      child: Text(
+        'Không có combo khóa học nào!',
+        style: TextStyle(
+          color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+        ),
+      ),
     );
   }
 
-  Widget _buildComboCourseList(List<CourseCardModel> courses) {
+  Widget _buildComboCourseList(List<CourseCardModel> courses, bool isDarkMode) {
     return ListView(
       padding: const EdgeInsets.all(16),
       physics: const AlwaysScrollableScrollPhysics(),
@@ -580,12 +607,12 @@ class _ComboCourseListScreenState extends State<ComboCourseListScreen> {
         const SizedBox(height: 20),
 
         // Title section
-        const Text(
+        Text(
           'Combo khóa học nổi bật',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF333333),
+            color: isDarkMode ? Colors.white : Color(0xFF333333),
           ),
         ),
         const SizedBox(height: 12),
@@ -597,6 +624,7 @@ class _ComboCourseListScreenState extends State<ComboCourseListScreen> {
                   child: _buildComboCard(
                     context,
                     course: course,
+                    isDarkMode: isDarkMode,
                   ),
                 ))
             .toList(),

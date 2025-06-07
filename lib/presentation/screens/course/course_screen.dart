@@ -216,6 +216,7 @@ class _CourseScreenState extends State<CourseScreen>
   }
 
   void _showComprehensiveFilterDialog() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     int? tempCategoryId =
         _selectedCategoryIds.isNotEmpty ? _selectedCategoryIds.first : null;
     String? tempTeacherFilter =
@@ -237,7 +238,7 @@ class _CourseScreenState extends State<CourseScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -255,11 +256,12 @@ class _CourseScreenState extends State<CourseScreen>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Lọc khóa học',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -270,11 +272,12 @@ class _CourseScreenState extends State<CourseScreen>
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Danh mục',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              color: isDarkMode ? Colors.white : Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -295,12 +298,12 @@ class _CourseScreenState extends State<CourseScreen>
                                         });
                                       }
                                     },
-                                    backgroundColor: Colors.grey.shade200,
+                                    backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey.shade200,
                                     selectedColor: const Color(0xFF3498DB),
                                     labelStyle: TextStyle(
                                       color: tempCategoryId == null
                                           ? Colors.white
-                                          : Colors.black,
+                                          : (isDarkMode ? Colors.white70 : Colors.black),
                                       fontWeight: tempCategoryId == null
                                           ? FontWeight.bold
                                           : FontWeight.normal,
@@ -323,12 +326,12 @@ class _CourseScreenState extends State<CourseScreen>
                                           }
                                         });
                                       },
-                                      backgroundColor: Colors.grey.shade200,
+                                      backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey.shade200,
                                       selectedColor: const Color(0xFF3498DB),
                                       labelStyle: TextStyle(
                                         color: isSelected
                                             ? Colors.white
-                                            : Colors.black,
+                                            : (isDarkMode ? Colors.white70 : Colors.black),
                                         fontWeight: isSelected
                                             ? FontWeight.bold
                                             : FontWeight.normal,
@@ -347,17 +350,22 @@ class _CourseScreenState extends State<CourseScreen>
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Giảng viên',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              color: isDarkMode ? Colors.white : Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 10),
                           _teachers.isEmpty
-                              ? const Text(
-                                  'Không có giảng viên nào để hiển thị')
+                              ? Text(
+                                  'Không có giảng viên nào để hiển thị',
+                                  style: TextStyle(
+                                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                  ),
+                                )
                               : Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
@@ -377,12 +385,12 @@ class _CourseScreenState extends State<CourseScreen>
                                           }
                                         });
                                       },
-                                      backgroundColor: Colors.grey.shade200,
+                                      backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey.shade200,
                                       selectedColor: const Color(0xFF3498DB),
                                       labelStyle: TextStyle(
                                         color: isSelected
                                             ? Colors.white
-                                            : Colors.black,
+                                            : (isDarkMode ? Colors.white70 : Colors.black),
                                         fontWeight: isSelected
                                             ? FontWeight.bold
                                             : FontWeight.normal,
@@ -399,11 +407,12 @@ class _CourseScreenState extends State<CourseScreen>
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Mức giảm giá',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              color: isDarkMode ? Colors.white : Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -432,12 +441,12 @@ class _CourseScreenState extends State<CourseScreen>
                                       }
                                     });
                                   },
-                                  backgroundColor: Colors.grey.shade200,
+                                  backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey.shade200,
                                   selectedColor: const Color(0xFF3498DB),
                                   labelStyle: TextStyle(
                                     color: isSelected
                                         ? Colors.white
-                                        : Colors.black,
+                                        : (isDarkMode ? Colors.white70 : Colors.black),
                                     fontWeight: isSelected
                                         ? FontWeight.bold
                                         : FontWeight.normal,
@@ -585,8 +594,10 @@ class _CourseScreenState extends State<CourseScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppStyles.courseScreenBgColor,
+      backgroundColor: isDarkMode ? Color(0xFF121212) : AppStyles.courseScreenBgColor,
       appBar: AppBar(
         title: const Text(
           "Khóa học",
@@ -595,12 +606,8 @@ class _CourseScreenState extends State<CourseScreen>
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+        backgroundColor: isDarkMode ? Color(0xFF1E1E1E) : const Color.fromARGB(255, 255, 255, 255),
         elevation: 0,
-        // leading: IconButton(
-        //   icon: const Icon(Icons.arrow_back, color: Colors.lightBlue),
-        //   onPressed: () => Navigator.of(context).pop(),
-        // ),
         actions: [
           // Add refresh button
           _isRefreshing
@@ -768,41 +775,54 @@ class _CourseScreenState extends State<CourseScreen>
                                     _selectedCategoryIds.first != null)
                                   Chip(
                                     label: Text(
-                                        'Danh mục: ${_getCategoryName(_selectedCategoryIds.first!)}'),
+                                      'Danh mục: ${_getCategoryName(_selectedCategoryIds.first!)}',
+                                      style: TextStyle(
+                                        color: isDarkMode ? Colors.white : Colors.black87,
+                                      ),
+                                    ),
                                     onDeleted: () {
                                       setState(() {
                                         _selectedCategoryIds = [];
                                       });
                                       _applyComprehensiveFilters();
                                     },
-                                    backgroundColor: Colors.grey.shade200,
-                                    deleteIconColor: Colors.black54,
+                                    backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey[200],
+                                    deleteIconColor: isDarkMode ? Colors.white70 : Colors.black54,
                                   ),
                                 if (_selectedTeachers.isNotEmpty &&
                                     _selectedTeachers.first != null)
                                   Chip(
                                     label: Text(
-                                        'Giảng viên: ${_selectedTeachers.first}'),
+                                      'Giảng viên: ${_selectedTeachers.first}',
+                                      style: TextStyle(
+                                        color: isDarkMode ? Colors.white : Colors.black87,
+                                      ),
+                                    ),
                                     onDeleted: () {
                                       setState(() {
                                         _selectedTeachers = [];
                                       });
                                       _applyComprehensiveFilters();
                                     },
-                                    backgroundColor: Colors.grey.shade200,
-                                    deleteIconColor: Colors.black54,
+                                    backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey[200],
+                                    deleteIconColor: isDarkMode ? Colors.white70 : Colors.black54,
                                   ),
                                 if (_selectedDiscountValues.isNotEmpty)
                                   Chip(
-                                    label: Text(_getDiscountRangeText()),
+                                    label: Text(
+                                      _getDiscountRangeText(),
+                                      style: TextStyle(
+                                        color: isDarkMode ? Colors.white : Colors.black87,
+                                      ),
+                                    ),
                                     onDeleted: () {
                                       setState(() {
                                         _selectedDiscountValues = [];
                                       });
                                       _applyComprehensiveFilters();
                                     },
-                                    backgroundColor: Colors.grey.shade200,
-                                    deleteIconColor: Colors.black54,
+                                    backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey[200],
+                                    deleteIconColor: isDarkMode ? Colors.white70 : Colors.black54,
                                   ),
                               ],
                             ),
@@ -815,7 +835,7 @@ class _CourseScreenState extends State<CourseScreen>
                         child: Text(
                           'Bộ lọc khóa học',
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -836,14 +856,14 @@ class _CourseScreenState extends State<CourseScreen>
                                 child: Column(
                                   children: [
                                     Icon(Icons.search_off,
-                                        size: 80, color: Colors.grey),
+                                        size: 80, color: isDarkMode ? Colors.grey[600] : Colors.grey),
                                     SizedBox(height: 16),
                                     Text(
                                       "Không có khóa học nào",
                                       style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.grey.shade700,
+                                        color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
                                       ),
                                     ),
                                   ],
@@ -855,6 +875,7 @@ class _CourseScreenState extends State<CourseScreen>
                                     const EdgeInsets.symmetric(horizontal: 16),
                                 child: CourseList(
                                   courses: _controller.getCurrentPageCourses(),
+                                  isDarkMode: isDarkMode,
                                 ),
                               ),
                             if (courses.isNotEmpty)

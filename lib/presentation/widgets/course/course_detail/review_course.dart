@@ -9,13 +9,15 @@ class ReviewCourseTab extends StatefulWidget {
   final List<ReviewCourseModel> reviews;
   final bool isLoading;
   final bool isPurchased;
+  final bool isDarkMode;
 
   const ReviewCourseTab({
     Key? key,
     required this.course,
     required this.reviews,
     required this.isLoading,
-    this.isPurchased = false,
+    required this.isPurchased,
+    this.isDarkMode = false,
   }) : super(key: key);
 
   @override
@@ -27,6 +29,8 @@ class _ReviewCourseTabState extends State<ReviewCourseTab> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = widget.isDarkMode || Theme.of(context).brightness == Brightness.dark;
+
     if (widget.isLoading) {
       return Center(child: CircularProgressIndicator());
     }

@@ -160,18 +160,23 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppStyles.backgroundColor,
+      backgroundColor: isDarkMode ? Color(0xFF121212) : AppStyles.backgroundColor,
       appBar: AppBar(
-        backgroundColor: AppStyles.backgroundColor,
+        backgroundColor: isDarkMode ? Color(0xFF1E1E1E) : AppStyles.backgroundColor,
         elevation: 0,
         title: Text(
           "Chi tiết khóa học",
-          style: AppStyles.appBarTitleStyle,
+          style: isDarkMode 
+              ? AppStyles.appBarTitleStyle.copyWith(color: Colors.white)
+              : AppStyles.appBarTitleStyle,
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios,
-              color: Colors.black, size: AppDimensions.smallIconSize),
+          icon: Icon(Icons.arrow_back_ios,
+              color: isDarkMode ? Colors.white : Colors.black, 
+              size: AppDimensions.smallIconSize),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -183,15 +188,21 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
             overviewCourse: _overviewCourse,
             isLoadingOverview: _isLoadingOverview,
             totalDuration: _calculateTotalDuration(),
+            isDarkMode: isDarkMode,
           ),
 
           // Tabs
           Container(
-            decoration: AppStyles.tabBarDecoration,
+            decoration: isDarkMode 
+                ? BoxDecoration(
+                    color: Color(0xFF1E1E1E),
+                    border: Border(bottom: BorderSide(color: Colors.grey[800]!, width: 1))
+                  )
+                : AppStyles.tabBarDecoration,
             child: TabBar(
               controller: _tabController,
               labelColor: AppStyles.tabActiveColor,
-              unselectedLabelColor: AppStyles.tabInactiveColor,
+              unselectedLabelColor: isDarkMode ? Colors.grey[400] : AppStyles.tabInactiveColor,
               indicatorColor: AppStyles.tabActiveColor,
               indicatorWeight: AppDimensions.tabIndicatorWeight,
               indicatorSize: TabBarIndicatorSize.tab,
@@ -231,6 +242,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                   isLoadingOverview: _isLoadingOverview,
                   isLoadingReviews: _isLoadingReviews,
                   totalDuration: _calculateTotalDuration(),
+                  isDarkMode: isDarkMode,
                 ),
                 // Sử dụng StructuredCourseTab widget thay vì _buildContentTab()
                 StructuredCourseTab(
@@ -240,6 +252,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                   isPurchased: _isPurchased,
                   totalDuration: _calculateTotalDuration(),
                   navigateToCart: _navigateToCart,
+                  isDarkMode: isDarkMode,
                 ),
                 // Sử dụng ReviewCourseTab widget cho tab đánh giá
                 ReviewCourseTab(
@@ -247,8 +260,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
                   reviews: _reviews,
                   isLoading: _isLoadingReviews,
                   isPurchased: _isPurchased,
+                  isDarkMode: isDarkMode,
                 ),
-                _buildRelatedCoursesTab(),
+                _buildRelatedCoursesTab(isDarkMode),
               ],
             ),
           ),
@@ -260,14 +274,16 @@ class _CourseDetailScreenState extends State<CourseDetailScreen>
         onAddToCart: _addToCart,
         onPurchase: _navigateToCart,
         onContinueLearning: _goToLearningScreen,
+        isDarkMode: isDarkMode,
       ),
     );
   }
 
-  Widget _buildRelatedCoursesTab() {
+  Widget _buildRelatedCoursesTab(bool isDarkMode) {
     return RelatedCourses(
       courses: _relatedCourses,
       isLoading: _isLoadingRelated,
+      isDarkMode: isDarkMode,
     );
   }
 

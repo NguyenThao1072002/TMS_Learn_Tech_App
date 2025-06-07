@@ -6,15 +6,19 @@ import 'package:tms_app/presentation/screens/course/course_detail.dart';
 class RelatedCourses extends StatelessWidget {
   final List<CourseCardModel> courses;
   final bool isLoading;
+  final bool isDarkMode;
 
   const RelatedCourses({
     super.key,
     required this.courses,
-    this.isLoading = false,
+    required this.isLoading,
+    this.isDarkMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = isDarkMode || Theme.of(context).brightness == Brightness.dark;
+
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
