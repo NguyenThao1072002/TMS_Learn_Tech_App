@@ -1,0 +1,108 @@
+{
+  "app_name": "TMS Learn Tech",
+  "welcome": "Chào mừng đến với TMS Learn Tech",
+  
+  "auth": {
+    "login": "Đăng nhập",
+    "register": "Đăng ký",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "forgot_password": "Quên mật khẩu?",
+    "continue_with_google": "Tiếp tục với Google",
+    "continue_with_facebook": "Tiếp tục với Facebook",
+    "dont_have_account": "Bạn chưa có tài khoản?",
+    "already_have_account": "Bạn đã có tài khoản?",
+    "sign_up": "Đăng ký",
+    "sign_in": "Đăng nhập"
+  },
+  
+  "home": {
+    "search": "Tìm kiếm khóa học, tài liệu...",
+    "categories": "Danh mục",
+    "trending_courses": "Khóa học nổi bật",
+    "recommended_courses": "Gợi ý cho bạn",
+    "recently_viewed": "Đã xem gần đây",
+    "view_all": "Xem tất cả",
+    "our_team": "Đội ngũ của chúng tôi",
+    "featured_instructors": "Giảng viên nổi bật"
+  },
+  
+  "course": {
+    "my_courses": "Khóa học của tôi",
+    "in_progress": "Đang học",
+    "completed": "Đã hoàn thành",
+    "course_details": "Chi tiết khóa học",
+    "lessons": "Bài học",
+    "duration": "Thời lượng",
+    "instructor": "Giảng viên",
+    "enrollments": "Lượt đăng ký",
+    "ratings": "Đánh giá",
+    "enroll_now": "Đăng ký ngay",
+    "continue_learning": "Tiếp tục học",
+    "course_content": "Nội dung khóa học",
+    "about_course": "Giới thiệu khóa học",
+    "reviews": "Đánh giá",
+    "write_review": "Viết đánh giá"
+  },
+  
+  "lesson": {
+    "lesson": "Bài học",
+    "next_lesson": "Bài tiếp theo",
+    "previous_lesson": "Bài trước đó",
+    "complete_lesson": "Đánh dấu đã hoàn thành",
+    "incomplete_lesson": "Đánh dấu chưa hoàn thành",
+    "notes": "Ghi chú",
+    "add_note": "Thêm ghi chú",
+    "attachments": "Tài liệu đính kèm",
+    "resources": "Tài nguyên"
+  },
+  
+  "settings": {
+    "settings": "Cài đặt",
+    "account": "Tài khoản",
+    "profile": "Hồ sơ",
+    "appearance": "Giao diện",
+    "language": "Ngôn ngữ",
+    "notifications": "Thông báo",
+    "dark_mode": "Chế độ tối",
+    "light_mode": "Chế độ sáng",
+    "system_mode": "Theo hệ thống",
+    "download_settings": "Cài đặt tải xuống",
+    "privacy": "Quyền riêng tư",
+    "help_support": "Trợ giúp & Hỗ trợ",
+    "about": "Giới thiệu",
+    "logout": "Đăng xuất"
+  },
+  
+  "account": {
+    "edit_profile": "Chỉnh sửa hồ sơ",
+    "name": "Tên",
+    "bio": "Giới thiệu",
+    "phone": "Số điện thoại",
+    "save_changes": "Lưu thay đổi",
+    "change_password": "Đổi mật khẩu",
+    "old_password": "Mật khẩu cũ",
+    "new_password": "Mật khẩu mới",
+    "confirm_password": "Xác nhận mật khẩu"
+  },
+  
+  "common": {
+    "loading": "Đang tải...",
+    "error": "Lỗi",
+    "retry": "Thử lại",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "delete": "Xóa",
+    "edit": "Sửa",
+    "search": "Tìm kiếm",
+    "filter": "Lọc",
+    "sort": "Sắp xếp",
+    "no_results": "Không tìm thấy kết quả",
+    "no_data": "Không có dữ liệu",
+    "coming_soon": "Sắp ra mắt",
+    "success": "Thành công",
+    "failure": "Thất bại",
+    "minutes": "phút",
+    "hours": "giờ"
+  }
+} 

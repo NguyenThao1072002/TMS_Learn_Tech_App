@@ -152,6 +152,10 @@ class _HomePageState extends State<HomePage> {
                     }
                   },
                 ),
+                
+                // Đội ngũ của chúng tôi
+                const TeachingStaffList(),
+                
                 // Danh mục
                 const CategoryWidget(),
 
@@ -420,9 +424,6 @@ class _HomePageState extends State<HomePage> {
                 ),
 
                 const SizedBox(height: AppDimensions.blockSpacing),
-
-                // Đội ngũ của chúng tôi
-                const TeachingStaffList(),
 
                 // Thêm footer vào đây
                 const AppFooter(),

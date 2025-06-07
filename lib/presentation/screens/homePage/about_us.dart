@@ -5,6 +5,7 @@ import 'package:tms_app/presentation/controller/home_controller.dart';
 import 'package:tms_app/presentation/screens/homePage/home.dart';
 import 'package:tms_app/presentation/screens/course/course_screen.dart';
 import 'package:tms_app/presentation/widgets/navbar/bottom_navbar_widget.dart';
+import 'package:tms_app/presentation/widgets/home/teaching_staff_list.dart';
 
 class AboutUsScreen extends StatelessWidget {
   const AboutUsScreen({Key? key}) : super(key: key);
@@ -243,55 +244,9 @@ class AboutUsScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-
-                // Team
-                Container(
-                  margin: EdgeInsets.symmetric(
-                      horizontal: AppDimensions.screenPadding,
-                      vertical: AppDimensions.smallSpacing * 2),
-                  child: Text(
-                    'Đội ngũ của chúng tôi',
-                    style: AppStyles.sectionTitle.copyWith(
-                      color: AppStyles.primaryColor,
-                    ),
-                  ),
-                ),
-
-                // Team Cards
-                Container(
-                  height: 200,
-                  margin:
-                      EdgeInsets.only(bottom: AppDimensions.blockSpacing + 10),
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: EdgeInsets.symmetric(
-                        horizontal: AppDimensions.screenPadding - 5),
-                    children: [
-                      _buildTeamMemberCard(
-                        name: 'Nguyễn Văn A',
-                        role: 'Giảng viên AI & Machine Learning',
-                        imageUrl:
-                            'https://randomuser.me/api/portraits/men/32.jpg',
-                        context: context,
-                      ),
-                      _buildTeamMemberCard(
-                        name: 'Trần Thị B',
-                        role: 'Giảng viên Web Development',
-                        imageUrl:
-                            'https://randomuser.me/api/portraits/women/44.jpg',
-                        context: context,
-                      ),
-                      _buildTeamMemberCard(
-                        name: 'Lê Văn C',
-                        role: 'Giảng viên Mobile Development',
-                        imageUrl:
-                            'https://randomuser.me/api/portraits/men/46.jpg',
-                        context: context,
-                      ),
-                    ],
-                  ),
-                ),
-
+                
+                 // Đội ngũ của chúng tôi
+                const TeachingStaffList(),
                 // Contact
                 Container(
                   margin: EdgeInsets.symmetric(

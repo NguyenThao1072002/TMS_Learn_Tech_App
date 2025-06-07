@@ -18,6 +18,11 @@ import 'package:get_it/get_it.dart';
 import 'package:tms_app/presentation/controller/my_course/my_course_controller.dart';
 import 'package:tms_app/core/widgets/app_connectivity_wrapper.dart';
 import 'package:tms_app/presentation/controller/teaching_staff_controller.dart';
+import 'package:tms_app/presentation/controller/theme_controller.dart';
+import 'package:tms_app/presentation/controller/language_controller.dart';
+import 'package:tms_app/core/theme/app_themes.dart';
+import 'package:tms_app/core/localization/app_localization.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -72,7 +77,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Lấy AuthManager từ service locator
-    AuthManager? authManager;
+    AuthManager authManager;
     try {
       authManager = GetIt.instance<AuthManager>();
     } catch (e) {
@@ -90,36 +95,46 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MyCourseController()),
         // Thêm TeachingStaffController vào providers
         ChangeNotifierProvider(create: (_) => TeachingStaffController()),
+        // Thêm ThemeController và LanguageController
+        ChangeNotifierProvider(create: (_) => ThemeController()),
+        ChangeNotifierProvider(create: (_) => LanguageController()),
         // Thêm các provider khác nếu cần
       ],
-      child: AppConnectivityWrapper(
-        child: MaterialApp(
-          title: 'TMS Learn Tech',
-          theme: ThemeData(
-            primarySwatch: Colors.blue,
-            visualDensity: VisualDensity.adaptivePlatformDensity,
-            fontFamily: 'Roboto',
-            appBarTheme: const AppBarTheme(
-              elevation: 0,
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-              centerTitle: false,
+      child: Consumer2<ThemeController, LanguageController>(
+        builder: (context, themeController, languageController, child) {
+          return AppConnectivityWrapper(
+            child: MaterialApp(
+              title: 'TMS Learn Tech',
+              theme: AppThemes.lightTheme,
+              darkTheme: AppThemes.darkTheme,
+              themeMode: themeController.themeMode,
+              debugShowCheckedModeBanner: false,
+              navigatorKey: authManager.navigatorKey,
+              locale: languageController.currentLocale,
+              supportedLocales: const [
+                Locale('en', ''), // English
+                Locale('vi', ''), // Vietnamese
+              ],
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              routes: {
+                '/teaching_staff': (context) => const TeachingStaffScreen(),
+                '/about_us': (context) => const AboutUsScreen(),
+              },
+              // Flow chọn màn hình hiển thị:
+              // 1. Nếu chưa xem onboarding -> hiển thị OnboardingScreen
+              // 2. Nếu đã xem onboarding nhưng chưa đăng nhập -> hiển thị LoginScreen
+              // 3. Nếu đã xem onboarding và đã đăng nhập -> hiển thị HomeScreen
+              home: showOnboarding
+                  ? const OnboardingScreen()
+                  : (isLoggedIn ? HomeScreen() : LoginScreen()),
             ),
-          ),
-          debugShowCheckedModeBanner: false,
-          navigatorKey: authManager.navigatorKey,
-          routes: {
-            '/teaching_staff': (context) => const TeachingStaffScreen(),
-            '/about_us': (context) => const AboutUsScreen(),
-          },
-          // Flow chọn màn hình hiển thị:
-          // 1. Nếu chưa xem onboarding -> hiển thị OnboardingScreen
-          // 2. Nếu đã xem onboarding nhưng chưa đăng nhập -> hiển thị LoginScreen
-          // 3. Nếu đã xem onboarding và đã đăng nhập -> hiển thị HomeScreen
-          home: showOnboarding
-              ? const OnboardingScreen()
-              : (isLoggedIn ? HomeScreen() : LoginScreen()),
-        ),
+          );
+        },
       ),
     );
   }

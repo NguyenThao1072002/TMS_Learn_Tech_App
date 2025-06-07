@@ -1,0 +1,108 @@
+{
+  "app_name": "TMS Learn Tech",
+  "welcome": "Welcome to TMS Learn Tech",
+  
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "forgot_password": "Forgot Password?",
+    "continue_with_google": "Continue with Google",
+    "continue_with_facebook": "Continue with Facebook",
+    "dont_have_account": "Don't have an account?",
+    "already_have_account": "Already have an account?",
+    "sign_up": "Sign up",
+    "sign_in": "Sign in"
+  },
+  
+  "home": {
+    "search": "Search courses, documents...",
+    "categories": "Categories",
+    "trending_courses": "Trending Courses",
+    "recommended_courses": "Recommended for you",
+    "recently_viewed": "Recently Viewed",
+    "view_all": "View all",
+    "our_team": "Our Team",
+    "featured_instructors": "Featured Instructors"
+  },
+  
+  "course": {
+    "my_courses": "My Courses",
+    "in_progress": "In Progress",
+    "completed": "Completed",
+    "course_details": "Course Details",
+    "lessons": "Lessons",
+    "duration": "Duration",
+    "instructor": "Instructor",
+    "enrollments": "Enrollments",
+    "ratings": "Ratings",
+    "enroll_now": "Enroll Now",
+    "continue_learning": "Continue Learning",
+    "course_content": "Course Content",
+    "about_course": "About This Course",
+    "reviews": "Reviews",
+    "write_review": "Write a Review"
+  },
+  
+  "lesson": {
+    "lesson": "Lesson",
+    "next_lesson": "Next Lesson",
+    "previous_lesson": "Previous Lesson",
+    "complete_lesson": "Mark as Complete",
+    "incomplete_lesson": "Mark as Incomplete",
+    "notes": "Notes",
+    "add_note": "Add Note",
+    "attachments": "Attachments",
+    "resources": "Resources"
+  },
+  
+  "settings": {
+    "settings": "Settings",
+    "account": "Account",
+    "profile": "Profile",
+    "appearance": "Appearance",
+    "language": "Language",
+    "notifications": "Notifications",
+    "dark_mode": "Dark Mode",
+    "light_mode": "Light Mode",
+    "system_mode": "System Mode",
+    "download_settings": "Download Settings",
+    "privacy": "Privacy",
+    "help_support": "Help & Support",
+    "about": "About",
+    "logout": "Logout"
+  },
+  
+  "account": {
+    "edit_profile": "Edit Profile",
+    "name": "Name",
+    "bio": "Bio",
+    "phone": "Phone",
+    "save_changes": "Save Changes",
+    "change_password": "Change Password",
+    "old_password": "Old Password",
+    "new_password": "New Password",
+    "confirm_password": "Confirm Password"
+  },
+  
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "no_results": "No results found",
+    "no_data": "No data available",
+    "coming_soon": "Coming Soon",
+    "success": "Success",
+    "failure": "Failure",
+    "minutes": "minutes",
+    "hours": "hours"
+  }
+} 

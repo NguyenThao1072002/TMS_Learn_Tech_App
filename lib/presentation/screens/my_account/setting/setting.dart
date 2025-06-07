@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:provider/provider.dart';
 import 'package:tms_app/domain/usecases/login_usecase.dart';
 import 'package:tms_app/presentation/controller/login/login_controller.dart';
+import 'package:tms_app/presentation/controller/theme_controller.dart';
+import 'package:tms_app/presentation/controller/language_controller.dart';
 import 'package:tms_app/presentation/screens/my_account/setting/change_password.dart';
 import 'package:tms_app/presentation/screens/my_account/setting/notification.dart';
 import 'package:tms_app/presentation/screens/my_account/setting/update_account.dart';
 import 'package:tms_app/presentation/screens/my_account/setting/help_and_support.dart';
 import 'package:tms_app/presentation/screens/my_account/setting/member.dart';
+import 'package:tms_app/presentation/screens/my_account/setting/appearance_language_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -46,6 +50,9 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final themeController = Provider.of<ThemeController>(context);
+    final languageController = Provider.of<LanguageController>(context);
+    
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -125,6 +132,21 @@ class _SettingsScreenState extends State<SettingsScreen>
                       MaterialPageRoute(
                         builder: (context) =>
                             const NotificationSettingsScreen(),
+                      ),
+                    );
+                  },
+                ),
+                
+                _buildAnimatedSettingItem(
+                  'Giao diện & Ngôn ngữ',
+                  icon: Icons.language_outlined,
+                  delay: 350,
+                  onTap: () {
+                    // Điều hướng đến màn hình giao diện & ngôn ngữ
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AppearanceAndLanguageScreen(),
                       ),
                     );
                   },

@@ -97,6 +97,8 @@ import 'package:tms_app/data/repositories/my_course/recent_lesson_reporitory_imp
 import 'package:tms_app/data/services/my_course/recent_lesson_services.dart';
 import 'package:tms_app/domain/repositories/my_course/recent_lesson_reporitory.dart';
 import 'package:tms_app/domain/usecases/my_course/recent_lesson_usecase.dart';
+import 'package:tms_app/presentation/controller/theme_controller.dart';
+import 'package:tms_app/presentation/controller/language_controller.dart';
 
 // Đảm bảo các import không bị xóa bởi công cụ IDE
 // ignore: unused_element
@@ -200,6 +202,10 @@ void setupLocator() {
 
   // Thiết lập TokenInterceptor sau khi các service đã được đăng ký
   _setupTokenInterceptor();
+
+  // Register controllers
+  sl.registerLazySingleton<ThemeController>(() => ThemeController());
+  sl.registerLazySingleton<LanguageController>(() => LanguageController());
 }
 
 // Hàm mới để thiết lập interceptor cho Dio
