@@ -9,6 +9,7 @@ class RelatedPracticeTest extends StatefulWidget {
   final int currentTestId;
   final int courseId;
   final int size;
+  final bool isDarkMode;
 
   const RelatedPracticeTest({
     Key? key,
@@ -16,6 +17,7 @@ class RelatedPracticeTest extends StatefulWidget {
     required this.currentTestId,
     required this.courseId,
     this.size = 5,
+    this.isDarkMode = false,
   }) : super(key: key);
 
   @override

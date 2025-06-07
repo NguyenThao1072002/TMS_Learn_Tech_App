@@ -44,8 +44,10 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkMode ? Color(0xFF121212) : Colors.white,
       body: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
@@ -68,7 +70,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                     'Không thể tải thông tin đề thi',
                     style: TextStyle(
                       fontSize: 18,
-                      color: Colors.grey.shade700,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey.shade700,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -76,7 +78,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                     'Lỗi: ${_controller.errorMessage}',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey.shade500,
+                      color: isDarkMode ? Colors.grey[500] : Colors.grey.shade500,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -99,14 +101,14 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                   Icon(
                     Icons.search_off,
                     size: 64,
-                    color: Colors.grey.shade400,
+                    color: isDarkMode ? Colors.grey[600] : Colors.grey.shade400,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'Không tìm thấy đề thi',
                     style: TextStyle(
                       fontSize: 18,
-                      color: Colors.grey.shade700,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey.shade700,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -114,7 +116,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                     'Mã đề thi: ${widget.testId}',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey.shade500,
+                      color: isDarkMode ? Colors.grey[500] : Colors.grey.shade500,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -135,7 +137,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
               SliverAppBar(
                 expandedHeight: 200,
                 pinned: true,
-                backgroundColor: const Color(0xFF3498DB),
+                backgroundColor: isDarkMode ? Color(0xFF1E1E1E) : const Color(0xFF3498DB),
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                   onPressed: () => Navigator.of(context).pop(),
@@ -148,7 +150,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                         test.imageUrl,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) => Container(
-                          color: const Color(0xFF3498DB),
+                          color: isDarkMode ? Color(0xFF1E1E1E) : const Color(0xFF3498DB),
                         ),
                       ),
                       Container(
@@ -244,12 +246,14 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                             icon: Icons.help_outline,
                             title: '${test.totalQuestion} câu hỏi',
                             subtitle: 'Đa dạng độ khó',
+                            isDarkMode: isDarkMode,
                           ),
                           const SizedBox(width: 12),
                           _buildInfoCard(
                             icon: Icons.access_time,
                             title: '${test.totalQuestion ~/ 2} phút',
                             subtitle: 'Thời gian làm bài',
+                            isDarkMode: isDarkMode,
                           ),
                           const SizedBox(width: 12),
                           _buildInfoCard(
@@ -257,6 +261,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                             title: _controller.getVietnameseLevel(test.level),
                             subtitle: 'Độ khó',
                             iconColor: _controller.getLevelColor(test.level),
+                            isDarkMode: isDarkMode,
                           ),
                         ],
                       ),
@@ -264,12 +269,12 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                       const SizedBox(height: 24),
 
                       // About this test
-                      const Text(
+                      Text(
                         'Giới thiệu đề thi',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF333333),
+                          color: isDarkMode ? Colors.white : Color(0xFF333333),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -277,7 +282,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                         test.description,
                         style: TextStyle(
                           fontSize: 15,
-                          color: Colors.grey.shade700,
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey.shade700,
                           height: 1.5,
                         ),
                       ),
@@ -285,37 +290,37 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                       const SizedBox(height: 24),
 
                       // What you'll learn
-                      const Text(
+                      Text(
                         'Bạn sẽ được kiểm tra',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF333333),
+                          color: isDarkMode ? Colors.white : Color(0xFF333333),
                         ),
                       ),
                       const SizedBox(height: 12),
                       ...test.testContents
-                          .map((item) => _buildBulletPoint(item)),
+                          .map((item) => _buildBulletPoint(item, isDarkMode)),
 
                       const SizedBox(height: 24),
 
                       // Requirements
-                      const Text(
+                      Text(
                         'Yêu cầu kiến thức',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF333333),
+                          color: isDarkMode ? Colors.white : Color(0xFF333333),
                         ),
                       ),
                       const SizedBox(height: 12),
                       ...test.knowledgeRequirements
-                          .map((item) => _buildBulletPoint(item)),
+                          .map((item) => _buildBulletPoint(item, isDarkMode)),
 
                       const SizedBox(height: 32),
 
                       // Price and purchase section
-                      _buildPriceSection(test),
+                      _buildPriceSection(test, isDarkMode),
 
                       const SizedBox(height: 32),
 
@@ -325,6 +330,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                         testTitle: test.title,
                         canReview: test.purchased,
                         practiceTestUseCase: _practiceTestUseCase,
+                        isDarkMode: isDarkMode,
                       ),
 
                       const SizedBox(height: 32),
@@ -334,6 +340,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                         practiceTestUseCase: _practiceTestUseCase,
                         currentTestId: test.testId,
                         courseId: test.courseId,
+                        isDarkMode: isDarkMode,
                       ),
                     ],
                   ),
@@ -355,7 +362,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
           return Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
@@ -377,7 +384,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                           style: TextStyle(
                             fontSize: 14,
                             decoration: TextDecoration.lineThrough,
-                            color: Colors.grey.shade600,
+                            color: isDarkMode ? Colors.grey[500] : Colors.grey.shade600,
                           ),
                         ),
                       Text(
@@ -391,7 +398,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                           fontWeight: FontWeight.bold,
                           color: test.purchased
                               ? Colors.green
-                              : const Color(0xFF333333),
+                              : (isDarkMode ? Colors.white : Color(0xFF333333)),
                         ),
                       ),
                     ],
@@ -477,14 +484,20 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
     );
   }
 
-  Widget _buildPriceSection(PracticeTestDetailModel test) {
+  Widget _buildPriceSection(PracticeTestDetailModel test, bool isDarkMode) {
     if (test.purchased) {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.green.withOpacity(0.1),
+          color: isDarkMode 
+              ? Colors.green.withOpacity(0.2) 
+              : Colors.green.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.green.withOpacity(0.3)),
+          border: Border.all(
+            color: isDarkMode 
+                ? Colors.green.withOpacity(0.4) 
+                : Colors.green.withOpacity(0.3),
+          ),
         ),
         child: Row(
           children: [
@@ -511,7 +524,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                     'Bạn có thể làm bài thi ngay bây giờ',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey.shade700,
+                      color: isDarkMode ? Colors.grey[300] : Colors.grey.shade700,
                     ),
                   ),
                 ],
@@ -526,6 +539,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
+      color: isDarkMode ? Color(0xFF2A2D3E) : Colors.white,
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -535,12 +549,12 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Giá',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF333333),
+                    color: isDarkMode ? Colors.white : Color(0xFF333333),
                   ),
                 ),
                 if (test.percentDiscount > 0)
@@ -548,7 +562,9 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: isDarkMode 
+                          ? Colors.red.withOpacity(0.2) 
+                          : Colors.red.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -573,7 +589,9 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: test.price > 0 ? Colors.black : Colors.green,
+                    color: test.price > 0 
+                        ? (isDarkMode ? Colors.white : Colors.black) 
+                        : Colors.green,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -583,7 +601,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       decoration: TextDecoration.lineThrough,
-                      color: Colors.grey.shade500,
+                      color: isDarkMode ? Colors.grey[500] : Colors.grey.shade500,
                     ),
                   ),
               ],
@@ -595,7 +613,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                   : 'Bài thi miễn phí - có thể truy cập ngay',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade700,
+                color: isDarkMode ? Colors.grey[400] : Colors.grey.shade700,
               ),
             ),
             
@@ -629,12 +647,13 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
     required String title,
     required String subtitle,
     Color iconColor = const Color(0xFF3498DB),
+    required bool isDarkMode,
   }) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDarkMode ? Color(0xFF2A2D3E) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -650,9 +669,10 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
             const SizedBox(height: 8),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
+                color: isDarkMode ? Colors.white : Colors.black87,
               ),
               textAlign: TextAlign.center,
             ),
@@ -661,7 +681,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
               subtitle,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey.shade600,
+                color: isDarkMode ? Colors.grey[400] : Colors.grey.shade600,
               ),
               textAlign: TextAlign.center,
             ),
@@ -671,7 +691,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
     );
   }
 
-  Widget _buildBulletPoint(String text) {
+  Widget _buildBulletPoint(String text, bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -690,7 +710,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
               text,
               style: TextStyle(
                 fontSize: 15,
-                color: Colors.grey.shade700,
+                color: isDarkMode ? Colors.grey[400] : Colors.grey.shade700,
                 height: 1.4,
               ),
             ),

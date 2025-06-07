@@ -9,6 +9,7 @@ class TestReviewSection extends StatefulWidget {
   final String testTitle;
   final bool canReview;
   final PracticeTestUseCase practiceTestUseCase;
+  final bool isDarkMode;
 
   const TestReviewSection({
     Key? key,
@@ -16,6 +17,7 @@ class TestReviewSection extends StatefulWidget {
     required this.testTitle,
     required this.canReview,
     required this.practiceTestUseCase,
+    this.isDarkMode = false,
   }) : super(key: key);
 
   @override
@@ -42,6 +44,12 @@ class _TestReviewSectionState extends State<TestReviewSection> {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = widget.isDarkMode ? Colors.white : const Color(0xFF333333);
+    final secondaryTextColor = widget.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700;
+    final containerColor = widget.isDarkMode ? const Color(0xFF2A2D3E) : Colors.grey.shade50;
+    final borderColor = widget.isDarkMode ? const Color(0xFF3A3F55) : Colors.grey.shade100;
+    final buttonColor = const Color(0xFF3498DB);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -49,12 +57,12 @@ class _TestReviewSectionState extends State<TestReviewSection> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Đánh giá từ học viên',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF333333),
+                color: textColor,
               ),
             ),
           ],
@@ -78,7 +86,7 @@ class _TestReviewSectionState extends State<TestReviewSection> {
               return Center(
                 child: Text(
                   'Không thể tải đánh giá',
-                  style: TextStyle(color: Colors.grey.shade600),
+                  style: TextStyle(color: secondaryTextColor),
                 ),
               );
             }
@@ -93,9 +101,9 @@ class _TestReviewSectionState extends State<TestReviewSection> {
               return Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: containerColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade100),
+                  border: Border.all(color: borderColor),
                 ),
                 child: Center(
                   child: Column(
@@ -103,13 +111,13 @@ class _TestReviewSectionState extends State<TestReviewSection> {
                       Icon(
                         Icons.rate_review_outlined,
                         size: 48,
-                        color: Colors.grey.shade400,
+                        color: widget.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
                       ),
                       const SizedBox(height: 16),
                       Text(
                         "Chưa có đánh giá nào cho đề thi này",
                         style: TextStyle(
-                          color: Colors.grey.shade700,
+                          color: secondaryTextColor,
                           fontSize: 16,
                         ),
                       ),
@@ -127,6 +135,10 @@ class _TestReviewSectionState extends State<TestReviewSection> {
                       rating: review.rating.toDouble(),
                       comment: review.review ?? 'Không có đánh giá',
                       date: review.createdAt,
+                      textColor: textColor,
+                      secondaryTextColor: secondaryTextColor,
+                      containerColor: containerColor,
+                      borderColor: borderColor,
                     )),
 
                 // Xem thêm button
@@ -143,7 +155,7 @@ class _TestReviewSectionState extends State<TestReviewSection> {
                         icon: const Icon(Icons.unfold_more),
                         label: const Text("Xem thêm đánh giá"),
                         style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xFF3498DB),
+                          foregroundColor: buttonColor,
                         ),
                       ),
                     ),
@@ -161,6 +173,7 @@ class _TestReviewSectionState extends State<TestReviewSection> {
                             builder: (context) => ReviewPracticeTestScreen(
                               testId: widget.testId,
                               testTitle: widget.testTitle,
+                              isDarkMode: widget.isDarkMode,
                             ),
                           ),
                         );
@@ -168,7 +181,7 @@ class _TestReviewSectionState extends State<TestReviewSection> {
                       icon: const Icon(Icons.format_list_bulleted),
                       label: Text("Xem tất cả ${reviews.length} đánh giá"),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF3498DB),
+                        backgroundColor: buttonColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
@@ -187,20 +200,20 @@ class _TestReviewSectionState extends State<TestReviewSection> {
         const SizedBox(height: 32),
         Container(
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
+            color: containerColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: borderColor),
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 "Chia sẻ trải nghiệm học tập của bạn",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Color(0xFF333333),
+                  color: textColor,
                 ),
               ),
               const SizedBox(height: 12),
@@ -208,7 +221,7 @@ class _TestReviewSectionState extends State<TestReviewSection> {
                 "Đánh giá của bạn sẽ giúp cải thiện chất lượng đề thi và giúp người học khác có lựa chọn phù hợp",
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade700,
+                  color: secondaryTextColor,
                 ),
               ),
               const SizedBox(height: 16),
@@ -231,8 +244,10 @@ class _TestReviewSectionState extends State<TestReviewSection> {
                   label: const Text("Viết đánh giá"),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: widget.canReview
-                        ? const Color(0xFF3498DB)
-                        : Colors.grey.shade300,
+                        ? buttonColor
+                        : widget.isDarkMode 
+                            ? Colors.grey.shade700 
+                            : Colors.grey.shade300,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 32,
@@ -251,18 +266,28 @@ class _TestReviewSectionState extends State<TestReviewSection> {
   void _showAddReviewDialog(BuildContext context) {
     int selectedRating = 5;
     final reviewController = TextEditingController();
+    final isDark = widget.isDarkMode;
+    final dialogBackgroundColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final dialogTextColor = isDark ? Colors.white : Colors.black;
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(builder: (context, setState) {
         return AlertDialog(
-          title: const Text('Đánh giá đề thi'),
+          backgroundColor: dialogBackgroundColor,
+          title: Text(
+            'Đánh giá đề thi',
+            style: TextStyle(color: dialogTextColor),
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Bạn đánh giá đề thi này thế nào?'),
+                Text(
+                  'Bạn đánh giá đề thi này thế nào?',
+                  style: TextStyle(color: dialogTextColor),
+                ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -282,16 +307,40 @@ class _TestReviewSectionState extends State<TestReviewSection> {
                   }),
                 ),
                 const SizedBox(height: 16),
-                const Text('Chia sẻ trải nghiệm của bạn (tùy chọn)'),
+                Text(
+                  'Chia sẻ trải nghiệm của bạn (tùy chọn)',
+                  style: TextStyle(color: dialogTextColor),
+                ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: reviewController,
                   maxLines: 3,
+                  style: TextStyle(color: dialogTextColor),
                   decoration: InputDecoration(
                     hintText: 'Viết đánh giá của bạn',
+                    hintStyle: TextStyle(
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                      ),
                     ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: const Color(0xFF3498DB),
+                      ),
+                    ),
+                    filled: true,
+                    fillColor: isDark ? const Color(0xFF2A2D3E) : Colors.white,
                   ),
                 ),
               ],
@@ -302,7 +351,10 @@ class _TestReviewSectionState extends State<TestReviewSection> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('Hủy'),
+              child: Text(
+                'Hủy',
+                style: TextStyle(color: const Color(0xFF3498DB)),
+              ),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -340,6 +392,10 @@ class _TestReviewSectionState extends State<TestReviewSection> {
                   }
                 }
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF3498DB),
+                foregroundColor: Colors.white,
+              ),
               child: const Text('Gửi đánh giá'),
             ),
           ],
@@ -357,14 +413,18 @@ class _TestReviewSectionState extends State<TestReviewSection> {
     required double rating,
     required String comment,
     required String date,
+    required Color textColor,
+    required Color secondaryTextColor,
+    required Color containerColor,
+    required Color borderColor,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: containerColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(color: borderColor),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -373,7 +433,7 @@ class _TestReviewSectionState extends State<TestReviewSection> {
             radius: 20,
             backgroundImage: NetworkImage(avatar),
             onBackgroundImageError: (exception, stackTrace) {},
-            backgroundColor: Colors.grey.shade200,
+            backgroundColor: widget.isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
             child: const Icon(Icons.person, color: Colors.white),
           ),
           const SizedBox(width: 12),
@@ -386,16 +446,17 @@ class _TestReviewSectionState extends State<TestReviewSection> {
                   children: [
                     Text(
                       name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
+                        color: textColor,
                       ),
                     ),
                     Text(
                       _formatDate(date),
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: secondaryTextColor,
                       ),
                     ),
                   ],
@@ -422,7 +483,7 @@ class _TestReviewSectionState extends State<TestReviewSection> {
                   comment,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey.shade700,
+                    color: secondaryTextColor,
                     height: 1.4,
                   ),
                 ),

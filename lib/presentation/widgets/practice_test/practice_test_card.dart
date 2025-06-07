@@ -5,234 +5,245 @@ class PracticeTestCard extends StatelessWidget {
   final PracticeTestCardModel test;
   final VoidCallback? onTap;
   final bool showDetailButton;
+  final bool isDarkMode;
 
   const PracticeTestCard({
     Key? key,
     required this.test,
     this.onTap,
     this.showDetailButton = true,
+    this.isDarkMode = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    final isDark = isDarkMode || brightness == Brightness.dark;
+    
     return InkWell(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? Color(0xFF2A2D3E) : Colors.white,
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: isDark 
+                  ? Colors.black.withOpacity(0.3)
+                  : Colors.black.withOpacity(0.15),
               blurRadius: 10,
               spreadRadius: 0,
               offset: const Offset(0, 5),
             ),
           ],
           border: Border.all(
-            color: Colors.grey.withOpacity(0.1),
+            color: isDark 
+                ? Colors.grey[700]!
+                : Colors.grey.withOpacity(0.1),
             width: 1,
           ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image
-            ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(15)),
-              child: Image.network(
-                test.imageUrl,
-                height: 120,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 120,
-                  color: Colors.grey.shade200,
-                  child: Icon(
-                    Icons.image_not_supported,
-                    color: Colors.grey.shade400,
-                    size: 50,
+            // Test image and badge
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(15),
+                    topRight: Radius.circular(15),
+                  ),
+                  child: Image.network(
+                    test.imageUrl,
+                    width: double.infinity,
+                    height: 150,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 150,
+                      color: isDark ? Colors.grey[800] : Colors.grey[200],
+                      child: Icon(
+                        Icons.assignment,
+                        size: 50,
+                        color: isDark ? Colors.grey[600] : Colors.grey[400],
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                // Level badge
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _getLevelColor(test.level).withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Text(
+                      test.vietnameseLevel,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                // Price badge
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: test.price > 0
+                          ? Colors.blue.withOpacity(0.9)
+                          : Colors.green.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Text(
+                      test.price > 0
+                          ? "${_formatPrice(test.price)}đ"
+                          : "Miễn phí",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-
+            // Test details
             Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(15),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Title
                   Text(
                     test.title,
-                    style: const TextStyle(
-                      fontSize: 18,
+                    style: TextStyle(
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF333333),
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-
-                  const SizedBox(height: 6),
-
-                  // // Description
-                  // Text(
-                  //   test.description,
-                  //   style: TextStyle(
-                  //     fontSize: 14,
-                  //     color: Colors.grey.shade700,
-                  //   ),
-                  //   maxLines: 2,
-                  //   overflow: TextOverflow.ellipsis,
-                  // ),
-
-                  // const SizedBox(height: 12),
-
-                  // Stats
+                  const SizedBox(height: 5),
+                  // Course
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.help_outline,
-                            size: 16,
-                            color: Color(0xFF3498DB),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${test.totalQuestion} câu hỏi',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF666666),
-                            ),
-                          ),
-                        ],
+                      Icon(
+                        Icons.category,
+                        size: 14,
+                        color: isDark ? Colors.grey[400] : Colors.grey[600],
                       ),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            size: 16,
-                            color: Color(0xFFFFC107),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${test.rating}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF666666),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '(${test.itemCountReview})',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getLevelColor(test.level).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                      const SizedBox(width: 5),
+                      Expanded(
                         child: Text(
-                          test.vietnameseLevel,
+                          test.courseTitle,
                           style: TextStyle(
                             fontSize: 12,
-                            color: _getLevelColor(test.level),
+                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  // Author
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.person,
+                        size: 14,
+                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Text(
+                          test.author,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  // Rating and Questions Count
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.star,
+                        size: 14,
+                        color: Colors.amber,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        "${test.rating}",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.grey[300] : Colors.grey[800],
+                        ),
+                      ),
+                      const SizedBox(width: 15),
+                      Icon(
+                        Icons.help_outline,
+                        size: 14,
+                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        "${test.totalQuestion} câu hỏi",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.grey[300] : Colors.grey[800],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (showDetailButton) ...[
+                    const SizedBox(height: 15),
+                    Container(
+                      width: double.infinity,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        color: isDark 
+                            ? Colors.blue.shade700
+                            : Colors.blue.shade50,
+                      ),
+                      child: TextButton(
+                        onPressed: onTap,
+                        child: Text(
+                          "Xem chi tiết",
+                          style: TextStyle(
+                            color: isDark 
+                                ? Colors.white
+                                : Colors.blue.shade700,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Price and action
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (test.percentDiscount > 0)
-                            Row(
-                              children: [
-                                Text(
-                                  '${_formatPrice(test.cost)}đ',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    decoration: TextDecoration.lineThrough,
-                                    color: Colors.grey.shade500,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    '-${test.percentDiscount}%',
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.red,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          Text(
-                            test.price > 0
-                                ? '${_formatPrice(test.price)}đ'
-                                : 'Miễn phí',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: test.price > 0
-                                  ? const Color(0xFF333333)
-                                  : Colors.green,
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (showDetailButton)
-                        ElevatedButton(
-                          onPressed: onTap,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: test.purchased
-                                ? Colors.green
-                                : const Color(0xFF3498DB),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: Text(
-                            test.purchased ? 'Làm bài' : 'Chi tiết',
-                          ),
-                        ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -256,9 +267,19 @@ class PracticeTestCard extends StatelessWidget {
   }
 
   String _formatPrice(double price) {
-    return price.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]}.',
-        );
+    if (price == 0) return "0";
+    
+    // Format with thousands separator
+    final String priceString = price.toInt().toString();
+    final StringBuffer result = StringBuffer();
+    
+    for (int i = 0; i < priceString.length; i++) {
+      if (i > 0 && (priceString.length - i) % 3 == 0) {
+        result.write('.');
+      }
+      result.write(priceString[i]);
+    }
+    
+    return result.toString();
   }
 }

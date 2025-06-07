@@ -95,6 +95,7 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
   }
 
   void _showFilterDialog() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     String? tempLevelFilter = _controller.levelFilter;
     String? tempAuthorFilter = _controller.authorFilter;
     double? tempMinPrice = _controller.minPriceFilter;
@@ -104,7 +105,7 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -122,11 +123,12 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Lọc đề thi',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -137,11 +139,12 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Danh mục',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              color: isDarkMode ? Colors.white : Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -159,12 +162,12 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                                     });
                                   }
                                 },
-                                backgroundColor: Colors.grey.shade200,
+                                backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey.shade200,
                                 selectedColor: const Color(0xFF3498DB),
                                 labelStyle: TextStyle(
                                   color: tempCategoryId == null
                                       ? Colors.white
-                                      : Colors.black,
+                                      : (isDarkMode ? Colors.white70 : Colors.black),
                                   fontWeight: tempCategoryId == null
                                       ? FontWeight.bold
                                       : FontWeight.normal,
@@ -204,12 +207,12 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                                           selected ? categoryId : null;
                                     });
                                   },
-                                  backgroundColor: Colors.grey.shade200,
+                                  backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey.shade200,
                                   selectedColor: const Color(0xFF3498DB),
                                   labelStyle: TextStyle(
                                     color: isSelected
                                         ? Colors.white
-                                        : Colors.black,
+                                        : (isDarkMode ? Colors.white70 : Colors.black),
                                     fontWeight: isSelected
                                         ? FontWeight.bold
                                         : FontWeight.normal,
@@ -226,11 +229,12 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Độ khó',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              color: isDarkMode ? Colors.white : Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -256,11 +260,11 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                                     }
                                   });
                                 },
-                                backgroundColor: Colors.grey.shade200,
+                                backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey.shade200,
                                 selectedColor: const Color(0xFF3498DB),
                                 labelStyle: TextStyle(
                                   color:
-                                      isSelected ? Colors.white : Colors.black,
+                                      isSelected ? Colors.white : (isDarkMode ? Colors.white70 : Colors.black),
                                   fontWeight: isSelected
                                       ? FontWeight.bold
                                       : FontWeight.normal,
@@ -277,16 +281,22 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Tác giả',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              color: isDarkMode ? Colors.white : Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 10),
                           _controller.authorOptions.isEmpty
-                              ? const Text('Không có tác giả nào để hiển thị')
+                              ? Text(
+                                  'Không có tác giả nào để hiển thị',
+                                  style: TextStyle(
+                                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                  ),
+                                )
                               : Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
@@ -310,12 +320,12 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                                           }
                                         });
                                       },
-                                      backgroundColor: Colors.grey.shade200,
+                                      backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey.shade200,
                                       selectedColor: const Color(0xFF3498DB),
                                       labelStyle: TextStyle(
                                         color: isSelected
                                             ? Colors.white
-                                            : Colors.black,
+                                            : (isDarkMode ? Colors.white70 : Colors.black),
                                         fontWeight: isSelected
                                             ? FontWeight.bold
                                             : FontWeight.normal,
@@ -332,11 +342,12 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Khoảng giá',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              color: isDarkMode ? Colors.white : Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -344,11 +355,18 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                             children: [
                               Expanded(
                                 child: TextField(
-                                  decoration: const InputDecoration(
+                                  decoration: InputDecoration(
                                     labelText: 'Giá tối thiểu',
+                                    labelStyle: TextStyle(
+                                      color: isDarkMode ? Colors.grey[400] : null,
+                                    ),
                                     border: OutlineInputBorder(),
-                                    prefix: Text('₫'),
+                                    prefix: Text('₫', style: TextStyle(color: isDarkMode ? Colors.white : null)),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
+                                    ),
                                   ),
+                                  style: TextStyle(color: isDarkMode ? Colors.white : null),
                                   keyboardType: TextInputType.number,
                                   onChanged: (value) {
                                     if (value.isNotEmpty) {
@@ -369,11 +387,18 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                               const SizedBox(width: 16),
                               Expanded(
                                 child: TextField(
-                                  decoration: const InputDecoration(
+                                  decoration: InputDecoration(
                                     labelText: 'Giá tối đa',
+                                    labelStyle: TextStyle(
+                                      color: isDarkMode ? Colors.grey[400] : null,
+                                    ),
                                     border: OutlineInputBorder(),
-                                    prefix: Text('₫'),
+                                    prefix: Text('₫', style: TextStyle(color: isDarkMode ? Colors.white : null)),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
+                                    ),
                                   ),
+                                  style: TextStyle(color: isDarkMode ? Colors.white : null),
                                   keyboardType: TextInputType.number,
                                   onChanged: (value) {
                                     if (value.isNotEmpty) {
@@ -443,11 +468,13 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkMode ? Color(0xFF121212) : Colors.white,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
         title: const Text(
           'Đề thi',
           style: TextStyle(
@@ -455,10 +482,6 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
             fontWeight: FontWeight.bold,
           ),
         ),
-        // leading: IconButton(
-        //   icon: const Icon(Icons.arrow_back, color: Colors.lightBlue),
-        //   onPressed: () => Navigator.of(context).pop(),
-        // ),
         actions: [
           // Add refresh button
           _isRefreshing
@@ -490,6 +513,7 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                     _controller.search(query);
                   },
                   controller: _controller,
+                  isDarkMode: isDarkMode,
                 ),
               );
             },
@@ -605,11 +629,12 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                       horizontal: 16.0, vertical: 8.0),
                   child: Row(
                     children: [
-                      const Text(
+                      Text(
                         'Danh mục',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
+                          color: isDarkMode ? Colors.white : Colors.black87,
                         ),
                       ),
                     ],
@@ -631,7 +656,7 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                                 label: const Text('Tất cả'),
                                 selected: true,
                                 onSelected: (selected) {},
-                                backgroundColor: Colors.grey.shade200,
+                                backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey.shade200,
                                 selectedColor: const Color(0xFF3498DB),
                                 labelStyle: const TextStyle(
                                   color: Colors.white,
@@ -660,13 +685,13 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                                           'Tất cả', null);
                                     }
                                   },
-                                  backgroundColor: Colors.grey.shade200,
+                                  backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey.shade200,
                                   selectedColor: const Color(0xFF3498DB),
                                   labelStyle: TextStyle(
                                     color:
                                         _controller.selectedCategory == 'Tất cả'
                                             ? Colors.white
-                                            : Colors.black,
+                                            : (isDarkMode ? Colors.white70 : Colors.black),
                                     fontWeight:
                                         _controller.selectedCategory == 'Tất cả'
                                             ? FontWeight.bold
@@ -694,11 +719,11 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                                         categoryName, categoryId);
                                   }
                                 },
-                                backgroundColor: Colors.grey.shade200,
+                                backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey.shade200,
                                 selectedColor: const Color(0xFF3498DB),
                                 labelStyle: TextStyle(
                                   color:
-                                      isSelected ? Colors.white : Colors.black,
+                                      isSelected ? Colors.white : (isDarkMode ? Colors.white70 : Colors.black),
                                   fontWeight: isSelected
                                       ? FontWeight.bold
                                       : FontWeight.normal,
@@ -723,31 +748,44 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                         if (_controller.categoryIdFilter != null)
                           Chip(
                             label: Text(
-                                'Danh mục: ${_controller.getCategoryName(_controller.categoryIdFilter!)}'),
+                              'Danh mục: ${_controller.getCategoryName(_controller.categoryIdFilter!)}',
+                              style: TextStyle(
+                                color: isDarkMode ? Colors.white : Colors.black87,
+                              ),
+                            ),
                             onDeleted: () {
                               _controller.clearFilter(FilterType.CATEGORY);
                             },
-                            backgroundColor: Colors.grey.shade200,
-                            deleteIconColor: Colors.black54,
+                            backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey.shade200,
+                            deleteIconColor: isDarkMode ? Colors.white70 : Colors.black54,
                           ),
                         if (_controller.levelFilter != null)
                           Chip(
                             label: Text(
-                                'Độ khó: ${_controller.translateLevel(_controller.levelFilter!)}'),
+                              'Độ khó: ${_controller.translateLevel(_controller.levelFilter!)}',
+                              style: TextStyle(
+                                color: isDarkMode ? Colors.white : Colors.black87,
+                              ),
+                            ),
                             onDeleted: () {
                               _controller.clearFilter(FilterType.LEVEL);
                             },
-                            backgroundColor: Colors.grey.shade200,
-                            deleteIconColor: Colors.black54,
+                            backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey.shade200,
+                            deleteIconColor: isDarkMode ? Colors.white70 : Colors.black54,
                           ),
                         if (_controller.authorFilter != null)
                           Chip(
-                            label: Text('Tác giả: ${_controller.authorFilter}'),
+                            label: Text(
+                              'Tác giả: ${_controller.authorFilter}',
+                              style: TextStyle(
+                                color: isDarkMode ? Colors.white : Colors.black87,
+                              ),
+                            ),
                             onDeleted: () {
                               _controller.clearFilter(FilterType.AUTHOR);
                             },
-                            backgroundColor: Colors.grey.shade200,
-                            deleteIconColor: Colors.black54,
+                            backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey.shade200,
+                            deleteIconColor: isDarkMode ? Colors.white70 : Colors.black54,
                           ),
                       ],
                     ),
@@ -760,7 +798,7 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                 child: Text(
                   'Đề thi và bộ lọc',
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey.shade600,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -780,14 +818,14 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                             Icon(
                               Icons.search_off,
                               size: 64,
-                              color: Colors.grey.shade400,
+                              color: isDarkMode ? Colors.grey[600] : Colors.grey.shade400,
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Không tìm thấy đề thi',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.grey.shade600,
+                                color: isDarkMode ? Colors.grey[400] : Colors.grey.shade600,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -845,6 +883,7 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                             final test = _controller.tests[index];
                             return PracticeTestCard(
                               test: test,
+                              isDarkMode: isDarkMode,
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -875,10 +914,12 @@ class PracticeTestSearchDelegate extends SearchDelegate<String> {
   bool _isSearching = false;
   // Biến đếm thời gian cho debounce tìm kiếm
   DateTime? _lastSearchTime;
+  final bool isDarkMode;
 
   PracticeTestSearchDelegate({
     required this.onSearch,
     required PracticeTestController controller,
+    required this.isDarkMode,
   }) : _controller = controller;
 
   @override
