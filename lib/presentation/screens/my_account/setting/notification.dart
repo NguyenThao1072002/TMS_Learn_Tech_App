@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
-  const NotificationSettingsScreen({Key? key}) : super(key: key);
+  final bool isDarkMode;
+
+  const NotificationSettingsScreen({
+    Key? key,
+    this.isDarkMode = false,
+  }) : super(key: key);
 
   @override
   State<NotificationSettingsScreen> createState() =>
       _NotificationSettingsScreenState();
 }
 
-class _NotificationSettingsScreenState
-    extends State<NotificationSettingsScreen> {
+class _NotificationSettingsScreenState extends State<NotificationSettingsScreen> {
   // Trạng thái các loại thông báo
   bool _dailyReminder = true;
   bool _streakReminder = true;
@@ -24,21 +28,31 @@ class _NotificationSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
+    // Colors for dark and light mode
+    final backgroundColor = widget.isDarkMode ? Colors.black : Colors.white;
+    final appBarColor = widget.isDarkMode ? Colors.black : Colors.white;
+    final textColor = widget.isDarkMode ? Colors.white : Colors.black;
+    final secondaryTextColor = widget.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600;
+    final dividerColor = widget.isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200;
+    final cardColor = widget.isDarkMode ? const Color(0xFF1A1A1A) : Colors.white;
+    final iconColor = widget.isDarkMode ? Colors.white : null;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: appBarColor,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Cài đặt thông báo',
           style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w500,
+            fontSize: 20,
+            color: textColor,
+            fontWeight: FontWeight.bold,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
+          icon: Icon(Icons.arrow_back, color: textColor),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       body: SingleChildScrollView(

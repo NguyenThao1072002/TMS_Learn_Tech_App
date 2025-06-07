@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:tms_app/presentation/screens/my_account/setting/notification.dart';
 
 class NotificationScreen extends StatefulWidget {
-  const NotificationScreen({Key? key}) : super(key: key);
+  final bool isDarkMode;
+
+  const NotificationScreen({
+    Key? key,
+    this.isDarkMode = false,
+  }) : super(key: key);
 
   @override
   State<NotificationScreen> createState() => _NotificationScreenState();
@@ -136,6 +141,10 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   // Hiển thị popup tùy chọn cho thông báo
   void _showNotificationOptions(NotificationItem notification) {
+    final backgroundColor = widget.isDarkMode ? Colors.black : Colors.white;
+    final textColor = widget.isDarkMode ? Colors.white : Colors.black;
+    final dividerColor = widget.isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300;
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -143,7 +152,7 @@ class _NotificationScreenState extends State<NotificationScreen>
       builder: (context) => Container(
         margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: backgroundColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -164,15 +173,18 @@ class _NotificationScreenState extends State<NotificationScreen>
               width: 50,
               margin: const EdgeInsets.only(bottom: 8),
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: widget.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             ListTile(
               leading: Icon(Icons.check_circle_outline, color: Colors.blue),
-              title: const Text(
+              title: Text(
                 'Đánh dấu đã đọc',
-                style: TextStyle(fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: textColor,
+                ),
               ),
               onTap: () {
                 Navigator.pop(context);
@@ -182,24 +194,30 @@ class _NotificationScreenState extends State<NotificationScreen>
                 _showToast('Đã đánh dấu thông báo là đã đọc');
               },
             ),
-            const Divider(height: 1),
+            Divider(height: 1, color: dividerColor),
             ListTile(
               leading: Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text(
+              title: Text(
                 'Xoá thông báo',
-                style: TextStyle(fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: textColor,
+                ),
               ),
               onTap: () {
                 Navigator.pop(context);
                 _deleteNotification(notification);
               },
             ),
-            const Divider(height: 1),
+            Divider(height: 1, color: dividerColor),
             ListTile(
               leading: Icon(Icons.close, color: Colors.grey),
-              title: const Text(
+              title: Text(
                 'Huỷ',
-                style: TextStyle(fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: textColor,
+                ),
               ),
               onTap: () => Navigator.pop(context),
             ),
@@ -214,7 +232,7 @@ class _NotificationScreenState extends State<NotificationScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const NotificationSettingsScreen(),
+        builder: (context) => NotificationSettingsScreen(isDarkMode: widget.isDarkMode),
       ),
     );
   }
@@ -226,7 +244,12 @@ class _NotificationScreenState extends State<NotificationScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title),
+          Text(
+            title,
+            style: TextStyle(
+              color: widget.isDarkMode ? Colors.white : Colors.black,
+            ),
+          ),
           Switch(
             value: initialValue,
             onChanged: (_) {},
@@ -244,20 +267,22 @@ class _NotificationScreenState extends State<NotificationScreen>
         ? _notifications
         : _notifications.where((item) => item.type == filterType).toList();
 
+    final emptyTextColor = widget.isDarkMode ? Colors.grey.shade400 : Colors.grey;
+
     if (filteredNotifications.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(32.0),
+          padding: const EdgeInsets.all(32.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.notifications_off, size: 64, color: Colors.grey),
-              SizedBox(height: 16),
+              Icon(Icons.notifications_off, size: 64, color: emptyTextColor),
+              const SizedBox(height: 16),
               Text(
                 'Không có thông báo nào',
                 style: TextStyle(
                   fontSize: 18,
-                  color: Colors.grey,
+                  color: emptyTextColor,
                 ),
               ),
             ],
@@ -269,7 +294,10 @@ class _NotificationScreenState extends State<NotificationScreen>
     return ListView.separated(
       padding: const EdgeInsets.only(top: 8.0),
       itemCount: filteredNotifications.length,
-      separatorBuilder: (context, index) => const Divider(height: 1),
+      separatorBuilder: (context, index) => Divider(
+        height: 1,
+        color: widget.isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+      ),
       itemBuilder: (context, index) {
         final notification = filteredNotifications[index];
         return _buildNotificationItem(notification);
@@ -279,8 +307,16 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   // Widget cho từng item thông báo
   Widget _buildNotificationItem(NotificationItem notification) {
+    final backgroundColor = widget.isDarkMode 
+        ? (notification.isRead ? Colors.black : const Color(0xFF1A1A1A)) 
+        : (notification.isRead ? Colors.white : Colors.blue.shade50);
+    
+    final titleColor = widget.isDarkMode ? Colors.white : Colors.black;
+    final contentColor = widget.isDarkMode ? Colors.grey.shade300 : Colors.black87;
+    final metaTextColor = widget.isDarkMode ? Colors.grey.shade500 : Colors.grey;
+    
     return Container(
-      color: notification.isRead ? Colors.white : Colors.blue.shade50,
+      color: backgroundColor,
       child: Stack(
         children: [
           // Nội dung thông báo
@@ -290,7 +326,7 @@ class _NotificationScreenState extends State<NotificationScreen>
             leading: CircleAvatar(
               radius: 20,
               backgroundColor:
-                  _getNotificationTypeColor(notification.type).withOpacity(0.1),
+                  _getNotificationTypeColor(notification.type).withOpacity(widget.isDarkMode ? 0.2 : 0.1),
               child: Icon(
                 _getNotificationTypeIcon(notification.type),
                 color: _getNotificationTypeColor(notification.type),
@@ -306,20 +342,20 @@ class _NotificationScreenState extends State<NotificationScreen>
                     // Loại thông báo
                     Text(
                       _getNotificationTypeName(notification.type),
-                      style: const TextStyle(
-                        color: Colors.grey,
+                      style: TextStyle(
+                        color: metaTextColor,
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
 
                     // Dấu chấm đen (bullet)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4.0),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
                       child: Text(
                         "•",
                         style: TextStyle(
-                          color: Colors.grey,
+                          color: metaTextColor,
                           fontSize: 10,
                         ),
                       ),
@@ -328,8 +364,8 @@ class _NotificationScreenState extends State<NotificationScreen>
                     // Thời gian
                     Text(
                       notification.time,
-                      style: const TextStyle(
-                        color: Colors.grey,
+                      style: TextStyle(
+                        color: metaTextColor,
                         fontSize: 12,
                       ),
                     ),
@@ -350,6 +386,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                         ? FontWeight.normal
                         : FontWeight.bold,
                     fontSize: 16,
+                    color: titleColor,
                   ),
                 ),
               ],
@@ -359,7 +396,7 @@ class _NotificationScreenState extends State<NotificationScreen>
               child: Text(
                 notification.content,
                 style: TextStyle(
-                  color: Colors.black87,
+                  color: contentColor,
                   fontSize: 14,
                   fontWeight:
                       notification.isRead ? FontWeight.normal : FontWeight.w500,
@@ -386,10 +423,10 @@ class _NotificationScreenState extends State<NotificationScreen>
               onTap: () => _showNotificationOptions(notification),
               child: Padding(
                 padding: const EdgeInsets.all(4),
-                child: const Icon(
+                child: Icon(
                   Icons.more_vert,
                   size: 18,
-                  color: Colors.grey,
+                  color: metaTextColor,
                 ),
               ),
             ),
@@ -449,28 +486,37 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Colors for dark and light mode
+    final backgroundColor = widget.isDarkMode ? Colors.black : Colors.grey.shade100;
+    final appBarColor = widget.isDarkMode ? Colors.black : Colors.white;
+    final textColor = widget.isDarkMode ? Colors.white : Colors.black;
+    final iconColor = widget.isDarkMode ? Colors.white : Colors.black;
+    final tabLabelColor = widget.isDarkMode ? Colors.white : Colors.black;
+    final tabUnselectedColor = widget.isDarkMode ? Colors.grey.shade600 : Colors.grey;
+    final indicatorColor = widget.isDarkMode ? Colors.blue : Colors.pinkAccent;
+    
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: appBarColor,
         elevation: 0,
         automaticallyImplyLeading: false,
-        title: const Text(
+        title: Text(
           'Thông báo',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: textColor,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.done_all, color: Colors.black),
+            icon: Icon(Icons.done_all, color: iconColor),
             onPressed: _markAllAsRead,
             tooltip: 'Đánh dấu tất cả là đã đọc',
           ),
           IconButton(
-            icon: const Icon(Icons.settings, color: Colors.black),
+            icon: Icon(Icons.settings, color: iconColor),
             onPressed: _showNotificationSettings,
             tooltip: 'Cài đặt thông báo',
           ),
@@ -478,9 +524,10 @@ class _NotificationScreenState extends State<NotificationScreen>
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          indicatorColor: Colors.pinkAccent,
-          labelColor: Colors.black,
-          unselectedLabelColor: Colors.grey,
+          indicatorColor: indicatorColor,
+          labelColor: tabLabelColor,
+          unselectedLabelColor: tabUnselectedColor,
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
           tabs: [
             _buildTab('Quan trọng', _unreadCount.toString()),
             _buildTab('Ưu đãi', '5'),
@@ -503,6 +550,9 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   // Widget cho tab
   Widget _buildTab(String text, String count) {
+    final badgeColor = widget.isDarkMode ? const Color(0xFF2A2D3E) : Colors.orange;
+    final badgeTextColor = Colors.white;
+    
     return Tab(
       child: Row(
         children: [
@@ -511,13 +561,13 @@ class _NotificationScreenState extends State<NotificationScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.orange,
+              color: badgeColor,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               count,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: badgeTextColor,
                 fontSize: 12,
               ),
             ),
