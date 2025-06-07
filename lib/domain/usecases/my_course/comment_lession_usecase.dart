@@ -1,6 +1,7 @@
 // UseCase cho bình luận bài học
 
 import 'package:tms_app/data/models/my_course/comment_lession_model.dart';
+import 'package:tms_app/data/models/my_course/like_comment_model.dart';
 import 'package:tms_app/domain/repositories/my_course/comment_lession_repository.dart';
 
 /// UseCase xử lý các tác vụ liên quan đến bình luận bài học
@@ -30,6 +31,29 @@ class CommentLessonUseCase {
       page: page,
       size: size,
     );
+  }
+
+  /// Like hoặc dislike một bình luận
+  ///
+  /// [commentId] ID của bình luận
+  /// [accountId] ID của tài khoản người dùng
+  /// Return: LikeCommentResponse chứa thông tin về trạng thái like/dislike
+  Future<LikeCommentResponse> likeComment({
+    required int commentId,
+    required int accountId,
+  }) async {
+    return await _commentLessonRepository.likeComment(
+      commentId: commentId,
+      accountId: accountId,
+    );
+  }
+
+  /// Kiểm tra bình luận đã được like hay chưa
+  ///
+  /// [liked] Giá trị liked từ CommentModel
+  /// Return: true nếu bình luận đã được like, false nếu chưa
+  bool isCommentLiked(int? liked) {
+    return liked != null && liked > 0;
   }
 
   /// Định dạng thời gian hiển thị cho bình luận

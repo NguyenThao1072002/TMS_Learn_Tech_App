@@ -10,7 +10,12 @@ import 'package:tms_app/presentation/widgets/course/course_card.dart';
 import 'package:tms_app/data/models/course/course_card_model.dart';
 
 class TeachingStaffScreen extends StatefulWidget {
-  const TeachingStaffScreen({Key? key}) : super(key: key);
+  final int? staffIdToShow;
+
+  const TeachingStaffScreen({
+    Key? key,
+    this.staffIdToShow,
+  }) : super(key: key);
 
   @override
   State<TeachingStaffScreen> createState() => _TeachingStaffScreenState();
@@ -43,6 +48,13 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
     if (!_initialized) {
       _loadData();
       _initialized = true;
+      
+      // If a specific staff ID was provided, show their details after loading
+      if (widget.staffIdToShow != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showSpecificStaffDetails(widget.staffIdToShow!);
+        });
+      }
     }
   }
 
@@ -1095,5 +1107,59 @@ class _TeachingStaffScreenState extends State<TeachingStaffScreen> {
         ],
       ),
     );
+  }
+
+  // Method to show details of a specific staff member
+  void _showSpecificStaffDetails(int staffId) async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+      
+      final staffDetail = await _controller.getTeachingStaffDetailById(staffId);
+      
+      // Dismiss loading indicator
+      Navigator.pop(context);
+      
+      if (staffDetail != null && mounted) {
+        // Find the staff in the loaded list or directly use staffDetail
+        TeachingStaff? staffToShow;
+        
+        // Try to find in the list first
+        final staffIndex = _controller.teachingStaffs.indexWhere((s) => s.id == staffId);
+        if (staffIndex >= 0) {
+          staffToShow = _controller.teachingStaffs[staffIndex];
+        } else {
+          // If not found in list, create TeachingStaff from detail
+          staffToShow = TeachingStaff(
+            id: staffDetail.id,
+            accountId: staffDetail.accountId,
+            fullname: staffDetail.fullname,
+            avatarUrl: staffDetail.avatarUrl,
+            courseCount: staffDetail.courseCount,
+            averageRating: staffDetail.averageRating,
+            instruction: staffDetail.instruction,
+            expert: staffDetail.expert,
+            totalStudents: staffDetail.totalStudents,
+            categoryId: staffDetail.categoryId,
+            categoryName: staffDetail.categoryName,
+          );
+        }
+        
+        // Show instructor details directly
+        if (staffToShow != null) {
+          _showInstructorDetails(staffToShow);
+        }
+      }
+    } catch (e) {
+      // Dismiss loading indicator if it's showing
+      Navigator.of(context, rootNavigator: true).pop();
+      print('Error loading staff details: $e');
+    }
   }
 }

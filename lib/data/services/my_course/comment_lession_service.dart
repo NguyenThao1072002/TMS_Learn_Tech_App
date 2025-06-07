@@ -2,6 +2,7 @@
 
 import 'package:dio/dio.dart';
 import 'package:tms_app/data/models/my_course/comment_lession_model.dart';
+import 'package:tms_app/data/models/my_course/like_comment_model.dart';
 import 'package:tms_app/core/utils/constants.dart';
 
 /// Service xử lý các request API liên quan đến bình luận bài học
@@ -43,6 +44,31 @@ class CommentLessonService {
       throw _handleError(e, 'Không thể tải bình luận');
     } catch (e) {
       throw Exception('Lỗi không xác định khi tải bình luận: $e');
+    }
+  }
+
+  /// Like hoặc unlike một bình luận
+  /// 
+  /// [commentId] ID của bình luận
+  /// [accountId] ID của tài khoản
+  Future<LikeCommentResponse> likeComment({
+    required int commentId,
+    required int accountId,
+  }) async {
+    try {
+      final endpoint = '$baseUrl/comments/$commentId/like';
+      final response = await _dio.post(
+        endpoint,
+        queryParameters: {
+          'accountId': accountId,
+        },
+      );
+
+      return LikeCommentResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e, 'Không thể thực hiện like/dislike bình luận');
+    } catch (e) {
+      throw Exception('Lỗi không xác định khi like/dislike bình luận: $e');
     }
   }
 

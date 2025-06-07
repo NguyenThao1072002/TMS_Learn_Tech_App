@@ -6,27 +6,27 @@ import 'package:tms_app/data/repositories/course_repository_impl.dart';
 import 'package:tms_app/data/repositories/discount_repository_impl.dart';
 import 'package:tms_app/data/repositories/document_repository_impl.dart';
 import 'package:tms_app/data/repositories/my_course/my_course_list_repository_impl.dart';
-import 'package:tms_app/data/repositories/my_course/course_lesson_repository_impl.dart'; // Import course lesson repository
-import 'package:tms_app/data/repositories/my_course/course_progress_repository_impl.dart'; // Import course progress repository
-import 'package:tms_app/data/repositories/my_course/content_test_repository_impl.dart'; // Import content test repository
-import 'package:tms_app/data/repositories/my_course/comment_lession_repository_impl.dart'; // Import comment lesson repository
-import 'package:tms_app/data/repositories/my_course/test_submission_repository_impl.dart'; // Import test submission repository
+import 'package:tms_app/data/repositories/my_course/course_lesson_repository_impl.dart'; 
+import 'package:tms_app/data/repositories/my_course/course_progress_repository_impl.dart'; 
+import 'package:tms_app/data/repositories/my_course/content_test_repository_impl.dart'; 
+import 'package:tms_app/data/repositories/my_course/comment_lession_repository_impl.dart'; 
+import 'package:tms_app/data/repositories/my_course/test_submission_repository_impl.dart'; 
 import 'package:tms_app/data/repositories/payment_repository_impl.dart';
-import 'package:tms_app/data/repositories/teaching_staff_repository_impl.dart'; // Import teaching staff repository
-import 'package:tms_app/data/services/auth_service.dart'; // Import AuthService
+import 'package:tms_app/data/repositories/teaching_staff_repository_impl.dart'; 
+import 'package:tms_app/data/services/auth_service.dart'; 
 import 'package:tms_app/data/services/blog_service.dart';
 import 'package:tms_app/data/services/cart/cart_service.dart';
 import 'package:tms_app/data/services/course/course_service.dart';
 import 'package:tms_app/data/services/discount_service.dart';
 import 'package:tms_app/data/services/document/document_service.dart';
 import 'package:tms_app/data/services/my_course/my_course_list_service.dart';
-import 'package:tms_app/data/services/my_course/course_lesson_service.dart'; // Import course lesson service
-import 'package:tms_app/data/services/my_course/course_progress_service.dart'; // Import course progress service
-import 'package:tms_app/data/services/my_course/content_test_service.dart'; // Import content test service
-import 'package:tms_app/data/services/my_course/comment_lession_service.dart'; // Import comment lesson service
+import 'package:tms_app/data/services/my_course/course_lesson_service.dart'; 
+import 'package:tms_app/data/services/my_course/course_progress_service.dart'; 
+import 'package:tms_app/data/services/my_course/content_test_service.dart'; 
+import 'package:tms_app/data/services/my_course/comment_lession_service.dart'; 
 import 'package:tms_app/data/services/payment_service.dart';
-import 'package:tms_app/data/services/teaching_staff/teaching_staff_service.dart'; // Import teaching staff service
-import 'package:tms_app/data/services/user_service.dart'; // Import UserService
+import 'package:tms_app/data/services/teaching_staff/teaching_staff_service.dart';
+import 'package:tms_app/data/services/user_service.dart'; 
 import 'package:tms_app/data/repositories/account_repository_impl.dart';
 import 'package:tms_app/domain/repositories/account_repository.dart';
 import 'package:tms_app/domain/repositories/blog_repository.dart';
@@ -35,13 +35,13 @@ import 'package:tms_app/domain/repositories/course_repository.dart';
 import 'package:tms_app/domain/repositories/discount_repository.dart';
 import 'package:tms_app/domain/repositories/document_repository.dart';
 import 'package:tms_app/domain/repositories/my_course/my_course_list_repository.dart';
-import 'package:tms_app/domain/repositories/my_course/course_lesson_repository.dart'; // Import course lesson repository interface
-import 'package:tms_app/domain/repositories/my_course/course_progress_repository.dart'; // Import course progress repository interface
-import 'package:tms_app/domain/repositories/my_course/content_test_repository.dart'; // Import content test repository interface
-import 'package:tms_app/domain/repositories/my_course/comment_lession_repository.dart'; // Import comment lesson repository interface
-import 'package:tms_app/domain/repositories/my_course/test_submission_repository.dart'; // Import test submission repository interface
+import 'package:tms_app/domain/repositories/my_course/course_lesson_repository.dart'; 
+import 'package:tms_app/domain/repositories/my_course/course_progress_repository.dart'; 
+import 'package:tms_app/domain/repositories/my_course/content_test_repository.dart'; 
+import 'package:tms_app/domain/repositories/my_course/comment_lession_repository.dart'; 
+import 'package:tms_app/domain/repositories/my_course/test_submission_repository.dart'; 
 import 'package:tms_app/domain/repositories/payment_repository.dart';
-import 'package:tms_app/domain/repositories/teaching_staff_repository.dart'; // Import teaching staff repository interface
+import 'package:tms_app/domain/repositories/teaching_staff_repository.dart'; 
 import 'package:tms_app/domain/usecases/blog_usecase.dart';
 import 'package:tms_app/domain/usecases/cart_usecase.dart';
 import 'package:tms_app/domain/usecases/course_usecase.dart';
@@ -50,11 +50,11 @@ import 'package:tms_app/domain/usecases/documents_usecase.dart';
 import 'package:tms_app/domain/usecases/forgot_password_usecase.dart';
 import 'package:tms_app/domain/usecases/login_usecase.dart';
 import 'package:tms_app/domain/usecases/my_course/my_course_list_usecase.dart';
-import 'package:tms_app/domain/usecases/my_course/course_lesson_usecase.dart'; // Import course lesson usecase
-import 'package:tms_app/domain/usecases/my_course/course_progress_usecase.dart'; // Import course progress usecase
-import 'package:tms_app/domain/usecases/my_course/content_test_usecase.dart'; // Import content test usecase
-import 'package:tms_app/domain/usecases/my_course/comment_lession_usecase.dart'; // Import comment lesson usecase
-import 'package:tms_app/domain/usecases/my_course/test_submission_usecase.dart'; // Import test submission usecase
+import 'package:tms_app/domain/usecases/my_course/course_lesson_usecase.dart';
+import 'package:tms_app/domain/usecases/my_course/course_progress_usecase.dart'; 
+import 'package:tms_app/domain/usecases/my_course/content_test_usecase.dart'; 
+import 'package:tms_app/domain/usecases/my_course/comment_lession_usecase.dart'; 
+import 'package:tms_app/domain/usecases/my_course/test_submission_usecase.dart'; 
 import 'package:tms_app/domain/usecases/payment_usecase.dart';
 import 'package:tms_app/domain/usecases/register_usecase.dart';
 import 'package:tms_app/domain/usecases/update_account_usecase.dart';
@@ -62,16 +62,15 @@ import 'package:tms_app/domain/usecases/overview_my_account_usecase.dart';
 import 'package:tms_app/presentation/controller/discount_controller.dart';
 import 'package:tms_app/presentation/controller/login/forgot_password_controller.dart';
 import 'package:tms_app/presentation/controller/my_account/setting/update_account_controller.dart';
-import 'package:tms_app/presentation/controller/login/verify_otp_controller.dart'; // Import LoginUseCase// Import BlogDataSource
-import 'package:tms_app/data/services/banner_service.dart'; // Import BannerService
-import 'package:tms_app/data/repositories/banner_repository_impl.dart'; // Import BannerRepositoryImpl
-import 'package:tms_app/domain/repositories/banner_repository.dart'; // Import BannerRepository
-import 'package:tms_app/domain/usecases/banner_usecase.dart'; // Import BannerUseCase
-import 'package:tms_app/data/services/category_service.dart'; // Import CategoryService
-import 'package:tms_app/data/repositories/category_repository_impl.dart'; // Import CategoryRepositoryImpl
-import 'package:tms_app/domain/repositories/category_repository.dart'; // Import CategoryRepository
-import 'package:tms_app/domain/usecases/category_usecase.dart'; // Import CategoryUseCase
-// Practice Test imports
+import 'package:tms_app/presentation/controller/login/verify_otp_controller.dart'; 
+import 'package:tms_app/data/services/banner_service.dart'; 
+import 'package:tms_app/data/repositories/banner_repository_impl.dart'; 
+import 'package:tms_app/domain/repositories/banner_repository.dart'; 
+import 'package:tms_app/domain/usecases/banner_usecase.dart'; 
+import 'package:tms_app/data/services/category_service.dart'; 
+import 'package:tms_app/data/repositories/category_repository_impl.dart'; 
+import 'package:tms_app/domain/repositories/category_repository.dart';
+import 'package:tms_app/domain/usecases/category_usecase.dart'; 
 import 'package:tms_app/data/services/practice_test/practice_test_service.dart';
 import 'package:tms_app/data/repositories/practice_test_repository_impl.dart';
 import 'package:tms_app/domain/repositories/practice_test_repository.dart';
@@ -89,10 +88,15 @@ import 'package:tms_app/domain/repositories/day_streak_repository.dart';
 import 'package:tms_app/data/services/day_streak_service.dart';
 import 'package:tms_app/domain/usecases/day_streak_usecase.dart';
 import 'package:tms_app/presentation/controller/day_streak_controller.dart';
-import 'package:tms_app/domain/usecases/teaching_staff/teaching_staff_usecase.dart'; // Import teaching staff usecase
+import 'package:tms_app/domain/usecases/teaching_staff/teaching_staff_usecase.dart'; 
 import 'package:tms_app/presentation/controller/teaching_staff_controller.dart';
-import 'package:tms_app/presentation/controller/my_course/course_progress_controller.dart'; // Import course progress controller
-import 'package:tms_app/presentation/controller/my_course/test_submission_controller.dart'; // Import test submission controller
+import 'package:tms_app/presentation/controller/my_course/course_progress_controller.dart'; 
+import 'package:tms_app/presentation/controller/my_course/test_submission_controller.dart'; 
+import 'package:tms_app/data/models/my_course/like_comment_model.dart'; 
+import 'package:tms_app/data/repositories/my_course/recent_lesson_reporitory_impl.dart';
+import 'package:tms_app/data/services/my_course/recent_lesson_services.dart';
+import 'package:tms_app/domain/repositories/my_course/recent_lesson_reporitory.dart';
+import 'package:tms_app/domain/usecases/my_course/recent_lesson_usecase.dart';
 
 // Đảm bảo các import không bị xóa bởi công cụ IDE
 // ignore: unused_element
@@ -110,11 +114,16 @@ void _keepImports() {
   ContentTestRepositoryImpl? j;
   ContentTestRepository? k;
   ContentTestUseCase? l;
-  CommentLessonService? m; // Thêm CommentLessonService
-  CommentLessonRepositoryImpl? n; // Thêm CommentLessonRepositoryImpl
-  CommentLessonRepository? o; // Thêm CommentLessonRepository
-  CommentLessonUseCase? p; // Thêm CommentLessonUseCase
-  a;
+  CommentLessonService? m; 
+  CommentLessonRepositoryImpl? n; 
+  CommentLessonRepository? o; 
+  CommentLessonUseCase? p; 
+  LikeCommentResponse? q; 
+  LikeCommentRequest? r;
+  RecentLessonService? s;
+  RecentLessonRepositoryImpl? t;
+  RecentLessonRepository? u;
+  RecentLessonUseCase? v;
   b;
   c;
   d;
@@ -130,6 +139,12 @@ void _keepImports() {
   n;
   o;
   p;
+  q;
+  r;
+  s;
+  t;
+  u;
+  v;
 }
 
 // Khởi tạo GetIt cho Dependency Injection
@@ -236,6 +251,8 @@ void _registerServices() {
   );
   // Đăng ký TeachingStaffService
   sl.registerLazySingleton(() => TeachingStaffService(sl()));
+  // Đăng ký RecentLessonService
+  sl.registerLazySingleton(() => RecentLessonService(sl()));
 }
 
 // Đăng ký tất cả các Repository
@@ -314,6 +331,11 @@ void _registerRepositories() {
     () => DayStreakRepositoryImpl(
       dayStreakService: sl(),
     ),
+  );
+
+  // Đăng ký RecentLessonRepository
+  sl.registerLazySingleton<RecentLessonRepository>(
+    () => RecentLessonRepositoryImpl(sl<RecentLessonService>()),
   );
 }
 
@@ -401,6 +423,11 @@ void _registerUseCases() {
   // Đăng ký TeachingStaffUseCase
   sl.registerLazySingleton(
       () => TeachingStaffUseCase(sl<TeachingStaffRepository>()));
+
+  // Đăng ký RecentLessonUseCase
+  sl.registerLazySingleton(
+    () => RecentLessonUseCase(sl<RecentLessonRepository>()),
+  );
 }
 
 // Thêm một phương thức mới riêng để đăng ký controllers
@@ -417,9 +444,19 @@ void _registerControllers() {
   );
 
   // Đăng ký MyCourseController
-  sl.registerLazySingleton(() => MyCourseController(
-        courseLessonUseCase: sl<CourseLessonUseCase>(),
-      ));
+  sl.registerLazySingleton<MyCourseController>(() {
+    final courseLessonUseCase = sl<CourseLessonUseCase>();
+    final recentLessonUseCase = sl<RecentLessonUseCase>();
+    
+    print('🔍 Đăng ký MyCourseController');
+    print('✅ courseLessonUseCase: $courseLessonUseCase');
+    print('✅ recentLessonUseCase: $recentLessonUseCase');
+    
+    return MyCourseController(
+      courseLessonUseCase: courseLessonUseCase,
+      recentLessonUseCase: recentLessonUseCase,
+    );
+  });
 
   // Đăng ký CourseProgressController
   sl.registerLazySingleton<CourseProgressController>(

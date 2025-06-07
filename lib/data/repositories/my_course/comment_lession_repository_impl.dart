@@ -1,6 +1,7 @@
 // Implementation cho CommentLessonRepository
 
 import 'package:tms_app/data/models/my_course/comment_lession_model.dart';
+import 'package:tms_app/data/models/my_course/like_comment_model.dart';
 import 'package:tms_app/data/services/my_course/comment_lession_service.dart';
 import 'package:tms_app/domain/repositories/my_course/comment_lession_repository.dart';
 
@@ -26,6 +27,17 @@ class CommentLessonRepositoryImpl implements CommentLessonRepository {
       targetType: targetType,
       page: page,
       size: size,
+    );
+  }
+
+  @override
+  Future<LikeCommentResponse> likeComment({
+    required int commentId,
+    required int accountId,
+  }) async {
+    return await _commentLessonService.likeComment(
+      commentId: commentId,
+      accountId: accountId,
     );
   }
 }

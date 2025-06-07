@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:tms_app/presentation/screens/my_account/my_course/enroll_course.dart';
 import 'package:tms_app/data/models/my_course/my_course_list_model.dart';
+import 'package:tms_app/data/models/my_course/recent_lesson_model.dart';
 import 'package:tms_app/domain/usecases/my_course/my_course_list_usecase.dart';
+import 'package:tms_app/domain/usecases/my_course/course_lesson_usecase.dart';
+import 'package:tms_app/domain/usecases/my_course/recent_lesson_usecase.dart';
 import 'package:tms_app/data/repositories/my_course/my_course_list_repository_impl.dart';
 import 'package:tms_app/data/services/my_course/my_course_list_service.dart';
 import 'package:tms_app/core/utils/shared_prefs.dart';
@@ -16,6 +19,10 @@ import 'package:dio/dio.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/services.dart';
+import 'package:tms_app/presentation/controller/my_course/my_course_controller.dart';
+import 'package:tms_app/domain/repositories/my_course/recent_lesson_reporitory.dart';
+import 'package:tms_app/data/repositories/my_course/recent_lesson_reporitory_impl.dart';
+import 'package:tms_app/data/services/my_course/recent_lesson_services.dart';
 
 class MyCourseScreen extends StatefulWidget {
   const MyCourseScreen({Key? key}) : super(key: key);
@@ -34,6 +41,9 @@ class _MyCourseScreenState extends State<MyCourseScreen>
   bool _isLoading = false;
   ConfettiController _confettiController =
       ConfettiController(duration: const Duration(seconds: 3));
+
+  // Controller for recent lessons
+  late MyCourseController _myCourseController;
 
   // Use model data instead of fake data
   MyCourseListResponse _courseListResponse = MyCourseListResponse(
@@ -93,6 +103,44 @@ class _MyCourseScreenState extends State<MyCourseScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
 
+    // Khởi tạo controller cách đơn giản nhất
+    try {
+      print('⚡ Khởi tạo MyCourseController...');
+      
+      // Tạo các dependencies thủ công
+      final dio = GetIt.instance.get<Dio>();
+      final recentLessonService = RecentLessonService(dio);
+      final recentLessonRepo = RecentLessonRepositoryImpl(recentLessonService);
+      final recentLessonUseCase = RecentLessonUseCase(recentLessonRepo);
+      
+      // Lấy courseLessonUseCase từ GetIt
+      final courseLessonUseCase = GetIt.instance.get<CourseLessonUseCase>();
+      
+      // Tạo controller với các dependencies đã chuẩn bị
+      _myCourseController = MyCourseController(
+        courseLessonUseCase: courseLessonUseCase,
+        recentLessonUseCase: recentLessonUseCase,
+      );
+      
+      print('✅ Đã khởi tạo MyCourseController thành công');
+      
+      // Load dữ liệu bài học gần đây
+      _loadRecentLessons();
+    } catch (e) {
+      print('❌ Lỗi khi khởi tạo MyCourseController: $e');
+      
+      // Trường hợp không thành công, vẫn giữ UI hoạt động với recentLessonUseCase là null
+      try {
+        final courseLessonUseCase = GetIt.instance.get<CourseLessonUseCase>();
+        _myCourseController = MyCourseController(
+          courseLessonUseCase: courseLessonUseCase,
+          recentLessonUseCase: null,
+        );
+      } catch (e) {
+        print('❌ Lỗi nghiêm trọng, không thể khởi tạo controller: $e');
+      }
+    }
+    
     // Xử lý sự kiện khi tab thay đổi (bấm vào tab)
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
@@ -106,6 +154,12 @@ class _MyCourseScreenState extends State<MyCourseScreen>
     });
 
     _loadCourses();
+  }
+
+  // Load recent lessons using the controller
+  Future<void> _loadRecentLessons() async {
+    await _myCourseController.loadRecentLessons();
+    // No need to setState here as the controller will notify listeners
   }
 
   // Xử lý khi tab thay đổi (cả khi bấm vào tab hoặc vuốt ngang)
@@ -312,7 +366,10 @@ class _MyCourseScreenState extends State<MyCourseScreen>
     // Check if we're on the first tab (All enrolled) to show recently viewed courses
     if (_tabController.index == 0 && _recentCourses.isNotEmpty) {
       return RefreshIndicator(
-        onRefresh: _loadCourses,
+        onRefresh: () async {
+          await _loadCourses();
+          await _loadRecentLessons();
+        },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -332,7 +389,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                   ),
                   TextButton.icon(
                     onPressed: () {
-                      // View all recently viewed courses
+                      // View all recently viewed lessons
                     },
                     icon: const Icon(Icons.history,
                         size: 16, color: Colors.orange),
@@ -348,18 +405,35 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                 ],
               ),
             ),
-            // List of recently viewed courses
+            // List of recently viewed lessons
             SizedBox(
-              height: 130,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _recentCourses.length,
-                itemBuilder: (context, index) {
-                  final course = _recentCourses[index];
-                  return _buildRecentCourseItem(course);
-                },
-              ),
+              height: 136,
+              child: _myCourseController.isLoadingRecentLessons
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.orange,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : _myCourseController.recentLessons.isEmpty
+                      ? Center(
+                          child: Text(
+                            'Bạn chưa xem bài học nào gần đây',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 14,
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: _myCourseController.recentLessons.length,
+                          itemBuilder: (context, index) {
+                            final lesson = _myCourseController.recentLessons[index];
+                            return _buildRecentLessonItem(lesson);
+                          },
+                        ),
             ),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -407,7 +481,8 @@ class _MyCourseScreenState extends State<MyCourseScreen>
     );
   }
 
-  Widget _buildRecentCourseItem(MyCourseItem course) {
+  // Widget to display a recently viewed lesson
+  Widget _buildRecentLessonItem(RecentLessonModel lesson) {
     return Container(
       width: 180,
       margin: const EdgeInsets.only(right: 12),
@@ -424,7 +499,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
         ],
       ),
       child: InkWell(
-        onTap: () => _navigateToCourseDetail(course),
+        onTap: () => _navigateToRecentLesson(lesson),
         borderRadius: BorderRadius.circular(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,7 +511,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                 topRight: Radius.circular(12),
               ),
               child: Image.network(
-                course.imageUrl,
+                lesson.imageCourse,
                 height: 80,
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -446,7 +521,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                     color: Colors.grey[300],
                     child: Center(
                       child: Text(
-                        course.title.isNotEmpty ? course.title[0] : 'C',
+                        lesson.courseName.isNotEmpty ? lesson.courseName[0] : 'C',
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -457,14 +532,14 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                 },
               ),
             ),
-            // Course info
+            // Lesson info
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    course.title,
+                    lesson.lessonTitle,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
@@ -473,16 +548,63 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  LinearProgressIndicator(
-                    value: course.progress,
-                    backgroundColor: Colors.grey[300],
-                    valueColor:
-                        const AlwaysStoppedAnimation<Color>(Colors.orange),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.play_circle_outline,
+                        size: 14,
+                        color: Colors.orange,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        _myCourseController.formatDurationFromSeconds(lesson.duration),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  // Navigate to the specific lesson
+  void _navigateToRecentLesson(RecentLessonModel lesson) {
+    // Get the course ID and lesson ID from the recent lesson
+    final courseId = int.parse(lesson.courseId);
+    final lessonId = lesson.lessonId;
+    
+    // Navigate to the EnrollCourseScreen with the course ID
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EnrollCourseScreen(
+          courseId: courseId,
+          courseTitle: lesson.courseName,
+          startOver: false,
+          viewAllLessons: false,
+          startVideo: true,
+          showMaterials: false,
+          showLessonContent: true,
+          onCommentSubmit: (_) {}, // Placeholder
+          currentLesson: Lesson(
+            id: lessonId,
+            title: lesson.lessonTitle,
+            duration: _myCourseController.formatDurationFromSeconds(lesson.duration),
+            type: LessonType.video,
+            isUnlocked: true,
+          ),
+          currentChapter: CourseChapter(
+            id: lesson.chapterId,
+            title: "Chapter",
+            lessons: [],
+          ),
         ),
       ),
     );

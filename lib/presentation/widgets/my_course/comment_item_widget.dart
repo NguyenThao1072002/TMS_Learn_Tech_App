@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:tms_app/core/DI/service_locator.dart';
+import 'package:tms_app/core/utils/shared_prefs.dart';
 import 'package:tms_app/data/models/my_course/comment_lession_model.dart';
+import 'package:tms_app/data/models/my_course/like_comment_model.dart';
 import 'package:tms_app/domain/usecases/my_course/comment_lession_usecase.dart';
 
 /// Widget hiển thị phần bình luận của bài học
@@ -126,6 +128,32 @@ class _CommentSectionWidgetState extends State<CommentSectionWidget> {
         _isSubmitting = false;
       });
     }
+  }
+
+  /// Cập nhật trạng thái like của comment cụ thể trong danh sách
+  void _updateCommentLikeStatus(int commentId, bool isLiked, int likeCount) {
+    setState(() {
+      for (int i = 0; i < _comments.length; i++) {
+        if (_comments[i].commentId == commentId) {
+          // Tạo bản sao của comment và cập nhật trạng thái liked
+          final updatedComment = CommentModel(
+            commentId: _comments[i].commentId,
+            content: _comments[i].content,
+            accountId: _comments[i].accountId,
+            fullname: _comments[i].fullname,
+            image: _comments[i].image,
+            liked: likeCount,
+            targetType: _comments[i].targetType,
+            createdAt: _comments[i].createdAt,
+            replies: _comments[i].replies,
+          );
+          
+          // Thay thế comment cũ bằng comment đã cập nhật
+          _comments[i] = updatedComment;
+          break;
+        }
+      }
+    });
   }
 
   @override
@@ -298,7 +326,13 @@ class _CommentSectionWidgetState extends State<CommentSectionWidget> {
               separatorBuilder: (context, index) => const SizedBox(height: 16),
               itemBuilder: (context, index) {
                 final comment = _comments[index];
-                return CommentItemWidget(comment: comment);
+                return CommentItemWidget(
+                  comment: comment,
+                  onLikeToggled: (bool isLiked, int likeCount) {
+                    // Cập nhật trạng thái like trong danh sách comment thay vì tải lại toàn bộ
+                    _updateCommentLikeStatus(comment.commentId, isLiked, likeCount);
+                  },
+                );
               },
             ),
         ],
@@ -308,19 +342,93 @@ class _CommentSectionWidgetState extends State<CommentSectionWidget> {
 }
 
 /// Widget hiển thị một bình luận
-class CommentItemWidget extends StatelessWidget {
+class CommentItemWidget extends StatefulWidget {
   final CommentModel comment;
+  final Function(bool, int)? onLikeToggled;
 
   const CommentItemWidget({
     Key? key,
     required this.comment,
+    this.onLikeToggled,
   }) : super(key: key);
 
   @override
+  State<CommentItemWidget> createState() => _CommentItemWidgetState();
+}
+
+class _CommentItemWidgetState extends State<CommentItemWidget> {
+  final CommentLessonUseCase _commentLessonUseCase = sl<CommentLessonUseCase>();
+  bool _isLiking = false;
+  bool _isLiked = false;
+  int _likeCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _isLiked = widget.comment.liked != null && widget.comment.liked! > 0;
+    _likeCount = widget.comment.liked ?? 0;
+    print('🔍 Comment ID: ${widget.comment.commentId}, isLiked: $_isLiked, likeCount: $_likeCount');
+  }
+
+  /// Xử lý toggle like/unlike bình luận
+  Future<void> _toggleLike() async {
+    if (_isLiking) return;
+
+    // Cập nhật UI ngay lập tức (optimistic update)
+    setState(() {
+      _isLiking = true;
+      _isLiked = !_isLiked;
+      _likeCount = _isLiked ? _likeCount + 1 : (_likeCount > 0 ? _likeCount - 1 : 0);
+    });
+
+    try {
+      // Lấy ID người dùng từ SharedPrefs
+      final accountId = await SharedPrefs.getUserId();
+      print('🔍 Toggling like for comment ID: ${widget.comment.commentId}, accountId: $accountId');
+      
+      // Gọi API để like/unlike bình luận
+      final response = await _commentLessonUseCase.likeComment(
+        commentId: widget.comment.commentId,
+        accountId: accountId,
+      );
+
+      print('🔍 API response: ${response.status}, message: ${response.message}');
+
+      // Kiểm tra nếu API không thành công, hoàn tác thay đổi UI
+      if (!response.isSuccess) {
+        setState(() {
+          _isLiked = !_isLiked; // Đảo ngược lại trạng thái
+          _likeCount = _isLiked ? _likeCount + 1 : (_likeCount > 0 ? _likeCount - 1 : 0);
+        });
+        
+        print('❌ API request failed: ${response.message}');
+      } else {
+        // Thông báo cho widget cha biết đã like/unlike thành công
+        if (widget.onLikeToggled != null) {
+          widget.onLikeToggled!(_isLiked, _likeCount);
+        }
+      }
+    } catch (e) {
+      print('❌ Lỗi khi thích/bỏ thích bình luận: $e');
+      
+      // Hoàn tác thay đổi UI nếu có lỗi
+      setState(() {
+        _isLiked = !_isLiked; // Đảo ngược lại trạng thái
+        _likeCount = _isLiked ? _likeCount + 1 : (_likeCount > 0 ? _likeCount - 1 : 0);
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLiking = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final commentLessonUseCase = sl<CommentLessonUseCase>();
     final formattedTime =
-        commentLessonUseCase.formatCommentTime(comment.createdAt);
+        _commentLessonUseCase.formatCommentTime(widget.comment.createdAt);
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -345,11 +453,11 @@ class CommentItemWidget extends StatelessWidget {
               CircleAvatar(
                 radius: 16,
                 backgroundImage:
-                    comment.image != null ? NetworkImage(comment.image!) : null,
+                    widget.comment.image != null ? NetworkImage(widget.comment.image!) : null,
                 backgroundColor: Colors.grey[300],
-                child: comment.image == null
+                child: widget.comment.image == null
                     ? Text(
-                        comment.fullname[0].toUpperCase(),
+                        widget.comment.fullname[0].toUpperCase(),
                         style: const TextStyle(color: Colors.white),
                       )
                     : null,
@@ -363,7 +471,7 @@ class CommentItemWidget extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      comment.fullname,
+                      widget.comment.fullname,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -386,7 +494,7 @@ class CommentItemWidget extends StatelessWidget {
 
           // Nội dung bình luận
           Text(
-            comment.content,
+            widget.comment.content,
             style: const TextStyle(fontSize: 14, height: 1.3),
           ),
 
@@ -397,36 +505,31 @@ class CommentItemWidget extends StatelessWidget {
             children: [
               // Nút thích
               InkWell(
-                onTap: () {
-                  // Hiển thị thông báo
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                          'Chức năng thích bình luận sẽ được cập nhật sau'),
-                      backgroundColor: Colors.blue,
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
-                },
+                onTap: _isLiking ? null : _toggleLike,
                 child: Row(
                   children: [
-                    Icon(
-                      comment.liked != null
-                          ? Icons.thumb_up
-                          : Icons.thumb_up_outlined,
-                      size: 16,
-                      color: comment.liked != null
-                          ? Colors.blue
-                          : Colors.grey[600],
-                    ),
+                    _isLiking
+                        ? SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.blue,
+                            ),
+                          )
+                        : Icon(
+                            _isLiked
+                                ? Icons.thumb_up
+                                : Icons.thumb_up_outlined,
+                            size: 16,
+                            color: _isLiked ? Colors.blue : Colors.grey[600],
+                          ),
                     const SizedBox(width: 4),
                     Text(
-                      comment.liked != null ? '${comment.liked}' : 'Thích',
+                      _likeCount > 0 ? '$_likeCount' : 'Thích',
                       style: TextStyle(
                         fontSize: 12,
-                        color: comment.liked != null
-                            ? Colors.blue
-                            : Colors.grey[600],
+                        color: _isLiked ? Colors.blue : Colors.grey[600],
                       ),
                     ),
                   ],
@@ -464,7 +567,7 @@ class CommentItemWidget extends StatelessWidget {
           ),
 
           // Hiển thị các phản hồi nếu có
-          if (comment.replies != null && comment.replies!.isNotEmpty)
+          if (widget.comment.replies != null && widget.comment.replies!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 12, left: 24),
               child: Column(
@@ -477,7 +580,7 @@ class CommentItemWidget extends StatelessWidget {
                     margin: const EdgeInsets.symmetric(vertical: 8),
                   ),
                   Text(
-                    '${comment.replies!.length} phản hồi',
+                    '${widget.comment.replies!.length} phản hồi',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[600],
@@ -485,11 +588,11 @@ class CommentItemWidget extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  ...comment.replies!
+                  ...widget.comment.replies!
                       .map((reply) => Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: _buildReplyItem(
-                                context, reply, commentLessonUseCase),
+                                context, reply, _commentLessonUseCase),
                           ))
                       .toList(),
                 ],
@@ -561,7 +664,14 @@ class CommentItemWidget extends StatelessWidget {
                 children: [
                   InkWell(
                     onTap: () {
-                      // Xử lý thích phản hồi
+                      // Xử lý thích phản hồi - sẽ triển khai tương tự như thích bình luận
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Chức năng thích phản hồi sẽ được cập nhật sau'),
+                          backgroundColor: Colors.blue,
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
                     },
                     child: Row(
                       children: [

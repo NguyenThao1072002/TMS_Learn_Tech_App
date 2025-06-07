@@ -35,6 +35,17 @@ class TeachingStaffController with ChangeNotifier {
   TeachingStaffController._internal()
       : _teachingStaffUseCase = GetIt.instance<TeachingStaffUseCase>();
 
+  // Safe notify listeners implementation
+  @override
+  void notifyListeners() {
+    try {
+      super.notifyListeners();
+    } catch (e) {
+      // Ignore NoSuchMethodError or other errors caused by listeners
+      print("Error during notification: $e");
+    }
+  }
+
   /// Lấy danh sách giảng viên
   Future<void> getTeachingStaffs({
     bool refresh = false,

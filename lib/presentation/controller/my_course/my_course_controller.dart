@@ -4,7 +4,9 @@ import 'package:flutter/material.dart' hide MaterialType;
 import 'package:tms_app/core/DI/service_locator.dart';
 import 'package:tms_app/data/models/my_course/learn_lesson_model.dart'
     hide Lesson, LessonType;
+import 'package:tms_app/data/models/my_course/recent_lesson_model.dart';
 import 'package:tms_app/domain/usecases/my_course/course_lesson_usecase.dart';
+import 'package:tms_app/domain/usecases/my_course/recent_lesson_usecase.dart';
 import 'package:tms_app/presentation/screens/my_account/my_course/enroll_course.dart';
 import 'package:tms_app/core/utils/shared_prefs.dart';
 import 'package:tms_app/domain/repositories/my_course/course_progress_repository.dart';
@@ -12,13 +14,16 @@ import 'package:tms_app/domain/repositories/my_course/course_progress_repository
 class MyCourseController with ChangeNotifier {
   // Dependencies
   final CourseLessonUseCase _courseLessonUseCase;
+  final RecentLessonUseCase _recentLessonUseCase;
 
   // State variables
   bool _isLoading = true;
+  bool _isLoadingRecentLessons = false;
   List<CourseChapter> _courseData = [];
   CourseLessonResponse? _courseLessonResponse;
   Map<String, bool> _completedLessons = {};
   List<bool> _expandedChapters = [];
+  List<RecentLessonModel> _recentLessons = [];
 
   int _selectedChapterIndex = 0;
   int _selectedLessonIndex = 0;
@@ -28,6 +33,7 @@ class MyCourseController with ChangeNotifier {
 
   // Getters
   bool get isLoading => _isLoading;
+  bool get isLoadingRecentLessons => _isLoadingRecentLessons;
   List<CourseChapter> get courseData => _courseData;
   Map<String, bool> get completedLessons => _completedLessons;
   List<bool> get expandedChapters => _expandedChapters;
@@ -36,14 +42,44 @@ class MyCourseController with ChangeNotifier {
   bool get showSidebarInMobile => _showSidebarInMobile;
   double get testResult => _testResult;
   CourseLessonResponse? get courseLessonResponse => _courseLessonResponse;
+  List<RecentLessonModel> get recentLessons => _recentLessons;
 
   // Constructor with dependency injection
-  MyCourseController({CourseLessonUseCase? courseLessonUseCase})
-      : _courseLessonUseCase = courseLessonUseCase ?? sl<CourseLessonUseCase>();
+  MyCourseController({
+    CourseLessonUseCase? courseLessonUseCase,
+    RecentLessonUseCase? recentLessonUseCase,
+  })  : _courseLessonUseCase = courseLessonUseCase ?? sl<CourseLessonUseCase>(),
+        _recentLessonUseCase = recentLessonUseCase ?? sl<RecentLessonUseCase>();
 
   // Initialize controller
   Future<void> initialize(int courseId) async {
     await loadCourseData(courseId);
+  }
+
+  // Load recently viewed lessons
+  Future<void> loadRecentLessons() async {
+    _isLoadingRecentLessons = true;
+    notifyListeners();
+    
+    try {
+      // Get user ID from SharedPrefs
+      final userId = await SharedPrefs.getUserId();
+      if (userId == null) {
+        print('Cannot load recent lessons: User ID is null');
+        _recentLessons = [];
+        return;
+      }
+      
+      final response = await _recentLessonUseCase.execute(userId.toString());
+      _recentLessons = response.data;
+      print('Loaded ${_recentLessons.length} recent lessons');
+    } catch (e) {
+      print('Error loading recent lessons: $e');
+      _recentLessons = [];
+    } finally {
+      _isLoadingRecentLessons = false;
+      notifyListeners();
+    }
   }
 
   // Load course data from API
@@ -796,5 +832,22 @@ class MyCourseController with ChangeNotifier {
   // Setter cho callback bài kiểm tra
   set onStartTest(Function(Lesson) callback) {
     _onStartTestCallback = callback;
+  }
+
+  // Navigate to a specific lesson from recent lessons
+  void navigateToRecentLesson(RecentLessonModel recentLesson) {
+    // This method will be called when a user clicks on a recently viewed lesson
+    // It should open the course and navigate to the specific lesson
+    print('Navigating to recent lesson: ${recentLesson.lessonTitle}');
+    
+    // Implementation will depend on your app's navigation logic
+    // You might need to load the course first and then find the specific lesson
+  }
+
+  // Format duration for display in the UI
+  String formatDurationFromSeconds(int seconds) {
+    final int minutes = seconds ~/ 60;
+    final int remainingSeconds = seconds % 60;
+    return '$minutes:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 }
