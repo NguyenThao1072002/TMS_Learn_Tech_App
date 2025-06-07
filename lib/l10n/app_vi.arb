@@ -1,0 +1,51 @@
+{
+  "appTitle": "TMS Learn Tech",
+  
+  "home": "Trang chủ",
+  "courses": "Khóa học",
+  "myCourses": "Khóa học của tôi",
+  "blog": "Blog",
+  "documents": "Tài liệu",
+  "account": "Tài khoản",
+  "settings": "Cài đặt",
+  
+  "themeSettings": "Tùy chỉnh giao diện",
+  "lightTheme": "Sáng",
+  "darkTheme": "Tối",
+  "systemTheme": "Theo hệ thống",
+  "lightThemeDescription": "Giao diện màu sáng cho ứng dụng",
+  "darkThemeDescription": "Giao diện màu tối giúp giảm mỏi mắt khi sử dụng buổi tối",
+  "systemThemeDescription": "Tự động thay đổi theo cài đặt của thiết bị",
+  
+  "languageSettings": "Cài đặt ngôn ngữ",
+  "selectLanguage": "Chọn ngôn ngữ hiển thị",
+  "languageChangeEffect": "Thay đổi ngôn ngữ ứng dụng sẽ có hiệu lực ngay lập tức",
+  "languageExample": "Ví dụ ngôn ngữ",
+  "languageGreeting": "Xin chào, chào mừng đến với TMS Learn Tech!",
+  "languageDescription": "Đây là cách ứng dụng sẽ hiển thị bằng tiếng Việt.",
+  "continueButton": "Tiếp tục",
+  
+  "appearance": "Giao diện",
+  "language": "Ngôn ngữ",
+  "selectThemeMode": "Chọn chế độ hiển thị giao diện ứng dụng",
+  "selectAppLanguage": "Chọn ngôn ngữ hiển thị",
+  
+  "accountSettings": "Tài khoản",
+  "updateAccount": "Cập nhật thông tin tài khoản",
+  "changePassword": "Đổi mật khẩu",
+  "notifications": "Thông báo",
+  "appearanceAndLanguage": "Giao diện & Ngôn ngữ",
+  
+  "upgradeAccount": "Nâng cấp tài khoản",
+  "support": "Hỗ trợ",
+  "helpCenter": "Trung tâm trợ giúp",
+  "contactUs": "Liên hệ với chúng tôi",
+  "reportIssue": "Báo cáo sự cố",
+  
+  "logout": "Đăng xuất",
+  "logoutConfirmation": "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?",
+  "cancel": "Hủy",
+  "done": "Xong",
+  
+  "version": "Phiên bản 1.0.0"
+}

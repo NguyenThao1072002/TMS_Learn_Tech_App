@@ -15,7 +15,7 @@ Future<Locale> setLocale(String languageCode) async {
 
 Future<Locale> getLocale() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  String languageCode = prefs.getString(LANGUAGE_CODE) ?? ENGLISH;
+  String languageCode = prefs.getString(LANGUAGE_CODE) ?? VIETNAMESE;
   return _locale(languageCode);
 }
 
@@ -26,7 +26,7 @@ Locale _locale(String languageCode) {
     case VIETNAMESE:
       return const Locale(VIETNAMESE, '');
     default:
-      return const Locale(ENGLISH, '');
+      return const Locale(VIETNAMESE, '');
   }
 }
 
@@ -37,6 +37,6 @@ String getTranslatedLanguageName(String languageCode) {
     case VIETNAMESE:
       return 'Tiếng Việt';
     default:
-      return 'English';
+      return 'Tiếng Việt';
   }
 } 

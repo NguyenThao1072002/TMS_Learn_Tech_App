@@ -23,8 +23,10 @@ class ThemeController extends ChangeNotifier {
         _themeMode = themeValue == 'dark' 
             ? ThemeMode.dark 
             : (themeValue == 'system' ? ThemeMode.system : ThemeMode.light);
-        notifyListeners();
+      } else {
+        _themeMode = ThemeMode.light;
       }
+      notifyListeners();
     } catch (e) {
       print('Error loading theme: $e');
     }

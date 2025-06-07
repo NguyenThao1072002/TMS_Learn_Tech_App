@@ -11,6 +11,30 @@ class AppDimensions {
   static const double iconSize = 28.0;
   static const double iconPadding = 10.0;
   
+  // Theme & Language Settings dimensions
+  static const double settingCardBorderRadius = 12.0;
+  static const double settingCardMarginHorizontal = 16.0;
+  static const double settingCardMarginVertical = 8.0;
+  static const double settingCardPadding = 16.0;
+  static const double settingItemVerticalPadding = 12.0;
+  static const double settingItemIconSize = 24.0;
+  static const double settingItemSpacing = 16.0;
+  static const double settingDescriptionSpacing = 4.0;
+  static const double settingSectionTitleFontSize = 16.0;
+  static const double settingTitleFontSize = 16.0;
+  static const double settingDescriptionFontSize = 12.0;
+  static const double settingFlagFontSize = 24.0;
+  
+  // Dialog dimensions
+  static const double dialogBorderRadius = 20.0;
+  static const double dialogPadding = 20.0;
+  static const double dialogIconSize = 30.0;
+  static const double dialogIconPadding = 15.0;
+  static const double dialogTitleFontSize = 20.0;
+  static const double dialogContentFontSize = 16.0;
+  static const double dialogButtonBorderRadius = 10.0;
+  static const double dialogButtonVerticalPadding = 12.0;
+  
   // Course detail dimensions
   static const double tabHeight = 46.0;
   static const double tabIndicatorWeight = 3.0;

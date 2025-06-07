@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tms_app/presentation/controller/language_controller.dart';
+import 'package:tms_app/core/localization/app_localization.dart';
 
 class LanguageSettingsScreen extends StatelessWidget {
   const LanguageSettingsScreen({Key? key}) : super(key: key);
@@ -10,8 +11,9 @@ class LanguageSettingsScreen extends StatelessWidget {
     final languageController = Provider.of<LanguageController>(context);
     
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Ngôn ngữ'),
+        title: Text(context.tr('languageSettings')),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
@@ -22,19 +24,16 @@ class LanguageSettingsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Chọn ngôn ngữ hiển thị',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+            Text(
+              context.tr('selectLanguage'),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Thay đổi ngôn ngữ ứng dụng sẽ có hiệu lực ngay lập tức',
+            Text(
+              context.tr('languageChangeEffect'),
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey,
+                color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
               ),
             ),
             const SizedBox(height: 24),
@@ -46,21 +45,22 @@ class LanguageSettingsScreen extends StatelessWidget {
                 children: [
                   InkWell(
                     onTap: () {
-                      languageController.setLanguage(language['code']);
+                      languageController.setLanguage(language['code'] as String);
                     },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12.0),
                       child: Row(
                         children: [
                           Text(
-                            language['flag'],
+                            language['flag'] as String,
                             style: const TextStyle(fontSize: 24),
                           ),
                           const SizedBox(width: 16),
                           Text(
-                            language['name'],
-                            style: const TextStyle(
+                            language['name'] as String,
+                            style: TextStyle(
                               fontSize: 16,
+                              color: Theme.of(context).textTheme.bodyLarge?.color,
                             ),
                           ),
                           const Spacer(),
@@ -73,7 +73,7 @@ class LanguageSettingsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const Divider(),
+                  Divider(color: Theme.of(context).dividerColor),
                 ],
               );
             }).toList(),
@@ -86,29 +86,9 @@ class LanguageSettingsScreen extends StatelessWidget {
   }
   
   Widget _buildLanguageExample(BuildContext context, LanguageController controller) {
-    // Example texts in different languages
-    final Map<String, Map<String, String>> examples = {
-      'en': {
-        'title': 'Language Example',
-        'greeting': 'Hello, welcome to TMS Learn Tech!',
-        'description': 'This is how the app will look in English.',
-        'button': 'Continue'
-      },
-      'vi': {
-        'title': 'Ví dụ ngôn ngữ',
-        'greeting': 'Xin chào, chào mừng đến với TMS Learn Tech!',
-        'description': 'Đây là cách ứng dụng sẽ hiển thị bằng tiếng Việt.',
-        'button': 'Tiếp tục'
-      }
-    };
-    
-    // Get current language code
-    final String langCode = controller.currentLocale.languageCode;
-    final exampleTexts = examples[langCode] ?? examples['en']!;
-    
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: Theme.of(context).dividerColor),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -125,7 +105,7 @@ class LanguageSettingsScreen extends StatelessWidget {
               ),
             ),
             child: Text(
-              exampleTexts['title']!,
+              context.tr('languageExample'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -141,18 +121,19 @@ class LanguageSettingsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  exampleTexts['greeting']!,
-                  style: const TextStyle(
+                  context.tr('languageGreeting'),
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
+                    color: Theme.of(context).textTheme.titleMedium?.color,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  exampleTexts['description']!,
+                  context.tr('languageDescription'),
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey.shade700,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -160,7 +141,7 @@ class LanguageSettingsScreen extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: ElevatedButton(
                     onPressed: null, // Disabled in preview
-                    child: Text(exampleTexts['button']!),
+                    child: Text(context.tr('continueButton')),
                   ),
                 ),
               ],

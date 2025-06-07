@@ -11,6 +11,9 @@ import 'package:tms_app/presentation/screens/my_account/setting/update_account.d
 import 'package:tms_app/presentation/screens/my_account/setting/help_and_support.dart';
 import 'package:tms_app/presentation/screens/my_account/setting/member.dart';
 import 'package:tms_app/presentation/screens/my_account/setting/appearance_language_screen.dart';
+import 'package:tms_app/core/localization/app_localization.dart';
+import 'package:tms_app/core/theme/app_styles.dart';
+import 'package:tms_app/core/theme/app_dimensions.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -52,21 +55,22 @@ class _SettingsScreenState extends State<SettingsScreen>
   Widget build(BuildContext context) {
     final themeController = Provider.of<ThemeController>(context);
     final languageController = Provider.of<LanguageController>(context);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
-        title: const Text(
-          'Cài đặt',
+        title: Text(
+          "Cài đặt",
           style: TextStyle(
-            color: Colors.black,
+            color: Theme.of(context).appBarTheme.foregroundColor,
             fontWeight: FontWeight.w500,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          icon: Icon(Icons.arrow_back_ios, color: Theme.of(context).appBarTheme.iconTheme?.color),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
@@ -74,10 +78,10 @@ class _SettingsScreenState extends State<SettingsScreen>
             onPressed: () {
               Navigator.of(context).pop();
             },
-            child: const Text(
-              'Xong',
+            child: Text(
+              "Xong",
               style: TextStyle(
-                color: Colors.blue,
+                color: Theme.of(context).primaryColor,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -106,6 +110,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     );
                   },
+                  isDarkMode: isDarkMode,
                 ),
                 _buildAnimatedSettingItem(
                   'Đổi mật khẩu',
@@ -120,6 +125,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     );
                   },
+                  isDarkMode: isDarkMode,
                 ),
                 _buildAnimatedSettingItem(
                   'Thông báo',
@@ -135,6 +141,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     );
                   },
+                  isDarkMode: isDarkMode,
                 ),
                 
                 _buildAnimatedSettingItem(
@@ -150,6 +157,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     );
                   },
+                  isDarkMode: isDarkMode,
                 ),
 
                 _buildSectionTitle('Nâng cấp tài khoản'),
@@ -167,6 +175,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     );
                   },
+                  isDarkMode: isDarkMode,
                 ),
 
                 _buildSectionTitle('Hỗ trợ'),
@@ -182,6 +191,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     );
                   },
+                  isDarkMode: isDarkMode,
                 ),
                 _buildAnimatedSettingItem(
                   'Liên hệ với chúng tôi',
@@ -195,6 +205,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     );
                   },
+                  isDarkMode: isDarkMode,
                 ),
                 _buildAnimatedSettingItem(
                   'Báo cáo sự cố',
@@ -208,6 +219,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     );
                   },
+                  isDarkMode: isDarkMode,
                 ),
 
                 // Nút đăng xuất với hiệu ứng ripple
@@ -229,10 +241,10 @@ class _SettingsScreenState extends State<SettingsScreen>
       padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.bold,
-          color: Colors.black87,
+          color: Theme.of(context).textTheme.titleMedium?.color,
         ),
       ),
     );
@@ -245,7 +257,13 @@ class _SettingsScreenState extends State<SettingsScreen>
     required int delay,
     required VoidCallback onTap,
     bool isHighlighted = false,
+    required bool isDarkMode,
   }) {
+    // Màu đường kẻ tùy theo chế độ sáng/tối
+    final dividerColor = isDarkMode 
+        ? Colors.grey.shade600 // Màu xám trắng cho chế độ tối
+        : Colors.grey.shade300; // Màu xám đậm cho chế độ sáng
+    
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child) {
@@ -270,16 +288,17 @@ class _SettingsScreenState extends State<SettingsScreen>
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          splashColor: Colors.blue.withOpacity(0.1),
-          highlightColor: Colors.blue.withOpacity(0.05),
+          splashColor: Theme.of(context).primaryColor.withOpacity(0.1),
+          highlightColor: Theme.of(context).primaryColor.withOpacity(0.05),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color:
-                  isHighlighted ? Colors.blue.withOpacity(0.05) : Colors.white,
+              color: isHighlighted 
+                  ? Theme.of(context).primaryColor.withOpacity(0.05) 
+                  : Theme.of(context).cardColor,
               border: Border(
                 bottom: BorderSide(
-                  color: Colors.grey.shade200,
+                  color: dividerColor, // Sử dụng màu đường kẻ đã định nghĩa
                   width: 1,
                 ),
               ),
@@ -289,7 +308,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                 Icon(
                   icon,
                   size: 22,
-                  color: isHighlighted ? Colors.blue : Colors.grey.shade700,
+                  color: isHighlighted 
+                      ? Theme.of(context).primaryColor 
+                      : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -297,16 +318,15 @@ class _SettingsScreenState extends State<SettingsScreen>
                     title,
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.black,
-                      fontWeight:
-                          isHighlighted ? FontWeight.bold : FontWeight.normal,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                      fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.arrow_forward_ios,
                   size: 16,
-                  color: Colors.grey,
+                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.5),
                 ),
               ],
             ),
@@ -339,7 +359,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B82F6),
+                  backgroundColor: Colors.red,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -350,9 +370,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                   // Xử lý đăng xuất
                   _showLogoutConfirmDialog(context);
                 },
-                child: const Text(
-                  'Đăng xuất',
-                  style: TextStyle(
+                child: Text(
+                  "Đăng xuất",
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -382,13 +402,13 @@ class _SettingsScreenState extends State<SettingsScreen>
 
         return Opacity(
           opacity: animation.value,
-          child: const Center(
+          child: Center(
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: Text(
-                'Phiên bản 1.0.0',
+                "Phiên bản 1.0.0",
                 style: TextStyle(
-                  color: Colors.grey,
+                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
                   fontSize: 14,
                 ),
               ),
@@ -401,6 +421,9 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   // Hộp thoại xác nhận đăng xuất
   void _showLogoutConfirmDialog(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final dividerColor = isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300;
+    
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.5),
@@ -412,7 +435,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
@@ -441,22 +464,22 @@ class _SettingsScreenState extends State<SettingsScreen>
                 ),
                 const SizedBox(height: 20),
                 // Tiêu đề
-                const Text(
-                  'Đăng xuất',
+                Text(
+                  "Đăng xuất",
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: Theme.of(context).textTheme.titleLarge?.color,
                   ),
                 ),
                 const SizedBox(height: 12),
                 // Nội dung
-                const Text(
-                  'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?',
+                Text(
+                  "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.grey,
+                    color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
                   ),
                 ),
                 const SizedBox(height: 25),
@@ -471,17 +494,17 @@ class _SettingsScreenState extends State<SettingsScreen>
                         },
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          side: const BorderSide(color: Colors.grey),
+                          side: BorderSide(color: dividerColor), // Sử dụng màu divider theo chế độ
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: const Text(
-                          'Hủy',
+                        child: Text(
+                          "Hủy",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.grey,
+                            color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
                           ),
                         ),
                       ),
@@ -506,7 +529,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                           elevation: 0,
                         ),
                         child: const Text(
-                          'Đăng xuất',
+                          "Đăng xuất",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,

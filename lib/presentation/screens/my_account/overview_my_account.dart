@@ -207,7 +207,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
   int _totalPoints = 0;
   int _dayStreaks = 0;
   int _totalCourses = 0;
-  int _totalDocuments = 0;
+  int _totalDocument = 0;
   double _balanceWallet = 0.0;
 
   // Số lượng cho badges
@@ -291,18 +291,26 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
       // Lấy userId từ SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString(SharedPrefs.KEY_USER_ID);
+      
+      // Thêm debug log để kiểm tra userId
+      debugPrint('Loading user info for userId: $userId');
 
       if (userId == null || userId.isEmpty) {
         setState(() {
           _errorLoadingUser = "Không tìm thấy thông tin người dùng";
           _isLoadingUserInfo = false;
+          _userName = 'Người dùng'; // Set default name when userId is missing
         });
+        debugPrint('User ID is missing, setting default name');
         return;
       }
 
       // Lấy thông tin người dùng từ repository
       final accountRepository = sl<AccountRepository>();
       final userProfile = await accountRepository.getUserById(userId);
+
+      // Debug log user profile
+      debugPrint('Received user profile: fullname=${userProfile.fullname}, email=${userProfile.email}');
 
       // Cập nhật thông tin người dùng
       setState(() {
@@ -319,6 +327,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
       setState(() {
         _errorLoadingUser = "Lỗi khi tải thông tin người dùng: $e";
         _isLoadingUserInfo = false;
+        _userName = 'Người dùng'; // Fallback name when error occurs
       });
       debugPrint('Lỗi khi tải thông tin người dùng: $e');
     }
@@ -359,7 +368,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
         _totalPoints = overviewData.totalPoints;
         _dayStreaks = overviewData.dayStreak;
         _totalCourses = overviewData.countCourse;
-        _totalDocuments = overviewData.countDocument;
+        _totalDocument = overviewData.countDocument;
         _balanceWallet = overviewData.balanceWallet;
         _isLoadingOverview = false;
       });
@@ -653,23 +662,15 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
                           fontWeight: FontWeight.bold,
                         ),
                       )
-                    : _errorLoadingUser != null
-                        ? const Text(
-                            'Người dùng',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          )
-                        : Text(
-                            _userName,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                    : Text(
+                        _accountOverview?.accountName ?? (_userName.isNotEmpty ? _userName : 'Người dùng'),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                 const SizedBox(height: 4),
                 _isLoadingUserInfo
                     ? Text(
@@ -769,8 +770,8 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
                       },
                     ),
                     _buildStatCard(
-                      title: "Tài liệu",
-                      value: _totalDocuments.toString(),
+                      title: "Bài thi",
+                      value: _totalDocument.toString(),
                       icon: Icons.description,
                       color: purpleColor,
                     ),

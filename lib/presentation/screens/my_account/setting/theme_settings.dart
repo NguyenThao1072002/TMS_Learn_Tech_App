@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tms_app/presentation/controller/theme_controller.dart';
+import 'package:tms_app/core/localization/app_localization.dart';
 
 class ThemeSettingsScreen extends StatelessWidget {
   const ThemeSettingsScreen({Key? key}) : super(key: key);
@@ -10,8 +11,9 @@ class ThemeSettingsScreen extends StatelessWidget {
     final themeController = Provider.of<ThemeController>(context);
     
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Tùy chỉnh giao diện'),
+        title: Text(context.tr('themeSettings')),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
@@ -22,33 +24,30 @@ class ThemeSettingsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Chế độ giao diện',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+            Text(
+              context.tr('appearance'),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 16),
             _buildThemeOption(
               context,
-              title: 'Sáng',
+              title: context.tr('lightTheme'),
               icon: Icons.light_mode,
               selected: themeController.themeMode == ThemeMode.light,
               onTap: () => themeController.setThemeMode(ThemeMode.light),
             ),
-            const Divider(),
+            Divider(color: Theme.of(context).dividerColor),
             _buildThemeOption(
               context,
-              title: 'Tối',
+              title: context.tr('darkTheme'),
               icon: Icons.dark_mode,
               selected: themeController.themeMode == ThemeMode.dark,
               onTap: () => themeController.setThemeMode(ThemeMode.dark),
             ),
-            const Divider(),
+            Divider(color: Theme.of(context).dividerColor),
             _buildThemeOption(
               context,
-              title: 'Theo hệ thống',
+              title: context.tr('systemTheme'),
               icon: Icons.settings_suggest,
               selected: themeController.themeMode == ThemeMode.system,
               onTap: () => themeController.setThemeMode(ThemeMode.system),
@@ -82,8 +81,9 @@ class ThemeSettingsScreen extends StatelessWidget {
             const SizedBox(width: 16),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
               ),
             ),
             const Spacer(),
@@ -102,17 +102,14 @@ class ThemeSettingsScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Xem trước',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+        Text(
+          context.tr('languageExample'),
+          style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 16),
         Container(
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: Theme.of(context).dividerColor),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
@@ -136,7 +133,7 @@ class ThemeSettingsScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 16),
                     Text(
-                      'Xem trước ứng dụng',
+                      context.tr('appTitle'),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -174,20 +171,13 @@ class ThemeSettingsScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Tiêu đề khóa học',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).textTheme.titleLarge?.color,
-                                ),
+                                context.tr('courses'),
+                                style: Theme.of(context).textTheme.titleMedium,
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Mô tả khóa học',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Theme.of(context).textTheme.bodyMedium?.color,
-                                ),
+                                context.tr('languageDescription'),
+                                style: Theme.of(context).textTheme.bodyMedium,
                               ),
                             ],
                           ),
@@ -205,14 +195,14 @@ class ThemeSettingsScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Phần',
+                            context.tr('myCourses'),
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Theme.of(context).textTheme.titleMedium?.color,
                             ),
                           ),
                           Text(
-                            'Xem tất cả',
+                            context.tr('continueButton'),
                             style: TextStyle(
                               color: Theme.of(context).primaryColor,
                               fontWeight: FontWeight.bold,

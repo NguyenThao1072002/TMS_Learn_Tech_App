@@ -1,0 +1,51 @@
+{
+  "appTitle": "TMS Learn Tech",
+  
+  "home": "Home",
+  "courses": "Courses",
+  "myCourses": "My Courses",
+  "blog": "Blog",
+  "documents": "Documents",
+  "account": "Account",
+  "settings": "Settings",
+  
+  "themeSettings": "Theme Settings",
+  "lightTheme": "Light",
+  "darkTheme": "Dark",
+  "systemTheme": "System Default",
+  "lightThemeDescription": "Light interface for the app",
+  "darkThemeDescription": "Dark interface reduces eye strain at night",
+  "systemThemeDescription": "Automatically changes based on device settings",
+  
+  "languageSettings": "Language Settings",
+  "selectLanguage": "Select display language",
+  "languageChangeEffect": "Language changes will take effect immediately",
+  "languageExample": "Language Example",
+  "languageGreeting": "Hello, welcome to TMS Learn Tech!",
+  "languageDescription": "This is how the app will look in English.",
+  "continueButton": "Continue",
+  
+  "appearance": "Appearance",
+  "language": "Language",
+  "selectThemeMode": "Select app display mode",
+  "selectAppLanguage": "Select app language",
+  
+  "accountSettings": "Account",
+  "updateAccount": "Update account information",
+  "changePassword": "Change password",
+  "notifications": "Notifications",
+  "appearanceAndLanguage": "Appearance & Language",
+  
+  "upgradeAccount": "Upgrade account",
+  "support": "Support",
+  "helpCenter": "Help center",
+  "contactUs": "Contact us",
+  "reportIssue": "Report an issue",
+  
+  "logout": "Logout",
+  "logoutConfirmation": "Are you sure you want to log out of your account?",
+  "cancel": "Cancel",
+  "done": "Done",
+  
+  "version": "Version 1.0.0"
+}

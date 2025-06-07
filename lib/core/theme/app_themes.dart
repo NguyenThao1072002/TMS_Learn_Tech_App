@@ -1,57 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:tms_app/core/theme/app_styles.dart';
 
 class AppThemes {
-  // Light theme
+  // Light theme - Giao diện mặc định
   static ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
     primarySwatch: Colors.orange,
-    primaryColor: Colors.orange,
+    primaryColor: AppStyles.lightPrimaryColor,
     hintColor: Colors.orange.shade200,
-    scaffoldBackgroundColor: Colors.white,
+    scaffoldBackgroundColor: AppStyles.lightBackgroundColor,
     fontFamily: 'Roboto',
     textTheme: const TextTheme(
       titleLarge: TextStyle(
         fontSize: 22,
         fontWeight: FontWeight.bold,
-        color: Colors.black,
+        color: AppStyles.lightTextColor,
       ),
       titleMedium: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w600,
-        color: Colors.black87,
+        color: AppStyles.lightTextSecondaryColor,
       ),
       bodyLarge: TextStyle(
         fontSize: 16,
-        color: Colors.black87,
+        color: AppStyles.lightTextSecondaryColor,
       ),
       bodyMedium: TextStyle(
         fontSize: 14,
-        color: Colors.black87,
+        color: AppStyles.lightTextSecondaryColor,
       ),
     ),
     appBarTheme: const AppBarTheme(
       elevation: 0,
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
+      backgroundColor: AppStyles.lightBackgroundColor,
+      foregroundColor: AppStyles.lightTextColor,
       centerTitle: false,
-      iconTheme: IconThemeData(color: Colors.black),
+      iconTheme: IconThemeData(color: AppStyles.lightTextColor),
     ),
     cardTheme: CardTheme(
-      color: Colors.white,
+      color: AppStyles.lightCardColor,
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
       ),
     ),
+    dividerColor: AppStyles.lightDividerColor,
+    iconTheme: const IconThemeData(
+      color: AppStyles.lightIconColor,
+    ),
     buttonTheme: ButtonThemeData(
-      buttonColor: Colors.orange,
+      buttonColor: AppStyles.lightPrimaryColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.orange,
+        backgroundColor: AppStyles.lightPrimaryColor,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -68,53 +73,57 @@ class AppThemes {
   static ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
     primarySwatch: Colors.orange,
-    primaryColor: Colors.orange,
+    primaryColor: AppStyles.darkPrimaryColor,
     hintColor: Colors.orange.shade200,
-    scaffoldBackgroundColor: const Color(0xFF121212),
+    scaffoldBackgroundColor: AppStyles.darkBackgroundColor,
     fontFamily: 'Roboto',
     textTheme: const TextTheme(
       titleLarge: TextStyle(
         fontSize: 22,
         fontWeight: FontWeight.bold,
-        color: Colors.white,
+        color: AppStyles.darkTextColor,
       ),
       titleMedium: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w600,
-        color: Colors.white70,
+        color: AppStyles.darkTextSecondaryColor,
       ),
       bodyLarge: TextStyle(
         fontSize: 16,
-        color: Colors.white70,
+        color: AppStyles.darkTextSecondaryColor,
       ),
       bodyMedium: TextStyle(
         fontSize: 14,
-        color: Colors.white70,
+        color: AppStyles.darkTextSecondaryColor,
       ),
     ),
     appBarTheme: const AppBarTheme(
       elevation: 0,
-      backgroundColor: Color(0xFF1F1F1F),
-      foregroundColor: Colors.white,
+      backgroundColor: AppStyles.darkCardColor,
+      foregroundColor: AppStyles.darkTextColor,
       centerTitle: false,
-      iconTheme: IconThemeData(color: Colors.white),
+      iconTheme: IconThemeData(color: AppStyles.darkTextColor),
     ),
     cardTheme: CardTheme(
-      color: const Color(0xFF1F1F1F),
+      color: AppStyles.darkCardColor,
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
       ),
     ),
+    dividerColor: AppStyles.darkDividerColor,
+    iconTheme: const IconThemeData(
+      color: AppStyles.darkIconColor,
+    ),
     buttonTheme: ButtonThemeData(
-      buttonColor: Colors.orange,
+      buttonColor: AppStyles.darkPrimaryColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.orange,
+        backgroundColor: AppStyles.darkPrimaryColor,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),

@@ -593,4 +593,148 @@ class AppStyles {
           borderRadius: BorderRadius.circular(8),
         ),
       );
+
+  // Theme và Language Settings Styles
+  // Light Theme Colors
+  static const Color lightBackgroundColor = Colors.white;
+  static const Color lightCardColor = Colors.white;
+  static const Color lightPrimaryColor = Colors.orange;
+  static const Color lightTextColor = Colors.black;
+  static const Color lightTextSecondaryColor = Colors.black87;
+  static const Color lightDividerColor = Color(0xFFEEEEEE);
+  static const Color lightIconColor = Color(0xFF757575);
+
+  // Dark Theme Colors
+  static const Color darkBackgroundColor = Color(0xFF121212);
+  static const Color darkCardColor = Color(0xFF1F1F1F);
+  static const Color darkPrimaryColor = Colors.orange;
+  static const Color darkTextColor = Colors.white;
+  static const Color darkTextSecondaryColor = Colors.white70;
+  static const Color darkDividerColor = Color(0xFF424242);
+  static const Color darkIconColor = Color(0xFFBDBDBD);
+
+  // Theme Settings Styles
+  static const TextStyle themeTitleStyle = TextStyle(
+    fontSize: 18,
+    fontWeight: FontWeight.bold,
+  );
+
+  static const TextStyle themeOptionTextStyle = TextStyle(
+    fontSize: 16,
+  );
+
+  static const TextStyle themeDescriptionTextStyle = TextStyle(
+    fontSize: 12,
+  );
+
+  static BoxDecoration themeCardDecoration = BoxDecoration(
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: Colors.grey.shade200),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.grey.withOpacity(0.05),
+        spreadRadius: 1,
+        blurRadius: 2,
+        offset: const Offset(0, 1),
+      ),
+    ],
+  );
+
+  // Language Settings Styles
+  static const TextStyle languageTitleStyle = TextStyle(
+    fontSize: 18,
+    fontWeight: FontWeight.bold,
+  );
+
+  static const TextStyle languageOptionTextStyle = TextStyle(
+    fontSize: 16,
+  );
+
+  static const TextStyle languageFlagStyle = TextStyle(
+    fontSize: 24,
+  );
+
+  static const TextStyle languageDescriptionStyle = TextStyle(
+    fontSize: 14,
+    color: Colors.grey,
+  );
+
+  static BoxDecoration languageExampleDecoration = BoxDecoration(
+    border: Border.all(color: Colors.grey.shade300),
+    borderRadius: BorderRadius.circular(8),
+  );
+
+  static BoxDecoration languageHeaderDecoration(Color primaryColor) => BoxDecoration(
+    color: primaryColor,
+    borderRadius: const BorderRadius.only(
+      topLeft: Radius.circular(8),
+      topRight: Radius.circular(8),
+    ),
+  );
+
+  // Settings Screen Styles
+  static BoxDecoration settingItemDecoration(bool isHighlighted, Color primaryColor, Color cardColor) => BoxDecoration(
+    color: isHighlighted ? primaryColor.withOpacity(0.05) : cardColor,
+    border: Border(
+      bottom: BorderSide(
+        color: Colors.grey.shade200,
+        width: 1,
+      ),
+    ),
+  );
+
+  static const TextStyle settingItemTextStyle = TextStyle(
+    fontSize: 16,
+  );
+
+  static const TextStyle settingSectionTitleStyle = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.bold,
+  );
+
+  static ButtonStyle logoutButtonStyle = ElevatedButton.styleFrom(
+    backgroundColor: Colors.red,
+    padding: const EdgeInsets.symmetric(vertical: 12),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+    elevation: 2,
+  );
+
+  static ButtonStyle cancelButtonStyle = OutlinedButton.styleFrom(
+    padding: const EdgeInsets.symmetric(vertical: 12),
+    side: const BorderSide(color: Colors.grey),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(10),
+    ),
+  );
+
+  // Dialog Styles
+  static BoxDecoration dialogDecoration = BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(20),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withOpacity(0.1),
+        blurRadius: 10,
+        spreadRadius: 1,
+        offset: const Offset(0, 5),
+      ),
+    ],
+  );
+
+  static BoxDecoration dialogIconDecoration = BoxDecoration(
+    color: Colors.red.withOpacity(0.1),
+    shape: BoxShape.circle,
+  );
+
+  static const TextStyle dialogTitleTextStyle = TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.bold,
+  );
+
+  static const TextStyle dialogContentTextStyle = TextStyle(
+    fontSize: 16,
+    color: Colors.grey,
+  );
 }
