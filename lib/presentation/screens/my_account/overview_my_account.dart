@@ -71,6 +71,8 @@ class _StatCardState extends State<StatCard>
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return GestureDetector(
       onTapDown: (_) => _controller.forward(),
       onTapUp: (_) => _controller.reverse(),
@@ -87,21 +89,26 @@ class _StatCardState extends State<StatCard>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
           decoration: BoxDecoration(
-            color: widget.color.withOpacity(0.09),
+            color: isDarkMode 
+                ? Color(0xFF252525).withOpacity(0.9) 
+                : widget.color.withOpacity(0.09),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.15),
+                color: isDarkMode 
+                    ? Colors.black.withOpacity(0.3) 
+                    : Colors.grey.withOpacity(0.15),
                 blurRadius: 12,
                 spreadRadius: 1,
                 offset: const Offset(0, 4),
               ),
-              BoxShadow(
-                color: Colors.white,
-                blurRadius: 0,
-                spreadRadius: 0,
-                offset: const Offset(0, 0),
-              ),
+              if (!isDarkMode)
+                const BoxShadow(
+                  color: Colors.white,
+                  blurRadius: 0,
+                  spreadRadius: 0,
+                  offset: Offset(0, 0),
+                ),
             ],
           ),
           child: Column(
@@ -133,7 +140,7 @@ class _StatCardState extends State<StatCard>
                 widget.title,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade600,
+                  color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600,
                   fontWeight: FontWeight.w500,
                 ),
                 textAlign: TextAlign.center,
@@ -423,15 +430,24 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDarkMode ? Colors.black : const Color.fromARGB(255, 255, 255, 255);
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final appBarColor = isDarkMode ? Colors.black : const Color.fromARGB(255, 255, 255, 255);
+    final cardColor = isDarkMode ? const Color(0xFF252525) : Colors.white;
+    final cardBorderColor = isDarkMode ? const Color(0xFF3A3F55) : Colors.grey.shade200;
+    final shadowColor = isDarkMode ? Colors.black.withOpacity(0.3) : Colors.grey.withOpacity(0.2);
+    final iconColor = isDarkMode ? Colors.white70 : null;
+
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+        backgroundColor: appBarColor,
         elevation: 0,
         actions: [
           // Nút refresh để tải lại dữ liệu
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.blue),
+            icon: Icon(Icons.refresh, color: Colors.blue),
             onPressed: () {
               debugPrint('Nút refresh được nhấn, tải lại dữ liệu...');
               setState(() {
@@ -449,7 +465,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
           ),
           // Kích hoạt khóa học
           IconButton(
-            icon: const Icon(Icons.key, color: Colors.blue),
+            icon: Icon(Icons.key, color: Colors.blue),
             onPressed: () {
               Navigator.push(
                 context,
@@ -464,7 +480,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
             alignment: Alignment.center,
             children: [
               IconButton(
-                icon: const Icon(Icons.shopping_cart, color: Colors.orange),
+                icon: Icon(Icons.shopping_cart, color: Colors.orange),
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -509,7 +525,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
             alignment: Alignment.center,
             children: [
               IconButton(
-                icon: const Icon(Icons.chat, color: Colors.green),
+                icon: Icon(Icons.chat, color: Colors.green),
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -552,7 +568,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
             child: Material(
               color: Colors.transparent,
               child: IconButton(
-                icon: const Icon(Icons.settings, color: Colors.grey),
+                icon: Icon(Icons.settings, color: isDarkMode ? Colors.grey.shade400 : Colors.grey),
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -572,25 +588,25 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Phần thông tin người dùng với avatar
-              _buildUserInfoSection(),
+              _buildUserInfoSection(isDarkMode, cardColor, textColor, cardBorderColor, shadowColor),
 
               // Phần tổng quan số liệu
-              _buildOverviewSection(),
+              _buildOverviewSection(isDarkMode, textColor),
 
               // Ví của tôi (My Wallet)
               _buildWalletSection(),
 
               // Kết quả học tập
-              _buildLearningOutcomesSection(),
+              _buildLearningOutcomesSection(isDarkMode, cardColor, shadowColor),
 
               // Lịch sử hoạt động
-              _buildActivityHistorySection(),
+              _buildActivityHistorySection(isDarkMode, cardColor, shadowColor),
 
               // Lịch sử thanh toán
-              _buildPaymentHistorySection(),
+              _buildPaymentHistorySection(isDarkMode, cardColor, shadowColor),
 
               // Hỗ trợ
-              _buildSupportSection(),
+              _buildSupportSection(isDarkMode, cardColor, shadowColor),
 
               // Thanh điều hướng dưới cùng (đã có trong bottom navigation bar)
               const SizedBox(height: 20),
@@ -602,16 +618,19 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
   }
 
   // Widget hiển thị thông tin người dùng với avatar
-  Widget _buildUserInfoSection() {
+  Widget _buildUserInfoSection(bool isDarkMode, Color cardColor, Color textColor, Color cardBorderColor, Color shadowColor) {
+    final userCardColor = isDarkMode ? const Color(0xFF2A2A2A) : cardColor;
+    
     return Container(
       padding: const EdgeInsets.all(16.0),
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: userCardColor,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cardBorderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
+            color: shadowColor,
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 2),
@@ -624,7 +643,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
           _isLoadingUserInfo
               ? CircleAvatar(
                   radius: 30,
-                  backgroundColor: Colors.white,
+                  backgroundColor: isDarkMode ? Colors.grey.shade800 : Colors.white,
                   child: CircularProgressIndicator(
                     valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
                     strokeWidth: 2,
@@ -632,7 +651,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
                 )
               : CircleAvatar(
                   radius: 30,
-                  backgroundColor: Colors.white,
+                  backgroundColor: isDarkMode ? Colors.grey.shade800 : Colors.white,
                   backgroundImage:
                       _userAvatar.isNotEmpty ? NetworkImage(_userAvatar) : null,
                   child: _userAvatar.isEmpty
@@ -655,18 +674,20 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _isLoadingUserInfo
-                    ? const Text(
+                    ? Text(
                         'Đang tải...',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
+                          color: textColor,
                         ),
                       )
                     : Text(
                         _accountOverview?.accountName ?? (_userName.isNotEmpty ? _userName : 'Người dùng'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
+                          color: textColor,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -677,14 +698,14 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
                         '...',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey[600],
+                          color: isDarkMode ? Colors.grey.shade400 : Colors.grey[600],
                         ),
                       )
                     : Text(
                         _userEmail.isNotEmpty ? _userEmail : "Chưa có email",
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey[600],
+                          color: isDarkMode ? Colors.grey.shade400 : Colors.grey[600],
                         ),
                       ),
               ],
@@ -696,7 +717,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
   }
 
   // Widget hiển thị các số liệu thống kê
-  Widget _buildOverviewSection() {
+  Widget _buildOverviewSection(bool isDarkMode, Color textColor) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Column(
@@ -799,17 +820,20 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
   }
 
   // Widget hiển thị kết quả học tập
-  Widget _buildLearningOutcomesSection() {
+  Widget _buildLearningOutcomesSection(bool isDarkMode, Color cardColor, Color shadowColor) {
+    final sectionCardColor = isDarkMode ? const Color(0xFF2A2A2A) : cardColor;
+    
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 255, 255, 255),
+        color: sectionCardColor,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: isDarkMode ? const Color(0xFF3A3F55) : Colors.transparent),
         boxShadow: [
           BoxShadow(
-            color: const Color.fromARGB(255, 163, 163, 163).withOpacity(0.25),
+            color: shadowColor,
             spreadRadius: 2,
             blurRadius: 10,
             offset: const Offset(0, 4),
@@ -834,7 +858,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withOpacity(isDarkMode ? 0.2 : 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -866,17 +890,20 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
   }
 
   // Widget hiển thị lịch sử hoạt động
-  Widget _buildActivityHistorySection() {
+  Widget _buildActivityHistorySection(bool isDarkMode, Color cardColor, Color shadowColor) {
+    final sectionCardColor = isDarkMode ? const Color(0xFF2A2A2A) : cardColor;
+    
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 255, 255, 255),
+        color: sectionCardColor,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: isDarkMode ? const Color(0xFF3A3F55) : Colors.transparent),
         boxShadow: [
           BoxShadow(
-            color: const Color.fromARGB(255, 163, 163, 163).withOpacity(0.25),
+            color: shadowColor,
             spreadRadius: 2,
             blurRadius: 10,
             offset: const Offset(0, 4),
@@ -896,7 +923,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withOpacity(isDarkMode ? 0.2 : 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -928,17 +955,20 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
   }
 
   // Widget hiển thị lịch sử thanh toán
-  Widget _buildPaymentHistorySection() {
+  Widget _buildPaymentHistorySection(bool isDarkMode, Color cardColor, Color shadowColor) {
+    final sectionCardColor = isDarkMode ? const Color(0xFF2A2A2A) : cardColor;
+    
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 255, 255, 255),
+        color: sectionCardColor,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: isDarkMode ? const Color(0xFF3A3F55) : Colors.transparent),
         boxShadow: [
           BoxShadow(
-            color: const Color.fromARGB(255, 163, 163, 163).withOpacity(0.25),
+            color: shadowColor,
             spreadRadius: 2,
             blurRadius: 10,
             offset: const Offset(0, 4),
@@ -963,8 +993,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color:
-                        const Color.fromARGB(255, 16, 92, 233).withOpacity(0.1),
+                    color: const Color.fromARGB(255, 16, 92, 233).withOpacity(isDarkMode ? 0.2 : 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -996,17 +1025,20 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
   }
 
   // Widget hỗ trợ
-  Widget _buildSupportSection() {
+  Widget _buildSupportSection(bool isDarkMode, Color cardColor, Color shadowColor) {
+    final sectionCardColor = isDarkMode ? const Color(0xFF2A2A2A) : cardColor;
+    
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 255, 255, 255),
+        color: sectionCardColor,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: isDarkMode ? const Color(0xFF3A3F55) : Colors.transparent),
         boxShadow: [
           BoxShadow(
-            color: const Color.fromARGB(255, 163, 163, 163).withOpacity(0.25),
+            color: shadowColor,
             spreadRadius: 2,
             blurRadius: 10,
             offset: const Offset(0, 4),
@@ -1026,7 +1058,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: Colors.green.withOpacity(isDarkMode ? 0.2 : 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -1059,6 +1091,8 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
 
   // Widget hiển thị ví của tôi
   Widget _buildWalletSection() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     // Chuyển đổi từ balanceWallet (double) sang định dạng hiển thị
     final balance = _balanceWallet;
     final formattedBalance = NumberFormat.currency(
@@ -1089,15 +1123,19 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
           width: double.infinity,
           padding: const EdgeInsets.all(16.0),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF3498DB), Color(0xFF2980B9)],
+            gradient: LinearGradient(
+              colors: isDarkMode 
+                  ? [const Color(0xFF1E3A8A), const Color(0xFF0D2B76)] 
+                  : [const Color(0xFF3498DB), const Color(0xFF2980B9)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF3498DB).withOpacity(0.3),
+                color: isDarkMode 
+                    ? Colors.black.withOpacity(0.4) 
+                    : const Color(0xFF3498DB).withOpacity(0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -1167,18 +1205,22 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
                             Icon(
                               Icons.add,
-                              color: Color(0xFF3498DB),
+                              color: isDarkMode 
+                                  ? const Color(0xFF1E3A8A) 
+                                  : const Color(0xFF3498DB),
                               size: 16,
                             ),
-                            SizedBox(width: 4),
+                            const SizedBox(width: 4),
                             Text(
                               'Nạp tiền',
                               style: TextStyle(
-                                color: Color(0xFF3498DB),
+                                color: isDarkMode 
+                                    ? const Color(0xFF1E3A8A) 
+                                    : const Color(0xFF3498DB),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                               ),

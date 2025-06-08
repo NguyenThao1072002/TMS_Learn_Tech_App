@@ -2,12 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tms_app/presentation/screens/my_account/setting/notification.dart';
 
 class NotificationScreen extends StatefulWidget {
-  final bool isDarkMode;
-
-  const NotificationScreen({
-    Key? key,
-    this.isDarkMode = false,
-  }) : super(key: key);
+  const NotificationScreen({Key? key}) : super(key: key);
 
   @override
   State<NotificationScreen> createState() => _NotificationScreenState();
@@ -141,9 +136,10 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   // Hiển thị popup tùy chọn cho thông báo
   void _showNotificationOptions(NotificationItem notification) {
-    final backgroundColor = widget.isDarkMode ? Colors.black : Colors.white;
-    final textColor = widget.isDarkMode ? Colors.white : Colors.black;
-    final dividerColor = widget.isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDarkMode ? Colors.black : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final dividerColor = isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300;
     
     showModalBottomSheet(
       context: context,
@@ -173,7 +169,7 @@ class _NotificationScreenState extends State<NotificationScreen>
               width: 50,
               margin: const EdgeInsets.only(bottom: 8),
               decoration: BoxDecoration(
-                color: widget.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -232,13 +228,14 @@ class _NotificationScreenState extends State<NotificationScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => NotificationSettingsScreen(isDarkMode: widget.isDarkMode),
+        builder: (context) => const NotificationSettingsScreen(),
       ),
     );
   }
 
   // Widget cho switch cài đặt
   Widget _buildSettingSwitch(String title, bool initialValue) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -247,7 +244,7 @@ class _NotificationScreenState extends State<NotificationScreen>
           Text(
             title,
             style: TextStyle(
-              color: widget.isDarkMode ? Colors.white : Colors.black,
+              color: isDarkMode ? Colors.white : Colors.black,
             ),
           ),
           Switch(
@@ -262,12 +259,13 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   // Widget hiển thị thông báo theo mỗi tab
   Widget _buildNotificationList(NotificationType? filterType) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     // Lọc thông báo theo loại nếu cần
     final filteredNotifications = filterType == null
         ? _notifications
         : _notifications.where((item) => item.type == filterType).toList();
 
-    final emptyTextColor = widget.isDarkMode ? Colors.grey.shade400 : Colors.grey;
+    final emptyTextColor = isDarkMode ? Colors.grey.shade400 : Colors.grey;
 
     if (filteredNotifications.isEmpty) {
       return Center(
@@ -296,7 +294,7 @@ class _NotificationScreenState extends State<NotificationScreen>
       itemCount: filteredNotifications.length,
       separatorBuilder: (context, index) => Divider(
         height: 1,
-        color: widget.isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+        color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
       ),
       itemBuilder: (context, index) {
         final notification = filteredNotifications[index];
@@ -307,13 +305,14 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   // Widget cho từng item thông báo
   Widget _buildNotificationItem(NotificationItem notification) {
-    final backgroundColor = widget.isDarkMode 
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDarkMode 
         ? (notification.isRead ? Colors.black : const Color(0xFF1A1A1A)) 
         : (notification.isRead ? Colors.white : Colors.blue.shade50);
     
-    final titleColor = widget.isDarkMode ? Colors.white : Colors.black;
-    final contentColor = widget.isDarkMode ? Colors.grey.shade300 : Colors.black87;
-    final metaTextColor = widget.isDarkMode ? Colors.grey.shade500 : Colors.grey;
+    final titleColor = isDarkMode ? Colors.white : Colors.black;
+    final contentColor = isDarkMode ? Colors.grey.shade300 : Colors.black87;
+    final metaTextColor = isDarkMode ? Colors.grey.shade500 : Colors.grey;
     
     return Container(
       color: backgroundColor,
@@ -326,7 +325,7 @@ class _NotificationScreenState extends State<NotificationScreen>
             leading: CircleAvatar(
               radius: 20,
               backgroundColor:
-                  _getNotificationTypeColor(notification.type).withOpacity(widget.isDarkMode ? 0.2 : 0.1),
+                  _getNotificationTypeColor(notification.type).withOpacity(isDarkMode ? 0.2 : 0.1),
               child: Icon(
                 _getNotificationTypeIcon(notification.type),
                 color: _getNotificationTypeColor(notification.type),
@@ -486,14 +485,17 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Lấy trạng thái dark mode từ Theme hiện tại
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     // Colors for dark and light mode
-    final backgroundColor = widget.isDarkMode ? Colors.black : Colors.grey.shade100;
-    final appBarColor = widget.isDarkMode ? Colors.black : Colors.white;
-    final textColor = widget.isDarkMode ? Colors.white : Colors.black;
-    final iconColor = widget.isDarkMode ? Colors.white : Colors.black;
-    final tabLabelColor = widget.isDarkMode ? Colors.white : Colors.black;
-    final tabUnselectedColor = widget.isDarkMode ? Colors.grey.shade600 : Colors.grey;
-    final indicatorColor = widget.isDarkMode ? Colors.blue : Colors.pinkAccent;
+    final backgroundColor = isDarkMode ? Colors.black : Colors.grey.shade100;
+    final appBarColor = isDarkMode ? Colors.black : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final iconColor = isDarkMode ? Colors.white : Colors.black;
+    final tabLabelColor = isDarkMode ? Colors.white : Colors.black;
+    final tabUnselectedColor = isDarkMode ? Colors.grey.shade600 : Colors.grey;
+    final indicatorColor = isDarkMode ? Colors.blue : Colors.pinkAccent;
     
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -550,7 +552,8 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   // Widget cho tab
   Widget _buildTab(String text, String count) {
-    final badgeColor = widget.isDarkMode ? const Color(0xFF2A2D3E) : Colors.orange;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final badgeColor = isDarkMode ? const Color(0xFF2A2D3E) : Colors.orange;
     final badgeTextColor = Colors.white;
     
     return Tab(

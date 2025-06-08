@@ -35,6 +35,14 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
   // Wallet balance
   final double _balance = 500000; // 500,000 VND
 
+  // Theme colors
+  late Color _backgroundColor;
+  late Color _cardColor;
+  late Color _textColor;
+  late Color _textSecondaryColor;
+  late Color _dividerColor;
+  late Color _shadowColor;
+
   // Mock transaction data
   final List<Transaction> _transactions = [
     Transaction(
@@ -103,27 +111,48 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
     },
   ];
 
+  void _initializeColors(bool isDarkMode) {
+    if (isDarkMode) {
+      _backgroundColor = const Color(0xFF121212);
+      _cardColor = const Color(0xFF1E1E1E);
+      _textColor = Colors.white;
+      _textSecondaryColor = Colors.white70;
+      _dividerColor = Colors.grey.shade800;
+      _shadowColor = Colors.black.withOpacity(0.3);
+    } else {
+      _backgroundColor = Colors.grey.shade100;
+      _cardColor = Colors.white;
+      _textColor = Colors.black;
+      _textSecondaryColor = Colors.grey.shade800;
+      _dividerColor = Colors.grey.shade200;
+      _shadowColor = Colors.grey.withOpacity(0.1);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    _initializeColors(isDarkMode);
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: _backgroundColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Ví của tôi',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: _textColor,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: _cardColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: _textColor),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.history, color: Colors.black),
+            icon: Icon(Icons.history, color: _textColor),
             onPressed: () {
               // Show detailed transaction history
             },
@@ -135,23 +164,23 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Balance card
-            _buildBalanceCard(),
+            _buildBalanceCard(isDarkMode),
 
             // Actions
-            _buildActionButtons(),
+            _buildActionButtons(isDarkMode),
 
             // Payment methods
-            _buildPaymentMethods(),
+            _buildPaymentMethods(isDarkMode),
 
             // Recent transactions
-            _buildRecentTransactions(),
+            _buildRecentTransactions(isDarkMode),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBalanceCard() {
+  Widget _buildBalanceCard(bool isDarkMode) {
     final formatter = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
 
     return Container(
@@ -166,7 +195,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3498DB).withOpacity(0.3),
+            color: const Color(0xFF3498DB).withOpacity(isDarkMode ? 0.4 : 0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -227,7 +256,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
     );
   }
 
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons(bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -238,8 +267,9 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
             label: 'Nạp tiền',
             color: Colors.green,
             onTap: () {
-              _showDepositDialog();
+              _showDepositDialog(isDarkMode);
             },
+            isDarkMode: isDarkMode,
           ),
           _buildActionButton(
             icon: Icons.send,
@@ -248,6 +278,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
             onTap: () {
               // Handle transfer action
             },
+            isDarkMode: isDarkMode,
           ),
           _buildActionButton(
             icon: Icons.qr_code_scanner,
@@ -256,6 +287,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
             onTap: () {
               // Handle scan action
             },
+            isDarkMode: isDarkMode,
           ),
           _buildActionButton(
             icon: Icons.receipt_long,
@@ -264,6 +296,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
             onTap: () {
               // Handle history action
             },
+            isDarkMode: isDarkMode,
           ),
         ],
       ),
@@ -275,6 +308,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
     required String label,
     required Color color,
     required VoidCallback onTap,
+    required bool isDarkMode,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -284,7 +318,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withOpacity(isDarkMode ? 0.2 : 0.1),
               borderRadius: BorderRadius.circular(15),
             ),
             child: Icon(
@@ -299,7 +333,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Colors.grey.shade800,
+              color: _textColor,
             ),
           ),
         ],
@@ -307,16 +341,16 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
     );
   }
 
-  Widget _buildPaymentMethods() {
+  Widget _buildPaymentMethods(bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: _shadowColor,
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -328,11 +362,12 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Phương thức thanh toán',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: _textColor,
                 ),
               )
             ],
@@ -345,9 +380,11 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
             itemBuilder: (context, index) {
               final method = _paymentMethods[index];
               return _buildPaymentMethodItem(
-                  name: method['name'],
-                  icon: method['icon'],
-                  color: method['color']);
+                name: method['name'],
+                icon: method['icon'],
+                color: method['color'],
+                isDarkMode: isDarkMode,
+              );
             },
           ),
         ],
@@ -359,13 +396,14 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
     required String name,
     required IconData icon,
     required Color color,
+    required bool isDarkMode,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: Colors.grey.shade200,
+            color: _dividerColor,
             width: 1,
           ),
         ),
@@ -376,7 +414,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withOpacity(isDarkMode ? 0.2 : 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -388,9 +426,10 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
           const SizedBox(width: 16),
           Text(
             name,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,
+              color: _textColor,
             ),
           ),
           const Spacer()
@@ -399,16 +438,16 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
     );
   }
 
-  Widget _buildRecentTransactions() {
+  Widget _buildRecentTransactions(bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: _shadowColor,
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -420,11 +459,12 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Giao dịch gần đây',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: _textColor,
                 ),
               ),
               TextButton(
@@ -442,7 +482,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
             itemCount: _transactions.length > 3 ? 3 : _transactions.length,
             itemBuilder: (context, index) {
               final transaction = _transactions[index];
-              return _buildTransactionItem(transaction);
+              return _buildTransactionItem(transaction, isDarkMode);
             },
           ),
         ],
@@ -450,7 +490,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
     );
   }
 
-  Widget _buildTransactionItem(Transaction transaction) {
+  Widget _buildTransactionItem(Transaction transaction, bool isDarkMode) {
     final formatter = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
     final dateFormat = DateFormat('dd/MM/yyyy');
 
@@ -459,7 +499,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: Colors.grey.shade200,
+            color: _dividerColor,
             width: 1,
           ),
         ),
@@ -471,8 +511,8 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
             height: 40,
             decoration: BoxDecoration(
               color: transaction.isIncome
-                  ? Colors.green.withOpacity(0.1)
-                  : Colors.red.withOpacity(0.1),
+                  ? Colors.green.withOpacity(isDarkMode ? 0.2 : 0.1)
+                  : Colors.red.withOpacity(isDarkMode ? 0.2 : 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -488,9 +528,10 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
               children: [
                 Text(
                   transaction.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
+                    color: _textColor,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -500,7 +541,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
                   dateFormat.format(transaction.date),
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey.shade600,
+                    color: _textSecondaryColor,
                   ),
                 ),
               ],
@@ -520,7 +561,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
     );
   }
 
-  void _showDepositDialog() {
+  void _showDepositDialog(bool isDarkMode) {
     final TextEditingController amountController = TextEditingController();
     String selectedMethod = 'momo';
 
@@ -530,24 +571,36 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text('Nạp tiền vào ví'),
+              backgroundColor: isDarkMode ? const Color(0xFF2A2D3E) : Colors.white,
+              title: Text(
+                'Nạp tiền vào ví',
+                style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
                     controller: amountController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87),
+                    decoration: InputDecoration(
                       labelText: 'Số tiền (VND)',
-                      border: OutlineInputBorder(),
+                      labelStyle: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black54),
+                      border: const OutlineInputBorder(),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Chọn phương thức thanh toán:',
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: 14,
+                      color: isDarkMode ? Colors.white : Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -566,11 +619,24 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
                                   setState(() => selectedMethod = value);
                               },
                               activeColor: Colors.pink,
+                              fillColor: MaterialStateProperty.resolveWith<Color>(
+                                (Set<MaterialState> states) {
+                                  if (states.contains(MaterialState.selected)) {
+                                    return Colors.pink;
+                                  }
+                                  return isDarkMode ? Colors.white70 : Colors.black54;
+                                },
+                              ),
                             ),
                             Icon(Icons.account_balance_wallet,
                                 color: Colors.pink, size: 20),
                             const SizedBox(width: 8),
-                            const Text('MoMo'),
+                            Text(
+                              'MoMo',
+                              style: TextStyle(
+                                color: isDarkMode ? Colors.white : Colors.black87,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -586,11 +652,24 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
                                   setState(() => selectedMethod = value);
                               },
                               activeColor: Colors.blue,
+                              fillColor: MaterialStateProperty.resolveWith<Color>(
+                                (Set<MaterialState> states) {
+                                  if (states.contains(MaterialState.selected)) {
+                                    return Colors.blue;
+                                  }
+                                  return isDarkMode ? Colors.white70 : Colors.black54;
+                                },
+                              ),
                             ),
                             Icon(Icons.wallet,
                                 color: Colors.blue.shade800, size: 20),
                             const SizedBox(width: 8),
-                            const Text('ZaloPay'),
+                            Text(
+                              'ZaloPay',
+                              style: TextStyle(
+                                color: isDarkMode ? Colors.white : Colors.black87,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -603,7 +682,10 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  child: const Text('Hủy'),
+                  child: Text(
+                    'Hủy',
+                    style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black54),
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: () async {

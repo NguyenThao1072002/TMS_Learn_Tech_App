@@ -10,6 +10,38 @@ class HelpAndSupportScreen extends StatefulWidget {
 }
 
 class _HelpAndSupportScreenState extends State<HelpAndSupportScreen> {
+  // Theme colors
+  late Color _backgroundColor;
+  late Color _cardColor;
+  late Color _textColor;
+  late Color _textSecondaryColor;
+  late Color _borderColor;
+  late Color _dividerColor;
+  late Color _searchBgColor;
+  late Color _shadowColor;
+  
+  void _initializeColors(bool isDarkMode) {
+    if (isDarkMode) {
+      _backgroundColor = const Color(0xFF121212);
+      _cardColor = const Color(0xFF1E1E1E);
+      _textColor = Colors.white;
+      _textSecondaryColor = Colors.grey.shade300;
+      _borderColor = Colors.grey.shade700;
+      _dividerColor = Colors.grey.shade800;
+      _searchBgColor = const Color(0xFF2A2D3E);
+      _shadowColor = Colors.black.withOpacity(0.3);
+    } else {
+      _backgroundColor = Colors.white;
+      _cardColor = Colors.white;
+      _textColor = Colors.black87;
+      _textSecondaryColor = Colors.grey.shade700;
+      _borderColor = Colors.grey.shade200;
+      _dividerColor = Colors.grey.shade200;
+      _searchBgColor = Colors.grey.shade100;
+      _shadowColor = Colors.black.withOpacity(0.1);
+    }
+  }
+
   // Dữ liệu cho FAQs
   final List<FAQItem> _faqItems = [
     FAQItem(
@@ -613,20 +645,24 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
 
   @override
   Widget build(BuildContext context) {
+    // Detect dark mode
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    _initializeColors(isDarkMode);
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: _backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: _backgroundColor,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Trung tâm trợ giúp',
           style: TextStyle(
-            color: Colors.black,
+            color: _textColor,
             fontWeight: FontWeight.w500,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          icon: Icon(Icons.arrow_back_ios, color: _textColor),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -678,7 +714,7 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color: Colors.blue.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.3 : 0.3),
             blurRadius: 10,
             spreadRadius: 1,
             offset: const Offset(0, 3),
@@ -768,19 +804,22 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
 
   // Widget hiển thị hộp tìm kiếm
   Widget _buildSearchBox() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: _searchBgColor,
         borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
+        style: TextStyle(color: _textColor),
         decoration: InputDecoration(
           hintText: 'Tìm kiếm câu hỏi, hướng dẫn...',
-          prefixIcon: const Icon(Icons.search, color: Colors.grey),
+          prefixIcon: Icon(Icons.search, color: isDarkMode ? Colors.grey.shade400 : Colors.grey),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 16),
-          hintStyle: TextStyle(color: Colors.grey.shade500),
+          hintStyle: TextStyle(color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade500),
         ),
       ),
     );
@@ -792,10 +831,10 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
       padding: const EdgeInsets.only(left: 16, top: 24, bottom: 12, right: 16),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: Colors.black87,
+          color: _textColor,
         ),
       ),
     );
@@ -803,6 +842,8 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
 
   // Widget hiển thị các phương thức liên hệ
   Widget _buildContactMethods() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       height: 120,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -818,12 +859,12 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
               margin: const EdgeInsets.only(right: 12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: _cardColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: _borderColor),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.shade100,
+                    color: _shadowColor,
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -836,9 +877,10 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
                   const SizedBox(height: 8),
                   Text(
                     method.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
+                      color: _textColor,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -846,7 +888,7 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
                     method.subtitle,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: _textSecondaryColor,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -861,15 +903,17 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
 
   // Widget hiển thị danh sách FAQ
   Widget _buildFAQList() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: _borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.shade100,
+            color: _shadowColor,
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -881,7 +925,7 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
         itemCount: _faqItems.length,
         separatorBuilder: (context, index) => Divider(
           height: 1,
-          color: Colors.grey.shade200,
+          color: _dividerColor,
         ),
         itemBuilder: (context, index) {
           return ExpansionTile(
@@ -893,14 +937,14 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
                 fontSize: 15,
                 fontWeight:
                     _expandedFlags[index] ? FontWeight.bold : FontWeight.normal,
-                color: Colors.black87,
+                color: _textColor,
               ),
             ),
             trailing: Icon(
               _expandedFlags[index]
                   ? Icons.keyboard_arrow_up
                   : Icons.keyboard_arrow_down,
-              color: Colors.grey,
+              color: isDarkMode ? Colors.grey.shade400 : Colors.grey,
             ),
             onExpansionChanged: (expanded) {
               setState(() {
@@ -914,7 +958,7 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
                   _faqItems[index].answer,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey.shade700,
+                    color: _textSecondaryColor,
                     height: 1.4,
                   ),
                 ),
@@ -928,6 +972,8 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
 
   // Widget hiển thị danh sách hướng dẫn
   Widget _buildGuidesList() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -935,12 +981,12 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
           return Container(
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: _cardColor,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: _borderColor),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.shade100,
+                  color: _shadowColor,
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -953,20 +999,28 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
                   padding: const EdgeInsets.all(16),
                   child: Text(
                     category.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
+                      color: _textColor,
                     ),
                   ),
                 ),
-                Divider(height: 1, color: Colors.grey.shade200),
+                Divider(height: 1, color: _dividerColor),
                 ...category.guides.map((guide) {
                   return ListTile(
                     title: Text(
                       guide.title,
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _textColor,
+                      ),
                     ),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                    trailing: Icon(
+                      Icons.arrow_forward_ios, 
+                      size: 14,
+                      color: isDarkMode ? Colors.grey.shade400 : Colors.grey,
+                    ),
                     onTap: () {
                       _showGuideDetailDialog(guide);
                     },
@@ -982,10 +1036,12 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
 
   // Hiển thị dialog hướng dẫn chi tiết
   void _showGuideDetailDialog(GuideItem guide) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: _backgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(20),
@@ -1007,7 +1063,7 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -1016,10 +1072,10 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
                 Container(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: _cardColor,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.shade200,
+                        color: _shadowColor,
                         offset: const Offset(0, 1),
                         blurRadius: 3,
                       ),
@@ -1030,7 +1086,7 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
+                          color: isDarkMode ? Colors.blue.shade900.withOpacity(0.3) : Colors.blue.shade50,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(Icons.menu_book,
@@ -1040,14 +1096,15 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
                       Expanded(
                         child: Text(
                           guide.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
+                            color: _textColor,
                           ),
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close, size: 20),
+                        icon: Icon(Icons.close, size: 20, color: _textColor),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         onPressed: () => Navigator.of(context).pop(),
@@ -1068,7 +1125,7 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
                 // Bottom padding để tránh các nút điều hướng
                 Container(
                   height: MediaQuery.of(context).padding.bottom,
-                  color: Colors.white,
+                  color: _cardColor,
                 ),
               ],
             );
@@ -1080,6 +1137,7 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
 
   // Widget để hiển thị nội dung markdown đơn giản
   Widget _buildMarkdownContent(String content) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final lines = content.split('\n');
     List<Widget> widgets = [];
 
@@ -1090,9 +1148,10 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
           padding: const EdgeInsets.only(bottom: 12),
           child: Text(
             line.substring(2),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
+              color: _textColor,
             ),
           ),
         ));
@@ -1102,10 +1161,10 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
           padding: const EdgeInsets.only(top: 8, bottom: 8),
           child: Text(
             line.substring(3),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.blue,
+              color: isDarkMode ? Colors.blue.shade300 : Colors.blue,
             ),
           ),
         ));
@@ -1116,11 +1175,11 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('• ', style: TextStyle(fontSize: 16)),
+              Text('• ', style: TextStyle(fontSize: 16, color: _textColor)),
               Expanded(
                 child: Text(
                   line.substring(2),
-                  style: const TextStyle(fontSize: 14),
+                  style: TextStyle(fontSize: 14, color: _textColor),
                 ),
               ),
             ],
@@ -1133,11 +1192,11 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('◦ ', style: TextStyle(fontSize: 14)),
+              Text('◦ ', style: TextStyle(fontSize: 14, color: _textSecondaryColor)),
               Expanded(
                 child: Text(
                   line.substring(4),
-                  style: const TextStyle(fontSize: 14),
+                  style: TextStyle(fontSize: 14, color: _textSecondaryColor),
                 ),
               ),
             ],
@@ -1152,7 +1211,7 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
           padding: const EdgeInsets.only(bottom: 8),
           child: Text(
             line,
-            style: const TextStyle(fontSize: 14),
+            style: TextStyle(fontSize: 14, color: _textColor),
           ),
         ));
       }
@@ -1170,9 +1229,11 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: Theme.of(context).brightness == Brightness.dark 
+            ? const Color(0xFF2A2D3E) 
+            : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: _borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1181,21 +1242,22 @@ Tận dụng các mã khuyến mãi và ưu đãi để tiết kiệm khi đăng
             children: [
               Icon(Icons.message, color: Colors.blue.shade700),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Gửi phản hồi của bạn',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: _textColor,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'Phản hồi của bạn giúp chúng tôi cải thiện dịch vụ hỗ trợ tốt hơn. Hãy chia sẻ ý kiến hoặc báo cáo vấn đề bạn gặp phải.',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.black87,
+              color: _textSecondaryColor,
             ),
           ),
           const SizedBox(height: 16),
@@ -1272,29 +1334,55 @@ Xin cảm ơn!
 
   // Hiển thị thông báo lỗi khi không thể mở ứng dụng email
   void _showEmailErrorDialog() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Không thể mở ứng dụng email'),
-        content: const Text(
-            'Không thể mở ứng dụng email trên thiết bị của bạn. Vui lòng gửi email trực tiếp đến địa chỉ tms.huit@gmail.com'),
+        backgroundColor: isDarkMode ? const Color(0xFF2A2D3E) : Colors.white,
+        title: Text(
+          'Không thể mở ứng dụng email',
+          style: TextStyle(color: _textColor),
+        ),
+        content: Text(
+          'Không thể mở ứng dụng email trên thiết bị của bạn. Vui lòng gửi email trực tiếp đến địa chỉ tms.huit@gmail.com',
+          style: TextStyle(color: _textSecondaryColor),
+        ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
             },
-            child: const Text('Đóng'),
+            child: Text(
+              'Đóng',
+              style: TextStyle(
+                color: isDarkMode ? Colors.blue.shade300 : Colors.blue,
+              ),
+            ),
           ),
           TextButton(
             onPressed: () {
               Clipboard.setData(
                   const ClipboardData(text: 'tms.huit@gmail.com'));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Đã sao chép địa chỉ email')),
+                SnackBar(
+                  content: Text(
+                    'Đã sao chép địa chỉ email',
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.white : null,
+                    ),
+                  ),
+                  backgroundColor: isDarkMode ? const Color(0xFF2A2D3E) : null,
+                ),
               );
               Navigator.of(context).pop();
             },
-            child: const Text('Sao chép địa chỉ email'),
+            child: Text(
+              'Sao chép địa chỉ email',
+              style: TextStyle(
+                color: isDarkMode ? Colors.blue.shade300 : Colors.blue,
+              ),
+            ),
           ),
         ],
       ),

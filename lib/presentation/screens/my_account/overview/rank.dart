@@ -63,10 +63,7 @@ class _RankScreenState extends State<RankScreen>
   final List<String> _tabs = ["Tuần này", "Tháng này", "Tổng"];
 
   // Gradient colors for various UI elements
-  final List<Color> _gradientColors = [
-    const Color(0xFF6448FE),
-    const Color(0xFF5FC6FF),
-  ];
+  late List<Color> _gradientColors;
 
   // Medal colors
   final Color _goldColor = const Color(0xFFFFD700);
@@ -74,11 +71,15 @@ class _RankScreenState extends State<RankScreen>
   final Color _bronzeColor = const Color(0xFFCD7F32);
 
   // Màu sắc nổi bật và đặc biệt cho UI
-  final Color _accentColor = const Color(0xFF5FC6FF);
-  final Color _secondaryAccentColor = const Color(0xFFFF5E84);
-  final Color _backgroundStartColor = const Color(0xFFF6F9FC);
-  final Color _backgroundEndColor = const Color(0xFFEDF1F7);
-  final Color _cardColor = Colors.white;
+  late Color _accentColor;
+  late Color _secondaryAccentColor;
+  late Color _backgroundStartColor;
+  late Color _backgroundEndColor;
+  late Color _cardColor;
+  late Color _textColor;
+  late Color _textSecondaryColor;
+  late Color _dividerColor;
+  late Color _shadowColor;
 
   // Thông tin điểm người dùng
   final int _userPoints = 250;
@@ -91,6 +92,9 @@ class _RankScreenState extends State<RankScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+
+    // Initialize colors with default values (light mode)
+    _initializeColors(false);
 
     // Generate mock data
     _generateMockData();
@@ -107,6 +111,37 @@ class _RankScreenState extends State<RankScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showCongratulationsDialog();
     });
+  }
+
+  void _initializeColors(bool isDarkMode) {
+    // Base gradient colors
+    _gradientColors = [
+      const Color(0xFF6448FE),
+      const Color(0xFF5FC6FF),
+    ];
+
+    // Theme-specific colors
+    _accentColor = const Color(0xFF5FC6FF);
+    _secondaryAccentColor = const Color(0xFFFF5E84);
+    
+    // Background colors
+    if (isDarkMode) {
+      _backgroundStartColor = const Color(0xFF121212);
+      _backgroundEndColor = const Color(0xFF1E1E1E);
+      _cardColor = const Color(0xFF2A2D3E);
+      _textColor = Colors.white;
+      _textSecondaryColor = Colors.white70;
+      _dividerColor = Colors.grey.shade800;
+      _shadowColor = Colors.black.withOpacity(0.3);
+    } else {
+      _backgroundStartColor = const Color(0xFFF6F9FC);
+      _backgroundEndColor = const Color(0xFFEDF1F7);
+      _cardColor = Colors.white;
+      _textColor = Colors.black87;
+      _textSecondaryColor = Colors.black54;
+      _dividerColor = Colors.grey.shade300;
+      _shadowColor = Colors.grey.withOpacity(0.1);
+    }
   }
 
   void _generateMockData() {
@@ -329,6 +364,12 @@ class _RankScreenState extends State<RankScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Check if dark mode is enabled
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    // Initialize colors based on theme
+    _initializeColors(isDarkMode);
+    
     return Scaffold(
       body: Stack(
         children: [
@@ -354,36 +395,36 @@ class _RankScreenState extends State<RankScreen>
                   SliverToBoxAdapter(
                     child: Column(
                       children: [
-                        _buildAppBar(),
+                        _buildAppBar(isDarkMode),
                         const SizedBox(height: 16),
-                        _buildPointsCard(),
+                        _buildPointsCard(isDarkMode),
                         const SizedBox(height: 20),
-                        _buildRewardsButton(),
+                        _buildRewardsButton(isDarkMode),
                         const SizedBox(height: 16),
                       ],
                     ),
                   ),
                   SliverPersistentHeader(
                     delegate: _SliverAppBarDelegate(
-                      child: _buildTabBar(),
+                      child: _buildTabBar(isDarkMode),
                     ),
                     pinned: true,
                     floating: true,
                   ),
                 ];
               },
-              body: _buildRankingsList(),
+              body: _buildRankingsList(isDarkMode),
             ),
           ),
 
           // Panel phần thưởng (hiển thị khi bấm nút phần thưởng)
-          if (_showRewardsPanel) _buildRewardsPanel(),
+          if (_showRewardsPanel) _buildRewardsPanel(isDarkMode),
         ],
       ),
     );
   }
 
-  Widget _buildAppBar() {
+  Widget _buildAppBar(bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       decoration: BoxDecoration(
@@ -413,7 +454,7 @@ class _RankScreenState extends State<RankScreen>
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDarkMode ? Colors.black26 : Colors.white,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
@@ -423,9 +464,9 @@ class _RankScreenState extends State<RankScreen>
                     ),
                   ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.arrow_back,
-                  color: Colors.black87,
+                  color: _textColor,
                 ),
               ),
             ),
@@ -468,14 +509,14 @@ class _RankScreenState extends State<RankScreen>
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Colors.white,
-                            const Color(0xFFF8F9FF),
+                            isDarkMode ? const Color(0xFF2A2D3E) : Colors.white,
+                            isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFF8F9FF),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: _shadowColor,
                             blurRadius: 15,
                             offset: const Offset(0, 5),
                           ),
@@ -546,11 +587,11 @@ class _RankScreenState extends State<RankScreen>
                             Container(
                               padding: const EdgeInsets.all(15),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: _cardColor,
                                 borderRadius: BorderRadius.circular(15),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.grey.withOpacity(0.1),
+                                    color: _shadowColor,
                                     blurRadius: 5,
                                     spreadRadius: 1,
                                     offset: const Offset(0, 2),
@@ -560,34 +601,23 @@ class _RankScreenState extends State<RankScreen>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Hệ thống học tập',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
+                                      color: _textColor,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  // const Text(
-                                  //   'Điểm được tính dựa trên hoạt động học tập của bạn:\n\n'
-                                  //   '• Hoàn thành bài học: +5 điểm\n'
-                                  //   '• Hoàn thành bài kiểm tra: +10 điểm\n'
-                                  //   '• Hoạt động liên tục 7 ngày: +30 điểm\n'
-                                  //   '• Hoàn thành khóa học: +100 điểm',
-                                  //   style: TextStyle(
-                                  //     fontSize: 14,
-                                  //     color: Colors.black54,
-                                  //   ),
-                                  // ),
-                                  // const SizedBox(height: 15),
-
+                                  
                                   // Cách tính điểm chi tiết với các icon
                                   _buildPointItem(
                                     icon: Icons.play_circle_filled,
                                     color: Colors.blue,
                                     title: 'Hoàn thành video bài học',
                                     points: '+5 điểm',
+                                    isDarkMode: isDarkMode,
                                   ),
                                   const SizedBox(height: 12),
                                   _buildPointItem(
@@ -595,6 +625,7 @@ class _RankScreenState extends State<RankScreen>
                                     color: Colors.orange,
                                     title: 'Hoàn thành bài kiểm tra',
                                     points: '+10 điểm',
+                                    isDarkMode: isDarkMode,
                                   ),
                                   const SizedBox(height: 12),
                                   _buildPointItem(
@@ -602,6 +633,7 @@ class _RankScreenState extends State<RankScreen>
                                     color: Colors.purple,
                                     title: 'Hoàn thành bài kiểm tra chương',
                                     points: '+30 điểm',
+                                    isDarkMode: isDarkMode,
                                   ),
                                   const SizedBox(height: 12),
                                   _buildPointItem(
@@ -609,6 +641,7 @@ class _RankScreenState extends State<RankScreen>
                                     color: Colors.green,
                                     title: 'Đạt điểm tuyệt đối (100%)',
                                     points: '+5 điểm bổ sung',
+                                    isDarkMode: isDarkMode,
                                   ),
                                   const SizedBox(height: 12),
                                   _buildPointItem(
@@ -616,6 +649,7 @@ class _RankScreenState extends State<RankScreen>
                                     color: Colors.red,
                                     title: 'Duy trì học tập 7 ngày liên tục',
                                     points: '+25 điểm',
+                                    isDarkMode: isDarkMode,
                                   ),
                                   const SizedBox(height: 12),
                                   _buildPointItem(
@@ -623,6 +657,7 @@ class _RankScreenState extends State<RankScreen>
                                     color: Colors.amber,
                                     title: 'Hoàn thành toàn bộ khóa học',
                                     points: '+100 điểm',
+                                    isDarkMode: isDarkMode,
                                   ),
                                 ],
                               ),
@@ -634,7 +669,9 @@ class _RankScreenState extends State<RankScreen>
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFF8E1),
+                                color: isDarkMode 
+                                    ? Colors.amber.withOpacity(0.1) 
+                                    : const Color(0xFFFFF8E1),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: Colors.amber.withOpacity(0.5),
@@ -649,12 +686,12 @@ class _RankScreenState extends State<RankScreen>
                                     size: 20,
                                   ),
                                   const SizedBox(width: 8),
-                                  const Expanded(
+                                  Expanded(
                                     child: Text(
                                       'Điểm xếp hạng được cập nhật hàng giờ. Duy trì học tập đều đặn để tăng điểm nhanh nhất!',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.black87,
+                                        color: _textColor,
                                       ),
                                     ),
                                   ),
@@ -698,19 +735,19 @@ class _RankScreenState extends State<RankScreen>
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDarkMode ? Colors.black26 : Colors.white,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: _secondaryAccentColor.withOpacity(0.2),
+                      color: _accentColor.withOpacity(0.2),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
                   ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.info_outline,
-                  color: Colors.black87,
+                  color: _textColor,
                 ),
               ),
             ),
@@ -720,7 +757,7 @@ class _RankScreenState extends State<RankScreen>
     );
   }
 
-  Widget _buildPointsCard() {
+  Widget _buildPointsCard(bool isDarkMode) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Stack(
@@ -859,7 +896,7 @@ class _RankScreenState extends State<RankScreen>
     );
   }
 
-  Widget _buildRewardsButton() {
+  Widget _buildRewardsButton(bool isDarkMode) {
     // Tìm reward phù hợp với rank hiện tại của người dùng
     final availableRewards = _rewards
         .where((reward) => reward.requiredRank >= _currentUserRank)
@@ -942,7 +979,7 @@ class _RankScreenState extends State<RankScreen>
     );
   }
 
-  Widget _buildTabBar() {
+  Widget _buildTabBar(bool isDarkMode) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -972,7 +1009,7 @@ class _RankScreenState extends State<RankScreen>
     );
   }
 
-  Widget _buildRankingsList() {
+  Widget _buildRankingsList(bool isDarkMode) {
     return Expanded(
       child: Scrollbar(
         thickness: 5,
@@ -980,16 +1017,16 @@ class _RankScreenState extends State<RankScreen>
         child: TabBarView(
           controller: _tabController,
           children: [
-            _buildRankingsTab(_weeklyRankings),
-            _buildRankingsTab(_monthlyRankings),
-            _buildRankingsTab(_allTimeRankings),
+            _buildRankingsTab(_weeklyRankings, isDarkMode),
+            _buildRankingsTab(_monthlyRankings, isDarkMode),
+            _buildRankingsTab(_allTimeRankings, isDarkMode),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRankingsTab(List<UserRankData> rankings) {
+  Widget _buildRankingsTab(List<UserRankData> rankings, bool isDarkMode) {
     // Find the current user's rank for highlighting
     final currentUserIndex = rankings.indexWhere((user) => user.isCurrentUser);
 
@@ -1024,7 +1061,7 @@ class _RankScreenState extends State<RankScreen>
               ],
             ),
             child: rankings.length >= 3
-                ? _buildPodium(rankings.take(3).toList())
+                ? _buildPodium(rankings.take(3).toList(), isDarkMode)
                 : const SizedBox(height: 20),
           ),
         ),
@@ -1062,7 +1099,7 @@ class _RankScreenState extends State<RankScreen>
 
                 final user = rankings[index];
 
-                return _buildRankItem(user);
+                return _buildRankItem(user, isDarkMode);
               },
               childCount: rankings.length,
             ),
@@ -1072,7 +1109,7 @@ class _RankScreenState extends State<RankScreen>
     );
   }
 
-  Widget _buildPodium(List<UserRankData> topThree) {
+  Widget _buildPodium(List<UserRankData> topThree, bool isDarkMode) {
     // Sort users by rank to ensure proper podium display
     topThree.sort((a, b) => a.rank.compareTo(b.rank));
 
@@ -1093,6 +1130,7 @@ class _RankScreenState extends State<RankScreen>
                 medalColor: const Color(0xFFC0C0C0),
                 podiumColor: const Color(0xFFE0E0E0),
                 rank: 2,
+                isDarkMode: isDarkMode,
               ),
 
               // 1st place
@@ -1103,6 +1141,7 @@ class _RankScreenState extends State<RankScreen>
                 medalColor: const Color(0xFFFFD700),
                 podiumColor: const Color(0xFFFFC107),
                 rank: 1,
+                isDarkMode: isDarkMode,
               ),
 
               // 3rd place
@@ -1113,6 +1152,7 @@ class _RankScreenState extends State<RankScreen>
                 medalColor: const Color(0xFFCD7F32),
                 podiumColor: const Color(0xFFBCAAA4),
                 rank: 3,
+                isDarkMode: isDarkMode,
               ),
             ],
           ),
@@ -1153,6 +1193,7 @@ class _RankScreenState extends State<RankScreen>
     required Color medalColor,
     required Color podiumColor,
     required int rank,
+    required bool isDarkMode,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1303,7 +1344,7 @@ class _RankScreenState extends State<RankScreen>
     );
   }
 
-  Widget _buildRankItem(UserRankData user) {
+  Widget _buildRankItem(UserRankData user, bool isDarkMode) {
     return Card(
       elevation: user.isCurrentUser ? 3 : 1,
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
@@ -1534,63 +1575,38 @@ class _RankScreenState extends State<RankScreen>
     required Color color,
     required String title,
     required String points,
+    required bool isDarkMode,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        // Tiêu đề với icon
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.visible,
-              ),
-            ),
-          ],
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(isDarkMode ? 0.2 : 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: color,
+            size: 16,
+          ),
         ),
-        // Điểm thưởng
-
-        Padding(
-          padding: const EdgeInsets.only(left: 40, top: 6, bottom: 6),
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 4,
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              color: _textColor,
             ),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              points,
-              style: TextStyle(
-                color: color,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.clip,
-            ),
+          ),
+        ),
+        Text(
+          points,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: color,
           ),
         ),
       ],
@@ -1825,7 +1841,7 @@ class _RankScreenState extends State<RankScreen>
   }
 
   // Hiển thị panel phần thưởng xếp hạng
-  Widget _buildRewardsPanel() {
+  Widget _buildRewardsPanel(bool isDarkMode) {
     // Phần thưởng cho các hạng khác nhau
     return Positioned.fill(
       child: GestureDetector(

@@ -235,16 +235,27 @@ class _MyCourseScreenState extends State<MyCourseScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Lấy trạng thái dark mode từ Theme hiện tại
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    // Colors based on dark mode
+    final backgroundColor = isDarkMode ? Colors.black : Colors.white;
+    final cardColor = isDarkMode ? const Color(0xFF1A1A1A) : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final secondaryTextColor = isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600;
+    final borderColor = isDarkMode ? const Color(0xFF3A3F55) : Colors.grey.shade200;
+    final searchBgColor = isDarkMode ? const Color(0xFF2A2D3E) : Colors.grey[100];
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: backgroundColor,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
+        iconTheme: IconThemeData(color: textColor),
+        title: Text(
           'Khóa học của tôi',
           style: TextStyle(
-            color: Colors.black,
+            color: textColor,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -253,7 +264,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
           child: TabBar(
             controller: _tabController,
             labelColor: Colors.orange,
-            unselectedLabelColor: Colors.grey,
+            unselectedLabelColor: isDarkMode ? Colors.grey.shade400 : Colors.grey,
             indicatorColor: Colors.orange,
             tabs: const [
               Tab(
@@ -277,7 +288,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
           // Search field
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: Colors.white,
+            color: backgroundColor,
             child: Row(
               children: [
                 // Search field
@@ -285,15 +296,17 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                   child: TextField(
                     decoration: InputDecoration(
                       hintText: 'Tìm kiếm khóa học...',
-                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                      hintStyle: TextStyle(color: secondaryTextColor),
+                      prefixIcon: Icon(Icons.search, color: secondaryTextColor),
                       filled: true,
-                      fillColor: Colors.grey[100],
+                      fillColor: searchBgColor,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
                       contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     ),
+                    style: TextStyle(color: textColor),
                     onChanged: (value) {
                       setState(() {
                         _searchQuery = value;
@@ -310,7 +323,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
           // Tab content
           Expanded(
             child: _isLoading
-                ? const Center(
+                ? Center(
                     child: CircularProgressIndicator(color: Colors.orange))
                 : PageView(
                     controller: _pageController,
@@ -343,19 +356,24 @@ class _MyCourseScreenState extends State<MyCourseScreen>
   }
 
   Widget _buildCoursesTab(List<MyCourseItem> courses) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final secondaryTextColor = isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600;
+    final emptyIconColor = isDarkMode ? Colors.grey[600] : Colors.grey[400];
+    
     if (courses.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.school_outlined, size: 60, color: Colors.grey[400]),
+            Icon(Icons.school_outlined, size: 60, color: emptyIconColor),
             const SizedBox(height: 16),
             Text(
               'Không có khóa học nào',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
-                color: Colors.grey[600],
+                color: secondaryTextColor,
               ),
             ),
           ],
@@ -384,7 +402,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
+                      color: textColor,
                     ),
                   ),
                   TextButton.icon(
@@ -407,7 +425,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
             ),
             // List of recently viewed lessons
             SizedBox(
-              height: 136,
+              height: 150,
               child: _myCourseController.isLoadingRecentLessons
                   ? Center(
                       child: CircularProgressIndicator(
@@ -420,7 +438,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                           child: Text(
                             'Bạn chưa xem bài học nào gần đây',
                             style: TextStyle(
-                              color: Colors.grey[600],
+                              color: secondaryTextColor,
                               fontSize: 14,
                             ),
                           ),
@@ -435,9 +453,9 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                           },
                         ),
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Divider(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Divider(color: isDarkMode ? const Color(0xFF3A3F55) : null),
             ),
             // All courses section
             Padding(
@@ -447,7 +465,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
+                  color: textColor,
                 ),
               ),
             ),
@@ -483,20 +501,29 @@ class _MyCourseScreenState extends State<MyCourseScreen>
 
   // Widget to display a recently viewed lesson
   Widget _buildRecentLessonItem(RecentLessonModel lesson) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDarkMode ? const Color(0xFF252525) : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final borderColor = isDarkMode ? const Color(0xFF3A3F55) : Colors.grey.withOpacity(0.15);
+    final placeholderColor = isDarkMode ? Colors.grey[800] : Colors.grey[300];
+    
     return Container(
       width: 180,
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.15),
+            color: isDarkMode 
+                ? Colors.black.withOpacity(0.3) 
+                : Colors.grey.withOpacity(0.15),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
         ],
+        border: isDarkMode ? Border.all(color: borderColor, width: 1) : null,
       ),
       child: InkWell(
         onTap: () => _navigateToRecentLesson(lesson),
@@ -518,13 +545,14 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
                     height: 80,
-                    color: Colors.grey[300],
+                    color: placeholderColor,
                     child: Center(
                       child: Text(
                         lesson.courseName.isNotEmpty ? lesson.courseName[0] : 'C',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
+                          color: textColor,
                         ),
                       ),
                     ),
@@ -534,20 +562,21 @@ class _MyCourseScreenState extends State<MyCourseScreen>
             ),
             // Lesson info
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(6.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     lesson.lessonTitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
+                      color: textColor,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Row(
                     children: [
                       Icon(
@@ -560,7 +589,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                         _myCourseController.formatDurationFromSeconds(lesson.duration),
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey[600],
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                         ),
                       ),
                     ],
@@ -612,196 +641,211 @@ class _MyCourseScreenState extends State<MyCourseScreen>
 
   // Widget to display a course in the list
   Widget _buildCourseListItem(MyCourseItem course) {
-    // Xác định tab hiện tại
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final bool isCompletedTab = _currentStatus == 'Completed';
     final bool isStudyingTab = _currentStatus == 'Studying';
+    
+    final cardColor = isDarkMode ? const Color(0xFF1A1A1A) : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final secondaryTextColor = isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600;
+    final placeholderColor = isDarkMode ? Colors.grey[800] : Colors.grey[300];
 
     return Card(
       margin: const EdgeInsets.only(bottom: 20),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      elevation: 4,
-      shadowColor: Colors.grey.withOpacity(0.3),
-      color: Colors.white,
+      elevation: isDarkMode ? 0 : 4,
+      shadowColor: isDarkMode ? Colors.transparent : Colors.grey.withOpacity(0.3),
+      color: cardColor,
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
           _navigateToCourseDetail(course);
         },
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              // Course image
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Stack(
-                  children: [
-                    Image.network(
-                      course.imageUrl,
-                      width: 120,
-                      height: 80,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 120,
-                          height: 80,
-                          color: Colors.grey[300],
-                          child: Center(
-                            child: Text(
-                              course.title.isNotEmpty ? course.title[0] : 'C',
-                              style: const TextStyle(
-                                fontSize: 30,
-                                fontWeight: FontWeight.bold,
+        child: Container(
+          decoration: isDarkMode ? BoxDecoration(
+            border: Border.all(color: const Color(0xFF3A3F55), width: 1),
+            borderRadius: BorderRadius.circular(12),
+          ) : null,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                // Course image
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Stack(
+                    children: [
+                      Image.network(
+                        course.imageUrl,
+                        width: 120,
+                        height: 80,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 120,
+                            height: 80,
+                            color: placeholderColor,
+                            child: Center(
+                              child: Text(
+                                course.title.isNotEmpty ? course.title[0] : 'C',
+                                style: TextStyle(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.bold,
+                                  color: textColor,
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
-                    // Badge for completed courses - only in completed tab
-                    if (isCompletedTab)
-                      Positioned(
-                        top: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Colors.green,
-                            borderRadius: BorderRadius.only(
-                              bottomLeft: Radius.circular(8),
+                          );
+                        },
+                      ),
+                      // Badge for completed courses - only in completed tab
+                      if (isCompletedTab)
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.green,
+                              borderRadius: BorderRadius.only(
+                                bottomLeft: Radius.circular(8),
+                              ),
                             ),
-                          ),
-                          child: const Icon(
-                            Icons.check_circle,
-                            color: Colors.white,
-                            size: 16,
+                            child: const Icon(
+                              Icons.check_circle,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              // Course info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      course.title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                const SizedBox(width: 16),
+                // Course info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        course.title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
+                      const SizedBox(height: 8),
 
-                    if (isCompletedTab)
-                      // Tab Hoàn thành
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Dòng 1: Hiển thị ngày hoàn thành
-                          Text(
-                            'Hoàn thành: ${_formatDate(course.completedDate)}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          // Dòng 2: Icon hoàn thành
-                          Row(
-                            children: [
-                              Icon(Icons.emoji_events,
-                                  color: Colors.amber[700], size: 20),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Hoàn thành 100%',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.green[700],
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      )
-                    else
-                      // Tab Đã đăng ký và Đang học
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // Hiển thị tên tác giả
-                          Text(
-                            'Tác giả: ${course.author}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          // Vòng tròn tiến trình
-                          CircularPercentIndicator(
-                            radius: 20.0,
-                            lineWidth: 4.0,
-                            percent:
-                                course.progress > 1.0 ? 1.0 : course.progress,
-                            center: Text(
-                              '${(course.progress * 100).clamp(0, 100).toInt()}%',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
+                      if (isCompletedTab)
+                        // Tab Hoàn thành
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Dòng 1: Hiển thị ngày hoàn thành
+                            Text(
+                              'Hoàn thành: ${_formatDate(course.completedDate)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: secondaryTextColor,
                               ),
                             ),
-                            progressColor:
-                                isStudyingTab ? Colors.orange : Colors.blue,
-                            backgroundColor: Colors.grey[300]!,
-                          ),
-                        ],
-                      ),
-
-                    // Chỉ hiển thị chứng chỉ trong tab hoàn thành
-                    if (isCompletedTab && course.certificateUrl != null)
-                      Container(
-                        margin: const EdgeInsets.only(top: 8),
-                        child: InkWell(
-                          onTap: () => _showCertificate(course.certificateUrl!),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade100,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
+                            const SizedBox(height: 6),
+                            // Dòng 2: Icon hoàn thành
+                            Row(
                               children: [
-                                Icon(
-                                  Icons.workspace_premium,
-                                  size: 16,
-                                  color: Colors.blue.shade800,
-                                ),
+                                Icon(Icons.emoji_events,
+                                    color: Colors.amber[700], size: 20),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Xem chứng chỉ',
+                                  'Hoàn thành 100%',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.blue.shade800,
-                                    fontWeight: FontWeight.w500,
+                                    color: Colors.green[700],
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ],
                             ),
+                          ],
+                        )
+                      else
+                        // Tab Đã đăng ký và Đang học
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Hiển thị tên tác giả
+                            Text(
+                              'Tác giả: ${course.author}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: secondaryTextColor,
+                              ),
+                            ),
+                            // Vòng tròn tiến trình
+                            CircularPercentIndicator(
+                              radius: 20.0,
+                              lineWidth: 4.0,
+                              percent:
+                                  course.progress > 1.0 ? 1.0 : course.progress,
+                              center: Text(
+                                '${(course.progress * 100).clamp(0, 100).toInt()}%',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: textColor,
+                                ),
+                              ),
+                              progressColor:
+                                  isStudyingTab ? Colors.orange : Colors.blue,
+                              backgroundColor: isDarkMode ? const Color(0xFF2A2D3E) : Colors.grey[300]!,
+                            ),
+                          ],
+                        ),
+
+                      // Chỉ hiển thị chứng chỉ trong tab hoàn thành
+                      if (isCompletedTab && course.certificateUrl != null)
+                        Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          child: InkWell(
+                            onTap: () => _showCertificate(course.certificateUrl!),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: isDarkMode ? Colors.blue.shade900 : Colors.blue.shade100,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.workspace_premium,
+                                    size: 16,
+                                    color: isDarkMode ? Colors.blue.shade300 : Colors.blue.shade800,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Xem chứng chỉ',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDarkMode ? Colors.blue.shade300 : Colors.blue.shade800,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1023,8 +1067,13 @@ class _MyCourseScreenState extends State<MyCourseScreen>
       context: context,
       barrierDismissible: true,
       builder: (BuildContext context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        final dialogBgColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+        final textColor = isDarkMode ? Colors.white : Colors.black87;
+        final dividerColor = isDarkMode ? const Color(0xFF3A3F55) : Colors.grey[300];
+
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: dialogBgColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
@@ -1048,7 +1097,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: textColor,
                       ),
                     ),
                   ],
@@ -1056,7 +1105,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                 const SizedBox(height: 16),
                 // Divider line
                 Divider(
-                  color: Colors.grey[300],
+                  color: dividerColor,
                   thickness: 1,
                 ),
                 const SizedBox(height: 16),
@@ -1238,72 +1287,79 @@ class _MyCourseScreenState extends State<MyCourseScreen>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
+      builder: (context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        final sheetBgColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+        final textColor = isDarkMode ? Colors.white : Colors.black87;
+        final dividerColor = isDarkMode ? const Color(0xFF3A3F55) : Colors.grey[300];
+
+        return Container(
+          decoration: BoxDecoration(
+            color: sheetBgColor,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
           ),
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Title with icon
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.lightbulb,
-                  color: Colors.orange,
-                  size: 28,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Khóa học được đề xuất',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Divider line
-            Divider(
-              color: Colors.grey[300],
-              thickness: 1,
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 250,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Title with icon
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildRecommendCourseCard(
-                    'Lập trình Web',
-                    'Học HTML, CSS, JavaScript và các framework hiện đại',
-                    Colors.blue,
+                  Icon(
+                    Icons.lightbulb,
+                    color: Colors.orange,
+                    size: 28,
                   ),
-                  _buildRecommendCourseCard(
-                    'Machine Learning cơ bản',
-                    'Giới thiệu về học máy và trí tuệ nhân tạo',
-                    Colors.green,
-                  ),
-                  _buildRecommendCourseCard(
-                    'Khoa học dữ liệu',
-                    'Phân tích và trực quan hóa dữ liệu với Python',
-                    Colors.purple,
+                  const SizedBox(width: 10),
+                  Text(
+                    'Khóa học được đề xuất',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-      ),
+              const SizedBox(height: 16),
+              // Divider line
+              Divider(
+                color: dividerColor,
+                thickness: 1,
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 250,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    _buildRecommendCourseCard(
+                      'Lập trình Web',
+                      'Học HTML, CSS, JavaScript và các framework hiện đại',
+                      Colors.blue,
+                    ),
+                    _buildRecommendCourseCard(
+                      'Machine Learning cơ bản',
+                      'Giới thiệu về học máy và trí tuệ nhân tạo',
+                      Colors.green,
+                    ),
+                    _buildRecommendCourseCard(
+                      'Khoa học dữ liệu',
+                      'Phân tích và trực quan hóa dữ liệu với Python',
+                      Colors.purple,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1378,10 +1434,16 @@ class _MyCourseScreenState extends State<MyCourseScreen>
       context: context,
       barrierDismissible: true,
       builder: (BuildContext context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        final dialogBgColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+        final textColor = isDarkMode ? Colors.white : Colors.black87;
+        final dividerColor = isDarkMode ? const Color(0xFF3A3F55) : Colors.grey[300];
+        final placeholderBgColor = isDarkMode ? const Color(0xFF2A2D3E) : Colors.grey[100];
+
         return Dialog(
           insetPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          backgroundColor: Colors.white,
+          backgroundColor: dialogBgColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -1416,13 +1478,13 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close, color: Colors.grey),
+                        icon: Icon(Icons.close, color: isDarkMode ? Colors.grey[400] : Colors.grey),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ],
                   ),
                 ),
-                Divider(color: Colors.grey[300], thickness: 1),
+                Divider(color: dividerColor, thickness: 1),
 
                 // Certificate image in a scrollable container
                 Flexible(
@@ -1433,16 +1495,19 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                           horizontal: 16, vertical: 12),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: isDarkMode ? const Color(0xFF2A2D3E) : Colors.white,
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.grey.withOpacity(0.2),
+                              color: isDarkMode 
+                                  ? Colors.black.withOpacity(0.3) 
+                                  : Colors.grey.withOpacity(0.2),
                               spreadRadius: 1,
                               blurRadius: 10,
                               offset: const Offset(0, 3),
                             ),
                           ],
+                          border: isDarkMode ? Border.all(color: const Color(0xFF3A3F55), width: 1) : null,
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
@@ -1450,26 +1515,27 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                               ? Container(
                                   height: 300,
                                   width: double.infinity,
-                                  color: Colors.grey[100],
+                                  color: placeholderBgColor,
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Icon(Icons.picture_as_pdf,
                                           size: 60, color: Colors.red[400]),
                                       const SizedBox(height: 16),
-                                      const Text(
+                                      Text(
                                         'Tài liệu PDF',
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w500,
+                                          color: textColor,
                                         ),
                                       ),
                                       const SizedBox(height: 8),
-                                      const Text(
+                                      Text(
                                         'Tải về để xem',
                                         style: TextStyle(
                                           fontSize: 14,
-                                          color: Colors.grey,
+                                          color: isDarkMode ? Colors.grey[400] : Colors.grey,
                                         ),
                                       ),
                                     ],
@@ -1502,7 +1568,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                                     return Container(
                                       height: 300,
                                       width: double.infinity,
-                                      color: Colors.grey[100],
+                                      color: placeholderBgColor,
                                       child: Column(
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
@@ -1510,11 +1576,12 @@ class _MyCourseScreenState extends State<MyCourseScreen>
                                           Icon(Icons.error_outline,
                                               size: 60, color: Colors.red[300]),
                                           const SizedBox(height: 16),
-                                          const Text(
+                                          Text(
                                             'Không thể tải chứng chỉ',
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w500,
+                                              color: textColor,
                                             ),
                                           ),
                                         ],
