@@ -51,4 +51,9 @@ class DocumentRepositoryImpl implements DocumentRepository {
   Future<bool> incrementView(int documentId) async {
     return await documentService.incrementView(documentId);
   }
+  
+  @override
+  Future<bool> trackDocumentDownload(int documentId) async {
+    return await documentService.trackDocumentDownload(documentId);
+  }
 }

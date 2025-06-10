@@ -11,8 +11,11 @@ import 'package:tms_app/data/repositories/my_course/course_progress_repository_i
 import 'package:tms_app/data/repositories/my_course/content_test_repository_impl.dart'; 
 import 'package:tms_app/data/repositories/my_course/comment_lession_repository_impl.dart'; 
 import 'package:tms_app/data/repositories/my_course/test_submission_repository_impl.dart'; 
-import 'package:tms_app/data/repositories/my_course/activate_course_repository_impl.dart'; 
+import 'package:tms_app/data/repositories/my_course/activate_course_repository_impl.dart';
+import 'package:tms_app/data/repositories/my_test/my_test_list_repository_impl.dart';
 import 'package:tms_app/data/repositories/payment_repository_impl.dart';
+import 'package:tms_app/data/repositories/payment/payment_history_repository_impl.dart';
+import 'package:tms_app/data/repositories/payment/wallet_transaction_repository_impl.dart';
 import 'package:tms_app/data/repositories/teaching_staff_repository_impl.dart'; 
 import 'package:tms_app/data/services/auth_service.dart'; 
 import 'package:tms_app/data/services/blog_service.dart';
@@ -26,7 +29,10 @@ import 'package:tms_app/data/services/my_course/course_progress_service.dart';
 import 'package:tms_app/data/services/my_course/content_test_service.dart'; 
 import 'package:tms_app/data/services/my_course/comment_lession_service.dart';
 import 'package:tms_app/data/services/my_course/activate_course_service.dart';
+import 'package:tms_app/data/services/my_test/my_test_list_service.dart';
 import 'package:tms_app/data/services/payment_service.dart';
+import 'package:tms_app/data/services/payment/payment_history_service.dart';
+import 'package:tms_app/data/services/payment/wallet_transaction_service.dart';
 import 'package:tms_app/data/services/teaching_staff/teaching_staff_service.dart';
 import 'package:tms_app/data/services/user_service.dart'; 
 import 'package:tms_app/data/repositories/account_repository_impl.dart';
@@ -43,7 +49,10 @@ import 'package:tms_app/domain/repositories/my_course/content_test_repository.da
 import 'package:tms_app/domain/repositories/my_course/comment_lession_repository.dart'; 
 import 'package:tms_app/domain/repositories/my_course/test_submission_repository.dart';
 import 'package:tms_app/domain/repositories/my_course/activate_course_repository.dart';
+import 'package:tms_app/domain/repositories/my_test/my_test_list_repository.dart';
 import 'package:tms_app/domain/repositories/payment_repository.dart';
+import 'package:tms_app/domain/repositories/payment/payment_history_repository.dart';
+import 'package:tms_app/domain/repositories/payment/wallet_transaction_repository.dart';
 import 'package:tms_app/domain/repositories/teaching_staff_repository.dart'; 
 import 'package:tms_app/domain/usecases/blog_usecase.dart';
 import 'package:tms_app/domain/usecases/cart_usecase.dart';
@@ -59,7 +68,10 @@ import 'package:tms_app/domain/usecases/my_course/content_test_usecase.dart';
 import 'package:tms_app/domain/usecases/my_course/comment_lession_usecase.dart'; 
 import 'package:tms_app/domain/usecases/my_course/test_submission_usecase.dart';
 import 'package:tms_app/domain/usecases/my_course/activate_course_usecase.dart'; 
+import 'package:tms_app/domain/usecases/my_test/my_test_list_usecase.dart';
 import 'package:tms_app/domain/usecases/payment_usecase.dart';
+import 'package:tms_app/domain/usecases/payment/payment_history_usecase.dart';
+import 'package:tms_app/domain/usecases/payment/wallet_transaction_history_usecase.dart';
 import 'package:tms_app/domain/usecases/register_usecase.dart';
 import 'package:tms_app/domain/usecases/update_account_usecase.dart';
 import 'package:tms_app/domain/usecases/overview_my_account_usecase.dart';
@@ -131,6 +143,14 @@ void _keepImports() {
   RecentLessonRepositoryImpl? t;
   RecentLessonRepository? u;
   RecentLessonUseCase? v;
+  MyTestListService? w;
+  MyTestListRepositoryImpl? x;
+  MyTestListRepository? y;
+  MyTestListUseCase? z;
+  PaymentHistoryService? aa;
+  PaymentHistoryRepositoryImpl? ab;
+  PaymentHistoryRepository? ac;
+  PaymentHistoryUseCase? ad;
   b;
   c;
   d;
@@ -152,6 +172,14 @@ void _keepImports() {
   t;
   u;
   v;
+  w;
+  x;
+  y;
+  z;
+  aa;
+  ab;
+  ac;
+  ad;
 }
 
 // Khởi tạo GetIt cho Dependency Injection
@@ -253,6 +281,8 @@ void _registerServices() {
   sl.registerLazySingleton(() => CommentLessonService(sl()));
   // Đăng ký ActivateCourseService
   sl.registerLazySingleton(() => ActivateCourseService(sl()));
+  // Đăng ký MyTestListService
+  sl.registerLazySingleton(() => MyTestListService(sl()));
   // Đăng ký PaymentService
   sl.registerLazySingleton(() => PaymentService(sl()));
   sl.registerLazySingleton(() => DiscountService(sl()));
@@ -266,6 +296,12 @@ void _registerServices() {
   sl.registerLazySingleton(() => TeachingStaffService(sl()));
   // Đăng ký RecentLessonService
   sl.registerLazySingleton(() => RecentLessonService(sl()));
+  
+  // Đăng ký PaymentHistoryService
+  sl.registerLazySingleton(() => PaymentHistoryService(sl()));
+  
+  // Đăng ký WalletTransactionService
+  sl.registerLazySingleton(() => WalletTransactionService(sl()));
 }
 
 // Đăng ký tất cả các Repository
@@ -325,6 +361,10 @@ void _registerRepositories() {
   // Đăng ký TestSubmissionRepository
   sl.registerLazySingleton<TestSubmissionRepository>(
       () => TestSubmissionRepositoryImpl(sl<CourseProgressService>()));
+      
+  // Đăng ký MyTestListRepository
+  sl.registerLazySingleton<MyTestListRepository>(
+      () => MyTestListRepositoryImpl(sl<MyTestListService>()));
 
   // Đăng ký PaymentRepository
   sl.registerLazySingleton<PaymentRepository>(
@@ -354,6 +394,16 @@ void _registerRepositories() {
   // Đăng ký ActivateCourseRepository
   sl.registerLazySingleton<ActivateCourseRepository>(
     () => ActivateCourseRepositoryImpl(activateCourseService: sl<ActivateCourseService>()),
+  );
+
+  // Đăng ký PaymentHistoryRepository
+  sl.registerLazySingleton<PaymentHistoryRepository>(
+    () => PaymentHistoryRepositoryImpl(sl<PaymentHistoryService>()),
+  );
+  
+  // Đăng ký WalletTransactionRepository
+  sl.registerLazySingleton<WalletTransactionRepository>(
+    () => WalletTransactionRepositoryImpl(sl<WalletTransactionService>()),
   );
 }
 
@@ -401,8 +451,17 @@ void _registerUseCases() {
   // Test Submission
   sl.registerLazySingleton(
       () => TestSubmissionUseCase(sl<TestSubmissionRepository>()));
+  // My Test List
+  sl.registerLazySingleton(
+      () => MyTestListUseCase(sl<MyTestListRepository>()));
   // Payment
   sl.registerLazySingleton(() => PaymentUseCase(sl<PaymentRepository>()));
+
+  // Payment History
+  sl.registerLazySingleton(() => PaymentHistoryUseCase(sl<PaymentHistoryRepository>()));
+  
+  // Wallet Transaction History
+  sl.registerLazySingleton(() => WalletTransactionHistoryUseCase(sl<WalletTransactionRepository>()));
 
   // UseCases
   sl.registerLazySingleton(

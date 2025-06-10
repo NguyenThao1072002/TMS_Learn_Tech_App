@@ -17,6 +17,7 @@ import 'package:tms_app/presentation/screens/my_account/checkout/cart.dart';
 import 'package:tms_app/presentation/screens/my_account/learning_result/learning_result.dart';
 import 'package:tms_app/presentation/screens/my_account/my_course/activate_course.dart';
 import 'package:tms_app/presentation/screens/my_account/overview/rank.dart';
+import 'package:tms_app/presentation/screens/my_account/my_test/my_test_list.dart';
 import 'package:tms_app/presentation/screens/my_account/chat.dart';
 import 'package:tms_app/core/di/service_locator.dart';
 import 'package:tms_app/domain/usecases/overview_my_account_usecase.dart';
@@ -795,6 +796,14 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
                       value: _totalDocument.toString(),
                       icon: Icons.description,
                       color: purpleColor,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MyTestListScreen(),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

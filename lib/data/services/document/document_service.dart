@@ -3,6 +3,7 @@ import 'package:tms_app/core/utils/constants.dart';
 import 'package:tms_app/core/utils/api_response_helper.dart';
 import 'package:tms_app/data/models/document/document_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tms_app/core/utils/shared_prefs.dart';
 
 class DocumentService {
   final String apiUrl = "${Constants.BASE_URL}/api";
@@ -241,5 +242,59 @@ class DocumentService {
   Future<String> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('jwt') ?? '';
+  }
+  
+  Future<bool> trackDocumentDownload(int documentId) async {
+    try {
+      final token = await _getToken();
+      final endpoint = '$apiUrl/document-account/download';
+
+      // Lấy accountId từ SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(SharedPrefs.KEY_USER_ID);
+      
+      // Chuyển userId từ string sang int
+      final accountId = int.tryParse(userId ?? '');
+      
+      if (accountId == null) {
+        print('Không tìm thấy accountId, không thể ghi nhận tải xuống');
+        return false;
+      }
+      
+      // Tạo ngày giờ hiện tại theo định dạng ISO
+      final now = DateTime.now().toIso8601String();
+
+      try {
+        final response = await dio.post(
+          endpoint,
+          data: {
+            'accountId': accountId,
+            'generalDocumentId': documentId,
+            'dateDownload': now
+          },
+          options: Options(
+            validateStatus: (status) => true,
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          ),
+        );
+
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          print('Đã ghi nhận tải xuống tài liệu thành công: $documentId');
+          return true;
+        } else {
+          print('Lỗi khi ghi nhận tải xuống: ${response.statusCode}, ${response.data}');
+          return false;
+        }
+      } on DioException catch (e) {
+        print('DioException khi ghi nhận tải tài liệu: ${e.message}');
+        return false;
+      }
+    } catch (e) {
+      print('Exception khi ghi nhận tải tài liệu: $e');
+      return false;
+    }
   }
 }
