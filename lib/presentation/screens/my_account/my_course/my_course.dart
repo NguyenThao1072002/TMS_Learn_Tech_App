@@ -425,7 +425,7 @@ class _MyCourseScreenState extends State<MyCourseScreen>
             ),
             // List of recently viewed lessons
             SizedBox(
-              height: 150,
+              height: 125,
               child: _myCourseController.isLoadingRecentLessons
                   ? Center(
                       child: CircularProgressIndicator(
