@@ -3,6 +3,7 @@ import 'package:tms_app/core/utils/constants.dart';
 import 'package:tms_app/core/utils/api_response_helper.dart';
 import 'package:tms_app/data/models/document/document_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tms_app/core/utils/shared_prefs.dart';
 
 class DocumentService {
   final String apiUrl = "${Constants.BASE_URL}/api";
@@ -126,7 +127,8 @@ class DocumentService {
 
   Future<List<DocumentModel>> searchDocuments(String keyword) async {
     try {
-      final endpoint = '$apiUrl/general_documents/public?keyword=$keyword';
+      final endpoint = '$apiUrl/general_documents/public?title=$keyword';
+      print('🔍 Tìm kiếm tài liệu: Gọi API với endpoint $endpoint');
 
       try {
         final response = await dio.get(endpoint,
@@ -136,15 +138,27 @@ class DocumentService {
             ));
 
         if (response.statusCode == 200) {
-          return ApiResponseHelper.processList(
+          print('🔍 Tìm kiếm thành công: ${response.statusCode}');
+          final results = ApiResponseHelper.processList(
               response.data, DocumentModel.fromJson);
+          print('🔍 Số tài liệu tìm thấy: ${results.length}');
+          
+          // In chi tiết mỗi tài liệu tìm thấy
+          for (var doc in results) {
+            print('🔍 - Tài liệu: ${doc.title} (${doc.format})');
+          }
+          
+          return results;
         } else {
+          print('🔍 Tìm kiếm thất bại: ${response.statusCode}, ${response.data}');
           return [];
         }
       } on DioException catch (e) {
+        print('🔍 Lỗi DioException: ${e.message}');
         return [];
       }
     } catch (e) {
+      print('🔍 Lỗi Exception: $e');
       return [];
     }
   }
@@ -241,5 +255,59 @@ class DocumentService {
   Future<String> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('jwt') ?? '';
+  }
+  
+  Future<bool> trackDocumentDownload(int documentId) async {
+    try {
+      final token = await _getToken();
+      final endpoint = '$apiUrl/document-account/download';
+
+      // Lấy accountId từ SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(SharedPrefs.KEY_USER_ID);
+      
+      // Chuyển userId từ string sang int
+      final accountId = int.tryParse(userId ?? '');
+      
+      if (accountId == null) {
+        print('Không tìm thấy accountId, không thể ghi nhận tải xuống');
+        return false;
+      }
+      
+      // Tạo ngày giờ hiện tại theo định dạng ISO
+      final now = DateTime.now().toIso8601String();
+
+      try {
+        final response = await dio.post(
+          endpoint,
+          data: {
+            'accountId': accountId,
+            'generalDocumentId': documentId,
+            'dateDownload': now
+          },
+          options: Options(
+            validateStatus: (status) => true,
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          ),
+        );
+
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          print('Đã ghi nhận tải xuống tài liệu thành công: $documentId');
+          return true;
+        } else {
+          print('Lỗi khi ghi nhận tải xuống: ${response.statusCode}, ${response.data}');
+          return false;
+        }
+      } on DioException catch (e) {
+        print('DioException khi ghi nhận tải tài liệu: ${e.message}');
+        return false;
+      }
+    } catch (e) {
+      print('Exception khi ghi nhận tải tài liệu: $e');
+      return false;
+    }
   }
 }

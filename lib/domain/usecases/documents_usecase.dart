@@ -41,4 +41,8 @@ class DocumentUseCase {
   Future<bool> incrementView(int documentId) async {
     return await repository.incrementView(documentId);
   }
+  
+  Future<bool> trackDocumentDownload(int documentId) async {
+    return await repository.trackDocumentDownload(documentId);
+  }
 }

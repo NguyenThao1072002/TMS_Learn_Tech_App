@@ -193,34 +193,34 @@ class _SettingsScreenState extends State<SettingsScreen>
                   },
                   isDarkMode: isDarkMode,
                 ),
-                _buildAnimatedSettingItem(
-                  context.tr('contactUs'),
-                  icon: Icons.phone_outlined,
-                  delay: 600,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const HelpAndSupportScreen(),
-                      ),
-                    );
-                  },
-                  isDarkMode: isDarkMode,
-                ),
-                _buildAnimatedSettingItem(
-                  context.tr('reportIssue'),
-                  icon: Icons.bug_report_outlined,
-                  delay: 700,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const HelpAndSupportScreen(),
-                      ),
-                    );
-                  },
-                  isDarkMode: isDarkMode,
-                ),
+                // _buildAnimatedSettingItem(
+                //   context.tr('contactUs'),
+                //   icon: Icons.phone_outlined,
+                //   delay: 600,
+                //   onTap: () {
+                //     Navigator.push(
+                //       context,
+                //       MaterialPageRoute(
+                //         builder: (context) => const HelpAndSupportScreen(),
+                //       ),
+                //     );
+                //   },
+                //   isDarkMode: isDarkMode,
+                // ),
+                // _buildAnimatedSettingItem(
+                //   context.tr('reportIssue'),
+                //   icon: Icons.bug_report_outlined,
+                //   delay: 700,
+                //   onTap: () {
+                //     Navigator.push(
+                //       context,
+                //       MaterialPageRoute(
+                //         builder: (context) => const HelpAndSupportScreen(),
+                //       ),
+                //     );
+                //   },
+                //   isDarkMode: isDarkMode,
+                // ),
 
                 // Nút đăng xuất với hiệu ứng ripple
                 _buildAnimatedLogoutButton(800),

@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:tms_app/presentation/screens/my_account/learning_result/course_result.dart';
+import 'package:tms_app/presentation/screens/my_account/learning_result/test_result_detail.dart';
+import 'package:tms_app/data/models/my_test/test_result_model.dart';
+import 'package:tms_app/domain/usecases/my_test/my_test_list_usecase.dart';
+import 'package:provider/provider.dart';
+import 'package:get_it/get_it.dart';
 import 'certificate.dart';
+import 'package:tms_app/domain/usecases/my_course/content_test_usecase.dart';
+import 'package:tms_app/presentation/screens/my_account/my_course/take_test.dart';
 
 class LearningResultScreen extends StatefulWidget {
   const LearningResultScreen({Key? key}) : super(key: key);
@@ -12,15 +19,205 @@ class LearningResultScreen extends StatefulWidget {
 class _LearningResultScreenState extends State<LearningResultScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final MyTestListUseCase _myTestListUseCase = GetIt.instance<MyTestListUseCase>();
+  final ContentTestUseCase _contentTestUseCase = GetIt.instance<ContentTestUseCase>();
+  
+  // Trạng thái cho tab kết quả bài thi
+  bool _isLoadingTestResults = false;
+  TestResultPaginatedData? _testResultData;
+  List<TestResultItem>? _testResultItems;
+  String _errorMessage = '';
+  int _accountId = 8; // ID mặc định, thay thế bằng ID thực từ hệ thống
+  
+  // Biến state kiểm soát việc sắp xếp
+  bool _isSortedByCompletion = false;
+
+  // Biến state để vô hiệu hóa nút khi đang làm lại bài thi
+  bool _isLoadingRetryTest = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _fetchTestResults();
+    
+    // Lắng nghe sự kiện thay đổi tab để tải lại dữ liệu nếu cần
+    _tabController.addListener(_handleTabChange);
+  }
+  
+  void _handleTabChange() {
+    if (_tabController.index == 1 && _testResultItems == null && !_isLoadingTestResults) {
+      _fetchTestResults();
+    }
+  }
+
+  // Lấy dữ liệu kết quả bài thi từ API
+  Future<void> _fetchTestResults() async {
+    if (_isLoadingTestResults) return;
+    
+    setState(() {
+      _isLoadingTestResults = true;
+      _errorMessage = '';
+    });
+    
+    try {
+      final result = await _myTestListUseCase.getTestResultsByAccountExam(
+        _accountId,
+        page: 0,
+        size: 20,
+      );
+      
+      setState(() {
+        _testResultData = result;
+        _testResultItems = List<TestResultItem>.from(result.content);
+        _isLoadingTestResults = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Không thể tải dữ liệu kết quả bài thi: $e';
+        _isLoadingTestResults = false;
+      });
+    }
+  }
+  
+  // Xem chi tiết kết quả thi
+  void _viewTestResultDetails(TestResultItem result) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TestResultDetailScreen(
+          testId: result.testId,
+          accountId: _accountId,
+          testTitle: result.testTitle,
+        ),
+      ),
+    );
+  }
+  
+  // Sắp xếp kết quả bài thi theo phần trăm hoàn thành
+  void _sortByCompletion() {
+    if (_testResultData == null) return;
+    
+    setState(() {
+      _isSortedByCompletion = !_isSortedByCompletion;
+      
+      if (_isSortedByCompletion) {
+        // Sử dụng phương thức từ UseCase để sắp xếp
+        _testResultItems = _myTestListUseCase.sortTestResultsByCompletion(_testResultData!);
+      } else {
+        // Khôi phục thứ tự ban đầu
+        _testResultItems = List<TestResultItem>.from(_testResultData!.content);
+      }
+    });
+  }
+
+  // Phương thức để làm lại bài thi
+  Future<void> _retryTest(TestResultItem result) async {
+    // Hiển thị hộp thoại xác nhận
+    final bool startTest = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        elevation: 24,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          result.testTitle,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.blue,
+          ),
+        ),
+        content: const Text(
+          'Bạn có chắc muốn làm lại bài kiểm tra này?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Hủy'),
+            style: TextButton.styleFrom(foregroundColor: Colors.grey),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Bắt đầu'),
+          ),
+        ],
+      ),
+    ) ?? false;
+
+    if (!startTest || !mounted) return;
+
+    // Bắt đầu lấy nội dung bài kiểm tra
+    setState(() {
+      _isLoadingRetryTest = true;
+    });
+
+    // Hiển thị dialog loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+        ),
+      ),
+    );
+
+    try {
+      // Lấy nội dung bài kiểm tra từ API
+      final contentTest = await _contentTestUseCase.getContentTest(result.testId);
+
+      // Đóng dialog loading
+      if (mounted) Navigator.pop(context);
+
+      // Điều hướng đến màn hình làm bài kiểm tra
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TakeTestScreen(
+              contentTest: contentTest,
+              contentTestUseCase: _contentTestUseCase,
+              onTestCompleted: (score) {
+                // Callback khi hoàn thành bài kiểm tra
+                debugPrint('Làm lại bài thi, điểm số: $score');
+                // Tải lại danh sách kết quả
+                _fetchTestResults();
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      // Đóng dialog loading
+      if (mounted) Navigator.pop(context);
+
+      // Hiển thị thông báo lỗi
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể tải nội dung bài kiểm tra: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingRetryTest = false;
+        });
+      }
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     super.dispose();
   }
@@ -222,70 +419,62 @@ class _LearningResultScreenState extends State<LearningResultScreen>
   }
 
   Widget _buildExamResultTab() {
-    // Dữ liệu mẫu cho kết quả bài thi
-    final examResults = [
-      {
-        'examName': 'Đề kiểm tra giữa kỳ Flutter',
-        'date': '10/05/2023',
-        'score': 85,
-        'maxScore': 100,
-        'time': '45 phút',
-        'status': 'Đạt',
-      },
-      {
-        'examName': 'Bài thi ReactJS',
-        'date': '02/04/2023',
-        'score': 92,
-        'maxScore': 100,
-        'time': '60 phút',
-        'status': 'Đạt',
-      },
-      {
-        'examName': 'Bài thi TOEIC 4 kỹ năng',
-        'date': '25/05/2023',
-        'score': 650,
-        'maxScore': 990,
-        'time': '120 phút',
-        'status': 'Đạt',
-      },
-      {
-        'examName': 'Kiểm tra JavaScript cơ bản',
-        'date': '15/03/2023',
-        'score': 65,
-        'maxScore': 100,
-        'time': '30 phút',
-        'status': 'Không đạt',
-      },
-    ];
+    // Hiển thị loading khi đang tải dữ liệu
+    if (_isLoadingTestResults) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
+    // Hiển thị thông báo lỗi nếu có
+    if (_errorMessage.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              _errorMessage,
+              style: const TextStyle(color: Colors.red),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _fetchTestResults,
+              child: const Text('Thử lại'),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Hiển thị thông báo nếu không có dữ liệu
+    if (_testResultItems == null || _testResultItems!.isEmpty) {
+      return const Center(
+        child: Text('Không có kết quả bài thi nào'),
+      );
+    }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: examResults.length,
-      itemBuilder: (context, index) {
-        final exam = examResults[index];
-        return _buildExamResultCard(
-          examName: exam['examName'] as String,
-          date: exam['date'] as String,
-          score: exam['score'] as int,
-          maxScore: exam['maxScore'] as int,
-          time: exam['time'] as String,
-          status: exam['status'] as String,
-        );
-      },
+    // Danh sách kết quả bài thi
+    return RefreshIndicator(
+      onRefresh: _fetchTestResults,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _testResultItems!.length,
+        itemBuilder: (context, index) {
+          final result = _testResultItems![index];
+          return _buildTestResultCard(result);
+        },
+      ),
     );
   }
-
-  Widget _buildExamResultCard({
-    required String examName,
-    required String date,
-    required int score,
-    required int maxScore,
-    required String time,
-    required String status,
-  }) {
-    final bool isPassed = status == 'Đạt';
-    final double percentage = score / maxScore * 100;
-
+  
+  Widget _buildTestResultCard(TestResultItem result) {
+    // Tính toán trạng thái đạt/không đạt dựa vào hoàn thành
+    final bool isPassed = result.completedPercentage >= 50;
+    final String status = isPassed ? 'Đạt' : 'Không đạt';
+    
+    // Format ngày tháng
+    final dateTime = result.createdAt;
+    final formattedDate = '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
@@ -301,7 +490,7 @@ class _LearningResultScreenState extends State<LearningResultScreen>
               children: [
                 Expanded(
                   child: Text(
-                    examName,
+                    result.testTitle,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -334,15 +523,15 @@ class _LearningResultScreenState extends State<LearningResultScreen>
             const SizedBox(height: 16),
             Row(
               children: [
-                _buildCircularProgress(percentage),
+                _buildCircularProgress(result.completedPercentage),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildInfoRow("Điểm số:", "$score/$maxScore"),
-                      _buildInfoRow("Ngày thi:", date),
-                      _buildInfoRow("Thời gian:", time),
+                      _buildInfoRow("Điểm số:", "${result.maxScore}"),
+                      _buildInfoRow("Ngày thi:", formattedDate),
+                      _buildInfoRow("Mã bài thi:", "#${result.testResultId}"),
                     ],
                   ),
                 ),
@@ -353,7 +542,7 @@ class _LearningResultScreenState extends State<LearningResultScreen>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 OutlinedButton.icon(
-                  onPressed: () {},
+                  onPressed: () => _viewTestResultDetails(result),
                   icon: const Icon(Icons.bar_chart, size: 18),
                   label: const Text("Chi tiết"),
                   style: OutlinedButton.styleFrom(
@@ -365,7 +554,7 @@ class _LearningResultScreenState extends State<LearningResultScreen>
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: () {},
+                  onPressed: _isLoadingRetryTest ? null : () => _retryTest(result),
                   icon: const Icon(Icons.refresh, size: 18),
                   label: const Text("Làm lại"),
                   style: TextButton.styleFrom(

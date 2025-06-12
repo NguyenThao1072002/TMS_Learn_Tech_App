@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tms_app/core/di/service_locator.dart';
+import 'package:tms_app/data/models/payment/wallet_transaction_model.dart';
+import 'package:tms_app/domain/usecases/payment/wallet_transaction_history_usecase.dart';
 import 'package:tms_app/presentation/screens/my_account/checkout/payment.dart';
+import 'package:tms_app/data/services/payment/wallet_transaction_service.dart';
 
 class Transaction {
   final String id;
@@ -25,7 +30,10 @@ class Transaction {
 }
 
 class MyWalletScreen extends StatefulWidget {
-  const MyWalletScreen({Key? key}) : super(key: key);
+  final double initialBalance;
+
+  const MyWalletScreen({Key? key, required this.initialBalance})
+      : super(key: key);
 
   @override
   State<MyWalletScreen> createState() => _MyWalletScreenState();
@@ -33,7 +41,11 @@ class MyWalletScreen extends StatefulWidget {
 
 class _MyWalletScreenState extends State<MyWalletScreen> {
   // Wallet balance
-  final double _balance = 500000; // 500,000 VND
+  double _balance = 0;
+  int _accountId = 0;
+  bool _isLoadingBalance = true;
+  bool _isLoadingTransactions = true;
+  String? _errorMessage;
 
   // Theme colors
   late Color _backgroundColor;
@@ -43,6 +55,9 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
   late Color _dividerColor;
   late Color _shadowColor;
 
+  // Transactions from API
+  List<WalletTransaction> _walletTransactions = [];
+  
   // Mock transaction data
   final List<Transaction> _transactions = [
     Transaction(
@@ -75,26 +90,6 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
       category: 'Đề thi',
       icon: Icons.quiz,
     ),
-    Transaction(
-      id: '4',
-      title: 'Hoàn tiền khóa học',
-      description: 'Hoàn tiền khóa học JavaScript',
-      amount: 120000,
-      date: DateTime.now().subtract(const Duration(days: 15)),
-      isIncome: true,
-      category: 'Hoàn tiền',
-      icon: Icons.replay,
-    ),
-    Transaction(
-      id: '5',
-      title: 'Nạp tiền vào tài khoản',
-      description: 'Nạp tiền qua ngân hàng VCB',
-      amount: 300000,
-      date: DateTime.now().subtract(const Duration(days: 20)),
-      isIncome: true,
-      category: 'Nạp tiền',
-      icon: Icons.add_circle,
-    ),
   ];
 
   // Payment methods
@@ -110,6 +105,89 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
       'color': Colors.blue.shade800,
     },
   ];
+
+  // Service instance
+  late final WalletTransactionService _walletTransactionService;
+
+  @override
+  void initState() {
+    super.initState();
+    _balance = widget.initialBalance;
+    _isLoadingBalance = false;
+
+    _walletTransactionService = sl<WalletTransactionService>();
+    _loadUserInfo();
+    _loadWalletTransactions();
+  }
+
+  // Tải thông tin người dùng
+  Future<void> _loadUserInfo() async {
+    try {
+      // Lấy accountId từ service
+      final accountId = await _walletTransactionService.getCurrentAccountId();
+
+      if (accountId == null) {
+        if (mounted) {
+          setState(() {
+            _errorMessage = "Không tìm thấy thông tin người dùng";
+          });
+        }
+        print('Không tìm thấy ID người dùng');
+        return;
+      }
+
+      if (mounted) {
+        setState(() {
+          _accountId = accountId;
+        });
+      }
+
+      print('Đã lấy được ID người dùng: $_accountId');
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = "Lỗi khi tải thông tin người dùng: $e";
+        });
+      }
+      print('Lỗi khi tải thông tin người dùng: $e');
+    }
+  }
+
+  // Tải lịch sử giao dịch ví
+  Future<void> _loadWalletTransactions() async {
+    try {
+      if (mounted) {
+        setState(() {
+          _isLoadingTransactions = true;
+          _errorMessage = null;
+        });
+      }
+
+      // Sử dụng phương thức mới từ service để lấy giao dịch của người dùng hiện tại
+      final response =
+          await _walletTransactionService.getCurrentUserWalletTransactions(
+        page: 0,
+        size: 5, // Chỉ lấy 5 giao dịch gần nhất
+      );
+
+      if (mounted) {
+        setState(() {
+          _walletTransactions = response.data.content;
+          _isLoadingTransactions = false;
+        });
+      }
+
+      print('Đã tải ${_walletTransactions.length} giao dịch ví');
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = "Lỗi khi tải lịch sử giao dịch ví: $e";
+          _isLoadingTransactions = false;
+        });
+      }
+      print('Lỗi khi tải lịch sử giao dịch ví: $e');
+    }
+  }
 
   void _initializeColors(bool isDarkMode) {
     if (isDarkMode) {
@@ -154,29 +232,47 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
           IconButton(
             icon: Icon(Icons.history, color: _textColor),
             onPressed: () {
-              // Show detailed transaction history
+              // Chưa có màn hình lịch sử giao dịch, hiển thị thông báo
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Tính năng đang được phát triển'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.refresh, color: _textColor),
+            onPressed: () {
+              _loadUserInfo();
+              _loadWalletTransactions();
             },
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Balance card
-            _buildBalanceCard(isDarkMode),
+      body: _errorMessage != null 
+        ? Center(
+            child: Text(
+              _errorMessage!,
+              style: TextStyle(color: Colors.red),
+              textAlign: TextAlign.center,
+            ),
+          )
+        : SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Balance card
+                _buildBalanceCard(isDarkMode),
 
-            // Actions
-            _buildActionButtons(isDarkMode),
+                // Payment methods
+                _buildPaymentMethods(isDarkMode),
 
-            // Payment methods
-            _buildPaymentMethods(isDarkMode),
-
-            // Recent transactions
-            _buildRecentTransactions(isDarkMode),
-          ],
-        ),
-      ),
+                // Recent transactions
+                _buildRecentTransactions(isDarkMode),
+              ],
+            ),
+          ),
     );
   }
 
@@ -223,118 +319,84 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            formatter.format(_balance),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          _isLoadingBalance
+              ? Container(
+                  height: 30,
+                  width: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                )
+              : Text(
+                  formatter.format(_balance),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
           const SizedBox(height: 20),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
+              const Text(
                 'TMS Wallet',
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
                 ),
               ),
-              Text(
-                '05/25',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
+              InkWell(
+                onTap: () {
+                  _showDepositDialog(isDarkMode);
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 5,
+                          offset: const Offset(0, 2),
+                        )
+                      ]),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.add_circle_outline,
+                        color: Colors.blue.shade800,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Nạp tiền',
+                        style: TextStyle(
+                          color: Colors.blue.shade800,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              )
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(bool isDarkMode) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildActionButton(
-            icon: Icons.add,
-            label: 'Nạp tiền',
-            color: Colors.green,
-            onTap: () {
-              _showDepositDialog(isDarkMode);
-            },
-            isDarkMode: isDarkMode,
-          ),
-          _buildActionButton(
-            icon: Icons.send,
-            label: 'Chuyển tiền',
-            color: Colors.blue,
-            onTap: () {
-              // Handle transfer action
-            },
-            isDarkMode: isDarkMode,
-          ),
-          _buildActionButton(
-            icon: Icons.qr_code_scanner,
-            label: 'Quét mã',
-            color: Colors.purple,
-            onTap: () {
-              // Handle scan action
-            },
-            isDarkMode: isDarkMode,
-          ),
-          _buildActionButton(
-            icon: Icons.receipt_long,
-            label: 'Lịch sử',
-            color: Colors.orange,
-            onTap: () {
-              // Handle history action
-            },
-            isDarkMode: isDarkMode,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-    required bool isDarkMode,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: color.withOpacity(isDarkMode ? 0.2 : 0.1),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 25,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: _textColor,
-            ),
           ),
         ],
       ),
@@ -469,30 +531,51 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
               ),
               TextButton(
                 onPressed: () {
-                  // Navigate to full transaction history
+                  // Hiển thị dialog với tất cả giao dịch
+                  _showAllTransactions(isDarkMode);
                 },
                 child: const Text('Xem tất cả'),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          ListView.builder(
-            physics: const NeverScrollableScrollPhysics(),
-            shrinkWrap: true,
-            itemCount: _transactions.length > 3 ? 3 : _transactions.length,
-            itemBuilder: (context, index) {
-              final transaction = _transactions[index];
-              return _buildTransactionItem(transaction, isDarkMode);
-            },
-          ),
+          _isLoadingTransactions
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            : _walletTransactions.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Text(
+                      'Chưa có giao dịch nào',
+                      style: TextStyle(color: _textSecondaryColor),
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  physics: const NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
+                  itemCount: _walletTransactions.length > 3 
+                    ? 3 
+                    : _walletTransactions.length,
+                  itemBuilder: (context, index) {
+                    final transaction = _walletTransactions[index];
+                    return _buildWalletTransactionItem(transaction, isDarkMode);
+                  },
+                ),
         ],
       ),
     );
   }
 
-  Widget _buildTransactionItem(Transaction transaction, bool isDarkMode) {
+  Widget _buildWalletTransactionItem(WalletTransaction transaction, bool isDarkMode) {
     final formatter = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
     final dateFormat = DateFormat('dd/MM/yyyy');
+    final isIncome = transaction.transactionType == "TOP_UP";
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -510,14 +593,14 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: transaction.isIncome
+              color: isIncome
                   ? Colors.green.withOpacity(isDarkMode ? 0.2 : 0.1)
                   : Colors.red.withOpacity(isDarkMode ? 0.2 : 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
-              transaction.icon,
-              color: transaction.isIncome ? Colors.green : Colors.red,
+              isIncome ? Icons.add_circle : Icons.shopping_cart,
+              color: isIncome ? Colors.green : Colors.red,
               size: 22,
             ),
           ),
@@ -527,7 +610,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  transaction.title,
+                  transaction.description,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
@@ -538,7 +621,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  dateFormat.format(transaction.date),
+                  dateFormat.format(transaction.transactionDate),
                   style: TextStyle(
                     fontSize: 13,
                     color: _textSecondaryColor,
@@ -549,11 +632,11 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
           ),
           const SizedBox(width: 8),
           Text(
-            '${transaction.isIncome ? '+' : '-'} ${formatter.format(transaction.amount)}',
+            '${isIncome ? '+' : ''} ${formatter.format(transaction.amount)}',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
-              color: transaction.isIncome ? Colors.green : Colors.red,
+              color: isIncome ? Colors.green : Colors.red,
             ),
           ),
         ],
@@ -753,5 +836,117 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
         backgroundColor: Colors.green,
       ),
     );
+  }
+
+  // Hiển thị tất cả giao dịch trong một dialog hoặc bottom sheet
+  void _showAllTransactions(bool isDarkMode) {
+    // Hiển thị bottom sheet trước để UX tốt hơn
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: _cardColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return DraggableScrollableSheet(
+            initialChildSize: 0.7,
+            maxChildSize: 0.9,
+            minChildSize: 0.5,
+            expand: false,
+            builder: (_, scrollController) {
+              return Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Lịch sử giao dịch ví',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: _textColor,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close, color: _textColor),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(color: _dividerColor),
+                  FutureBuilder<List<WalletTransaction>>(
+                    future: _loadAllTransactions(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Expanded(
+                          child: Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      } else if (snapshot.hasError) {
+                        return Expanded(
+                          child: Center(
+                            child: Text(
+                              'Đã xảy ra lỗi: ${snapshot.error}',
+                              style: TextStyle(color: Colors.red),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        );
+                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return Expanded(
+                          child: Center(
+                            child: Text(
+                              'Chưa có giao dịch nào',
+                              style: TextStyle(color: _textSecondaryColor),
+                            ),
+                          ),
+                        );
+                      } else {
+                        final transactions = snapshot.data!;
+                        return Expanded(
+                          child: ListView.separated(
+                            controller: scrollController,
+                            padding: const EdgeInsets.all(16.0),
+                            itemCount: transactions.length,
+                            separatorBuilder: (context, index) => Divider(color: _dividerColor),
+                            itemBuilder: (context, index) {
+                              final transaction = transactions[index];
+                              return _buildWalletTransactionItem(transaction, isDarkMode);
+                            },
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  // Tải tất cả giao dịch khi nhấn "Xem tất cả"
+  Future<List<WalletTransaction>> _loadAllTransactions() async {
+    try {
+      // Lấy 50 giao dịch gần nhất khi xem tất cả
+      final response = await _walletTransactionService.getCurrentUserWalletTransactions(
+        page: 0,
+        size: 50, // Lấy 50 giao dịch gần nhất
+      );
+      
+      return response.data.content;
+    } catch (e) {
+      print('Lỗi khi tải tất cả giao dịch: $e');
+      // Ném lỗi để FutureBuilder có thể bắt và hiển thị
+      throw Exception('Không thể tải lịch sử giao dịch: $e');
+    }
   }
 }

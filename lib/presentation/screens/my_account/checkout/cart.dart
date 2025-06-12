@@ -3231,7 +3231,7 @@ class _CartScreenState extends State<CartScreen> {
             ),
           ),
           actions: [
-            TextButton(
+            ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 // Vẫn chọn khóa học riêng lẻ theo ý người dùng
@@ -3239,20 +3239,16 @@ class _CartScreenState extends State<CartScreen> {
                   _selectedItems[courseItem.cartItemId] = true;
                 });
               },
-              child: const Text(
-                'Vẫn chọn khóa học này',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                minimumSize: const Size(double.infinity, 45),
               ),
-              child: const Text('Đóng'),
+              child: const Text(
+                'Vẫn chọn khóa học này',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ),
           ],
           actionsPadding:

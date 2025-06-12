@@ -201,40 +201,81 @@ class _DocumentListScreenState extends State<DocumentListScreen>
       delegate: UnifiedSearchDelegate(
         searchType: SearchType.document,
         onSearch: (query, type) {
-          searchController.search(query, type);
+          // Tìm kiếm theo tiêu đề tài liệu
+          print('Tìm kiếm tài liệu với từ khóa: "$query", trường: "title"');
+          searchController.searchByField(query, type, field: 'title');
         },
         itemBuilder: (context, item, type) {
           // Hiển thị kết quả tìm kiếm tài liệu
-          return ListTile(
-            title: Text(item.title ?? ''),
-            subtitle: Text('${item.format ?? ''} • ${item.view ?? 0} lượt xem'),
-            leading: item.imageUrl != null && item.imageUrl.isNotEmpty
-                ? Image.network(
-                    item.imageUrl,
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.picture_as_pdf, size: 50),
-                  )
-                : const Icon(Icons.picture_as_pdf, size: 50),
-            onTap: () {
-              // Đóng màn hình tìm kiếm và chuyển hướng đến chi tiết tài liệu
-              Navigator.pop(context);
-              if (item is DocumentModel) {
+          if (item is DocumentModel) {
+            final document = item;
+            return ListTile(
+              title: Text(
+                document.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              subtitle: Text(
+                '${document.format.toUpperCase()} • ${document.view} lượt xem • ${document.categoryName}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+              leading: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: _getColorForDocType(document.format),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Icon(
+                    _getDocumentIconData(document.format),
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                ),
+              ),
+              onTap: () {
+                // Đóng màn hình tìm kiếm và chuyển hướng đến chi tiết tài liệu
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => DocumentDetailScreen(document: item),
+                    builder: (context) => DocumentDetailScreen(document: document),
                   ),
                 );
-              }
-            },
+              },
+            );
+          }
+          return const ListTile(
+            title: Text('Kết quả không hợp lệ'),
           );
         },
         searchController: searchController,
       ),
     );
+  }
+
+  // Hàm trả về IconData dựa trên loại tài liệu
+  IconData _getDocumentIconData(String type) {
+    type = type.toLowerCase();
+    if (type == 'pdf') {
+      return Icons.picture_as_pdf;
+    } else if (type == 'excel' || type == 'xls' || type == 'xlsx') {
+      return Icons.table_chart;
+    } else if (type == 'word' || type == 'doc' || type == 'docx') {
+      return Icons.article;
+    } else if (type == 'ppt' || type == 'pptx') {
+      return Icons.slideshow;
+    } else {
+      return Icons.article;
+    }
   }
 
   void _showComprehensiveFilterDialog() {
@@ -631,46 +672,46 @@ class _DocumentListScreenState extends State<DocumentListScreen>
                                             ),
                                           ),
                                         ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(20.0),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                banner.title,
-                                                style: const TextStyle(
-                                                  fontSize: 20,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 8),
-                                              ElevatedButton(
-                                                onPressed: () {
-                                                  // Xử lý hành động khi click vào banner
-                                                  if (banner.link != null &&
-                                                      banner.link!.isNotEmpty) {
-                                                    // Mở link hoặc xử lý hành động tương ứng
-                                                  }
-                                                },
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: Colors.white,
-                                                  foregroundColor:
-                                                      const Color(0xFF5E35B1),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            20),
-                                                  ),
-                                                ),
-                                                child: const Text('Xem ngay'),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
+                                        // Padding(
+                                        //   padding: const EdgeInsets.all(20.0),
+                                        //   child: Column(
+                                        //     crossAxisAlignment:
+                                        //         CrossAxisAlignment.start,
+                                        //     mainAxisAlignment:
+                                        //         MainAxisAlignment.center,
+                                        //     children: [
+                                        //       Text(
+                                        //         banner.title,
+                                        //         style: const TextStyle(
+                                        //           fontSize: 20,
+                                        //           fontWeight: FontWeight.bold,
+                                        //           color: Colors.white,
+                                        //         ),
+                                        //       ),
+                                        //       const SizedBox(height: 8),
+                                        //       ElevatedButton(
+                                        //         onPressed: () {
+                                        //           // Xử lý hành động khi click vào banner
+                                        //           if (banner.link != null &&
+                                        //               banner.link!.isNotEmpty) {
+                                        //             // Mở link hoặc xử lý hành động tương ứng
+                                        //           }
+                                        //         },
+                                        //         style: ElevatedButton.styleFrom(
+                                        //           backgroundColor: Colors.white,
+                                        //           foregroundColor:
+                                        //               const Color(0xFF5E35B1),
+                                        //           shape: RoundedRectangleBorder(
+                                        //             borderRadius:
+                                        //                 BorderRadius.circular(
+                                        //                     20),
+                                        //           ),
+                                        //         ),
+                                        //         child: const Text('Xem ngay'),
+                                        //       ),
+                                        //     ],
+                                        //   ),
+                                        // ),
                                       ],
                                     ),
                                   );

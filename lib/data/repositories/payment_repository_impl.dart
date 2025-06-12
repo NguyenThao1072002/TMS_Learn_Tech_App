@@ -1,7 +1,10 @@
 import 'package:tms_app/data/models/payment/payment_request_model.dart';
 import 'package:tms_app/data/models/payment/payment_response_model.dart';
+import 'package:tms_app/data/models/payment/payment_gateway_request.dart';
+import 'package:tms_app/data/models/payment/payment_gateway_response.dart';
 import 'package:tms_app/data/services/payment_service.dart';
 import 'package:tms_app/domain/repositories/payment_repository.dart';
+import 'package:flutter/foundation.dart';
 
 class PaymentRepositoryImpl implements PaymentRepository {
   // Assuming you have a PaymentService that handles the actual API calls
@@ -35,5 +38,24 @@ class PaymentRepositoryImpl implements PaymentRepository {
   Future<ApiResponseWrapper<PaymentResponseModel>> createPayment(
       PaymentRequestModel request) async {
     return paymentService.createPaymentV2(request);
+  }
+  
+  @override
+  Future<PaymentGatewayResponse> processPaymentGateway(PaymentGatewayRequest request) async {
+    try {
+      debugPrint('Repository: Processing payment gateway for transaction ${request.transactionId}');
+      final response = await paymentService.processPaymentGateway(request);
+      
+      if (response.isSuccess) {
+        debugPrint('Repository: Payment gateway process successful');
+      } else {
+        debugPrint('Repository: Payment gateway process failed: ${response.message}');
+      }
+      
+      return response;
+    } catch (e) {
+      debugPrint('Repository: Error processing payment gateway: $e');
+      rethrow;
+    }
   }
 }
