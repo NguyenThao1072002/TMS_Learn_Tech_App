@@ -9,6 +9,7 @@ import 'package:tms_app/presentation/controller/practice_test_controller.dart';
 import 'package:tms_app/presentation/widgets/practice_test/related_practice_test.dart';
 import 'package:tms_app/presentation/widgets/practice_test/test_review_section.dart';
 import 'package:tms_app/presentation/screens/my_account/checkout/cart.dart';
+import 'package:tms_app/presentation/screens/my_account/my_test/my_test_list.dart';
 
 class PracticeTestDetailScreen extends StatefulWidget {
   final int testId;
@@ -431,11 +432,11 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                   onPressed: () {
                     // Start the test or purchase flow
                     if (test.purchased) {
-                      // Navigate to test taking screen
-                      _controller.startTest();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Bắt đầu làm bài thi...'),
+                      // Navigate to my test list screen instead of starting the test
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const MyTestListScreen(),
                         ),
                       );
                     } else if (test.price > 0) {
@@ -466,7 +467,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                   ),
                   child: Text(
                     test.purchased
-                        ? 'Làm bài ngay'
+                        ? 'Xem đề thi của tôi'
                         : test.price > 0
                             ? 'Mua ngay'
                             : 'Làm bài miễn phí',
@@ -499,35 +500,60 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
                 : Colors.green.withOpacity(0.3),
           ),
         ),
-        child: Row(
+        child: Column(
           children: [
-            const Icon(
-              Icons.check_circle,
-              color: Colors.green,
-              size: 28,
+            Row(
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  color: Colors.green,
+                  size: 28,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Bạn đã mua đề thi này',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.green,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Bạn có thể xem đề thi trong danh sách đề thi của mình',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDarkMode ? Colors.grey[300] : Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Bạn đã mua đề thi này',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.green,
-                    ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MyTestListScreen(),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Bạn có thể làm bài thi ngay bây giờ',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isDarkMode ? Colors.grey[300] : Colors.grey.shade700,
-                    ),
-                  ),
-                ],
+                );
+              },
+              icon: const Icon(Icons.list_alt),
+              label: const Text('Xem danh sách đề thi của tôi'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ],
@@ -618,7 +644,7 @@ class _PracticeTestDetailScreenState extends State<PracticeTestDetailScreen> {
             ),
             
             // Thêm nút Thêm vào giỏ hàng cho đề thi có phí
-            if (test.price > 0) ...[
+            if (test.price > 0 && !test.purchased) ...[
               const SizedBox(height: 20),
               Row(
                 children: [

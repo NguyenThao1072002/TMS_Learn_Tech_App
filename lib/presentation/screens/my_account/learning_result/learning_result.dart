@@ -6,6 +6,8 @@ import 'package:tms_app/domain/usecases/my_test/my_test_list_usecase.dart';
 import 'package:provider/provider.dart';
 import 'package:get_it/get_it.dart';
 import 'certificate.dart';
+import 'package:tms_app/domain/usecases/my_course/content_test_usecase.dart';
+import 'package:tms_app/presentation/screens/my_account/my_course/take_test.dart';
 
 class LearningResultScreen extends StatefulWidget {
   const LearningResultScreen({Key? key}) : super(key: key);
@@ -18,6 +20,7 @@ class _LearningResultScreenState extends State<LearningResultScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final MyTestListUseCase _myTestListUseCase = GetIt.instance<MyTestListUseCase>();
+  final ContentTestUseCase _contentTestUseCase = GetIt.instance<ContentTestUseCase>();
   
   // Trạng thái cho tab kết quả bài thi
   bool _isLoadingTestResults = false;
@@ -28,6 +31,9 @@ class _LearningResultScreenState extends State<LearningResultScreen>
   
   // Biến state kiểm soát việc sắp xếp
   bool _isSortedByCompletion = false;
+
+  // Biến state để vô hiệu hóa nút khi đang làm lại bài thi
+  bool _isLoadingRetryTest = false;
 
   @override
   void initState() {
@@ -103,6 +109,110 @@ class _LearningResultScreenState extends State<LearningResultScreen>
         _testResultItems = List<TestResultItem>.from(_testResultData!.content);
       }
     });
+  }
+
+  // Phương thức để làm lại bài thi
+  Future<void> _retryTest(TestResultItem result) async {
+    // Hiển thị hộp thoại xác nhận
+    final bool startTest = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        elevation: 24,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          result.testTitle,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.blue,
+          ),
+        ),
+        content: const Text(
+          'Bạn có chắc muốn làm lại bài kiểm tra này?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Hủy'),
+            style: TextButton.styleFrom(foregroundColor: Colors.grey),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Bắt đầu'),
+          ),
+        ],
+      ),
+    ) ?? false;
+
+    if (!startTest || !mounted) return;
+
+    // Bắt đầu lấy nội dung bài kiểm tra
+    setState(() {
+      _isLoadingRetryTest = true;
+    });
+
+    // Hiển thị dialog loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+        ),
+      ),
+    );
+
+    try {
+      // Lấy nội dung bài kiểm tra từ API
+      final contentTest = await _contentTestUseCase.getContentTest(result.testId);
+
+      // Đóng dialog loading
+      if (mounted) Navigator.pop(context);
+
+      // Điều hướng đến màn hình làm bài kiểm tra
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TakeTestScreen(
+              contentTest: contentTest,
+              contentTestUseCase: _contentTestUseCase,
+              onTestCompleted: (score) {
+                // Callback khi hoàn thành bài kiểm tra
+                debugPrint('Làm lại bài thi, điểm số: $score');
+                // Tải lại danh sách kết quả
+                _fetchTestResults();
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      // Đóng dialog loading
+      if (mounted) Navigator.pop(context);
+
+      // Hiển thị thông báo lỗi
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể tải nội dung bài kiểm tra: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingRetryTest = false;
+        });
+      }
+    }
   }
 
   @override
@@ -444,9 +554,7 @@ class _LearningResultScreenState extends State<LearningResultScreen>
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: () {
-                    // Chuyển đến trang làm lại bài thi
-                  },
+                  onPressed: _isLoadingRetryTest ? null : () => _retryTest(result),
                   icon: const Icon(Icons.refresh, size: 18),
                   label: const Text("Làm lại"),
                   style: TextButton.styleFrom(

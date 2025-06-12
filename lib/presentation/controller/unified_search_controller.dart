@@ -339,4 +339,84 @@ class UnifiedSearchController with ChangeNotifier {
     _limitedCourseResults.addAll(_fullCourseResults);
     notifyListeners();
   }
+
+  // Tìm kiếm theo trường cụ thể (ví dụ: title)
+  Future<void> searchByField(String query, SearchType searchType, {required String field}) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // Xử lý tùy theo loại tìm kiếm
+      switch (searchType) {
+        case SearchType.document:
+          await _searchDocumentsByField(query, field);
+          break;
+        case SearchType.course:
+          await _searchCoursesByField(query, field);
+          break;
+        case SearchType.blog:
+          await _searchBlogsByField(query, field);
+          break;
+        case SearchType.practiceTest:
+          await _searchPracticeTestsByField(query, field);
+          break;
+        case SearchType.all:
+          // Hiện tại chỉ hỗ trợ tìm kiếm tất cả như thông thường
+          await _searchAll(query);
+          break;
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+      print('Search by field error: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Tìm kiếm tài liệu theo trường cụ thể
+  Future<void> _searchDocumentsByField(String query, String field) async {
+    _documentResults.clear();
+    _fullDocumentResults.clear();
+    _limitedDocumentResults.clear();
+
+    // Gọi API tìm kiếm cơ bản với từ khóa 
+    print('⭐ Tìm kiếm tài liệu với field=$field, query=$query');
+    final results = await _documentUseCase.searchDocuments(query);
+    print('⭐ API trả về ${results.length} kết quả');
+
+    // Sử dụng trực tiếp kết quả từ API, không lọc thêm
+    _documentResults.addAll(results);
+    _fullDocumentResults.addAll(results);
+
+    // Giới hạn kết quả để hiển thị
+    if (_documentResults.length <= _searchPageLimit) {
+      _limitedDocumentResults.addAll(_documentResults);
+    } else {
+      _limitedDocumentResults.addAll(_documentResults.sublist(0, _searchPageLimit));
+    }
+    
+    print('⭐ Kết quả cuối cùng: ${_fullDocumentResults.length} tài liệu');
+  }
+
+  // Tìm kiếm khóa học theo trường cụ thể
+  Future<void> _searchCoursesByField(String query, String field) async {
+    // Hiện tại sử dụng phương thức tìm kiếm thông thường
+    // Có thể thay đổi trong tương lai để tìm theo trường cụ thể
+    await _searchCourses(query);
+  }
+
+  // Tìm kiếm blog theo trường cụ thể
+  Future<void> _searchBlogsByField(String query, String field) async {
+    // Hiện tại sử dụng phương thức tìm kiếm thông thường
+    // Có thể thay đổi trong tương lai để tìm theo trường cụ thể
+    await _searchBlogs(query);
+  }
+
+  // Tìm kiếm đề thi theo trường cụ thể
+  Future<void> _searchPracticeTestsByField(String query, String field) async {
+    // Hiện tại sử dụng phương thức tìm kiếm thông thường
+    // Có thể thay đổi trong tương lai để tìm theo trường cụ thể
+    await _searchPracticeTests(query);
+  }
 }

@@ -127,7 +127,8 @@ class DocumentService {
 
   Future<List<DocumentModel>> searchDocuments(String keyword) async {
     try {
-      final endpoint = '$apiUrl/general_documents/public?keyword=$keyword';
+      final endpoint = '$apiUrl/general_documents/public?title=$keyword';
+      print('🔍 Tìm kiếm tài liệu: Gọi API với endpoint $endpoint');
 
       try {
         final response = await dio.get(endpoint,
@@ -137,15 +138,27 @@ class DocumentService {
             ));
 
         if (response.statusCode == 200) {
-          return ApiResponseHelper.processList(
+          print('🔍 Tìm kiếm thành công: ${response.statusCode}');
+          final results = ApiResponseHelper.processList(
               response.data, DocumentModel.fromJson);
+          print('🔍 Số tài liệu tìm thấy: ${results.length}');
+          
+          // In chi tiết mỗi tài liệu tìm thấy
+          for (var doc in results) {
+            print('🔍 - Tài liệu: ${doc.title} (${doc.format})');
+          }
+          
+          return results;
         } else {
+          print('🔍 Tìm kiếm thất bại: ${response.statusCode}, ${response.data}');
           return [];
         }
       } on DioException catch (e) {
+        print('🔍 Lỗi DioException: ${e.message}');
         return [];
       }
     } catch (e) {
+      print('🔍 Lỗi Exception: $e');
       return [];
     }
   }

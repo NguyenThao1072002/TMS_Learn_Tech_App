@@ -339,87 +339,87 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                       const SizedBox(height: 20),
 
                       // Price range
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Khoảng giá',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: isDarkMode ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  decoration: InputDecoration(
-                                    labelText: 'Giá tối thiểu',
-                                    labelStyle: TextStyle(
-                                      color: isDarkMode ? Colors.grey[400] : null,
-                                    ),
-                                    border: OutlineInputBorder(),
-                                    prefix: Text('₫', style: TextStyle(color: isDarkMode ? Colors.white : null)),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
-                                    ),
-                                  ),
-                                  style: TextStyle(color: isDarkMode ? Colors.white : null),
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (value) {
-                                    if (value.isNotEmpty) {
-                                      setModalState(() {
-                                        tempMinPrice = double.tryParse(value);
-                                      });
-                                    } else {
-                                      setModalState(() {
-                                        tempMinPrice = null;
-                                      });
-                                    }
-                                  },
-                                  controller: TextEditingController(
-                                    text: tempMinPrice?.toString() ?? '',
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: TextField(
-                                  decoration: InputDecoration(
-                                    labelText: 'Giá tối đa',
-                                    labelStyle: TextStyle(
-                                      color: isDarkMode ? Colors.grey[400] : null,
-                                    ),
-                                    border: OutlineInputBorder(),
-                                    prefix: Text('₫', style: TextStyle(color: isDarkMode ? Colors.white : null)),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
-                                    ),
-                                  ),
-                                  style: TextStyle(color: isDarkMode ? Colors.white : null),
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (value) {
-                                    if (value.isNotEmpty) {
-                                      setModalState(() {
-                                        tempMaxPrice = double.tryParse(value);
-                                      });
-                                    } else {
-                                      setModalState(() {
-                                        tempMaxPrice = null;
-                                      });
-                                    }
-                                  },
-                                  controller: TextEditingController(
-                                    text: tempMaxPrice?.toString() ?? '',
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                      // Column(
+                      //   crossAxisAlignment: CrossAxisAlignment.start,
+                      //   children: [
+                      //     Text(
+                      //       'Khoảng giá',
+                      //       style: TextStyle(
+                      //         fontSize: 16,
+                      //         fontWeight: FontWeight.bold,
+                      //         color: isDarkMode ? Colors.white : Colors.black87,
+                      //       ),
+                      //     ),
+                      //     const SizedBox(height: 10),
+                      //     Row(
+                      //       children: [
+                      //         Expanded(
+                      //           child: TextField(
+                      //             decoration: InputDecoration(
+                      //               labelText: 'Giá tối thiểu',
+                      //               labelStyle: TextStyle(
+                      //                 color: isDarkMode ? Colors.grey[400] : null,
+                      //               ),
+                      //               border: OutlineInputBorder(),
+                      //               prefix: Text('₫', style: TextStyle(color: isDarkMode ? Colors.white : null)),
+                      //               enabledBorder: OutlineInputBorder(
+                      //                 borderSide: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
+                      //               ),
+                      //             ),
+                      //             style: TextStyle(color: isDarkMode ? Colors.white : null),
+                      //             keyboardType: TextInputType.number,
+                      //             onChanged: (value) {
+                      //               if (value.isNotEmpty) {
+                      //                 setModalState(() {
+                      //                   tempMinPrice = double.tryParse(value);
+                      //                 });
+                      //               } else {
+                      //                 setModalState(() {
+                      //                   tempMinPrice = null;
+                      //                 });
+                      //               }
+                      //             },
+                      //             controller: TextEditingController(
+                      //               text: tempMinPrice?.toString() ?? '',
+                      //             ),
+                      //           ),
+                      //         ),
+                      //         const SizedBox(width: 16),
+                      //         Expanded(
+                      //           child: TextField(
+                      //             decoration: InputDecoration(
+                      //               labelText: 'Giá tối đa',
+                      //               labelStyle: TextStyle(
+                      //                 color: isDarkMode ? Colors.grey[400] : null,
+                      //               ),
+                      //               border: OutlineInputBorder(),
+                      //               prefix: Text('₫', style: TextStyle(color: isDarkMode ? Colors.white : null)),
+                      //               enabledBorder: OutlineInputBorder(
+                      //                 borderSide: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
+                      //               ),
+                      //             ),
+                      //             style: TextStyle(color: isDarkMode ? Colors.white : null),
+                      //             keyboardType: TextInputType.number,
+                      //             onChanged: (value) {
+                      //               if (value.isNotEmpty) {
+                      //                 setModalState(() {
+                      //                   tempMaxPrice = double.tryParse(value);
+                      //                 });
+                      //               } else {
+                      //                 setModalState(() {
+                      //                   tempMaxPrice = null;
+                      //                 });
+                      //               }
+                      //             },
+                      //             controller: TextEditingController(
+                      //               text: tempMaxPrice?.toString() ?? '',
+                      //             ),
+                      //           ),
+                      //         ),
+                      //       ],
+                      //     ),
+                      //   ],
+                      // ),
                     ],
                   ),
                 ),

@@ -25,6 +25,8 @@ import 'package:tms_app/data/models/account/overview_my_account_model.dart';
 import 'package:tms_app/core/lifecycle_observer.dart';
 import 'package:intl/intl.dart';
 import 'package:tms_app/data/services/cart/cart_service.dart';
+import 'package:tms_app/presentation/screens/my_account/payment/payment_history_screen.dart';
+import 'package:tms_app/presentation/screens/my_account/setting/help_and_support.dart';
 // import 'package:tms_app/core/app_export.dart';
 
 class StatCard extends StatefulWidget {
@@ -600,8 +602,8 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
               // Kết quả học tập
               _buildLearningOutcomesSection(isDarkMode, cardColor, shadowColor),
 
-              // Lịch sử hoạt động
-              _buildActivityHistorySection(isDarkMode, cardColor, shadowColor),
+              // // Lịch sử hoạt động
+              // _buildActivityHistorySection(isDarkMode, cardColor, shadowColor),
 
               // Lịch sử thanh toán
               _buildPaymentHistorySection(isDarkMode, cardColor, shadowColor),
@@ -986,10 +988,22 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
       ),
       child: InkWell(
         onTap: () {
+          if (_accountOverview == null || _accountOverview!.accountId <= 0) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Không thể tải lịch sử giao dịch. Thông tin tài khoản chưa sẵn sàng.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+          
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const CartScreen(),
+              builder: (context) => PaymentHistoryScreen(
+                accountId: _accountOverview?.accountId ?? 0,
+              ),
             ),
           );
         },
@@ -1056,7 +1070,12 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
       ),
       child: InkWell(
         onTap: () {
-          // Add navigation when needed
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const HelpAndSupportScreen(),
+            ),
+          );
         },
         borderRadius: BorderRadius.circular(12),
         child: Row(
@@ -1121,7 +1140,9 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const MyWalletScreen(),
+              builder: (context) => MyWalletScreen(
+                initialBalance: _balanceWallet,
+              ),
             ),
           );
         },

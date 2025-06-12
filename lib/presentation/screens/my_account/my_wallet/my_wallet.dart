@@ -30,7 +30,10 @@ class Transaction {
 }
 
 class MyWalletScreen extends StatefulWidget {
-  const MyWalletScreen({Key? key}) : super(key: key);
+  final double initialBalance;
+
+  const MyWalletScreen({Key? key, required this.initialBalance})
+      : super(key: key);
 
   @override
   State<MyWalletScreen> createState() => _MyWalletScreenState();
@@ -109,6 +112,9 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
   @override
   void initState() {
     super.initState();
+    _balance = widget.initialBalance;
+    _isLoadingBalance = false;
+
     _walletTransactionService = sl<WalletTransactionService>();
     _loadUserInfo();
     _loadWalletTransactions();
@@ -117,65 +123,68 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
   // Tải thông tin người dùng
   Future<void> _loadUserInfo() async {
     try {
-      setState(() {
-        _isLoadingBalance = true;
-        _errorMessage = null;
-      });
-
       // Lấy accountId từ service
       final accountId = await _walletTransactionService.getCurrentAccountId();
-      
+
       if (accountId == null) {
-        setState(() {
-          _errorMessage = "Không tìm thấy thông tin người dùng";
-          _isLoadingBalance = false;
-        });
+        if (mounted) {
+          setState(() {
+            _errorMessage = "Không tìm thấy thông tin người dùng";
+          });
+        }
         print('Không tìm thấy ID người dùng');
         return;
       }
 
-      // Lấy thông tin tài khoản từ API
-      setState(() {
-        _accountId = accountId;
-        _balance = 500000; // Giá trị tạm thời, sẽ được thay thế bằng dữ liệu API thực tế
-        _isLoadingBalance = false;
-      });
-      
+      if (mounted) {
+        setState(() {
+          _accountId = accountId;
+        });
+      }
+
       print('Đã lấy được ID người dùng: $_accountId');
     } catch (e) {
-      setState(() {
-        _errorMessage = "Lỗi khi tải thông tin ví: $e";
-        _isLoadingBalance = false;
-      });
-      print('Lỗi khi tải thông tin ví: $e');
+      if (mounted) {
+        setState(() {
+          _errorMessage = "Lỗi khi tải thông tin người dùng: $e";
+        });
+      }
+      print('Lỗi khi tải thông tin người dùng: $e');
     }
   }
 
   // Tải lịch sử giao dịch ví
   Future<void> _loadWalletTransactions() async {
     try {
-      setState(() {
-        _isLoadingTransactions = true;
-        _errorMessage = null;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingTransactions = true;
+          _errorMessage = null;
+        });
+      }
 
       // Sử dụng phương thức mới từ service để lấy giao dịch của người dùng hiện tại
-      final response = await _walletTransactionService.getCurrentUserWalletTransactions(
+      final response =
+          await _walletTransactionService.getCurrentUserWalletTransactions(
         page: 0,
         size: 5, // Chỉ lấy 5 giao dịch gần nhất
       );
 
-      setState(() {
-        _walletTransactions = response.data.content;
-        _isLoadingTransactions = false;
-      });
+      if (mounted) {
+        setState(() {
+          _walletTransactions = response.data.content;
+          _isLoadingTransactions = false;
+        });
+      }
 
       print('Đã tải ${_walletTransactions.length} giao dịch ví');
     } catch (e) {
-      setState(() {
-        _errorMessage = "Lỗi khi tải lịch sử giao dịch ví: $e";
-        _isLoadingTransactions = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = "Lỗi khi tải lịch sử giao dịch ví: $e";
+          _isLoadingTransactions = false;
+        });
+      }
       print('Lỗi khi tải lịch sử giao dịch ví: $e');
     }
   }
@@ -256,9 +265,6 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
                 // Balance card
                 _buildBalanceCard(isDarkMode),
 
-                // Actions
-                _buildActionButtons(isDarkMode),
-
                 // Payment methods
                 _buildPaymentMethods(isDarkMode),
 
@@ -314,142 +320,83 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
           ),
           const SizedBox(height: 8),
           _isLoadingBalance
-            ? Container(
-                height: 30,
-                width: 120,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
+              ? Container(
+                  height: 30,
+                  width: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
+                )
+              : Text(
+                  formatter.format(_balance),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              )
-            : Text(
-                formatter.format(_balance),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
           const SizedBox(height: 20),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
+              const Text(
                 'TMS Wallet',
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
                 ),
               ),
-              Text(
-                '05/25',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
+              InkWell(
+                onTap: () {
+                  _showDepositDialog(isDarkMode);
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 5,
+                          offset: const Offset(0, 2),
+                        )
+                      ]),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.add_circle_outline,
+                        color: Colors.blue.shade800,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Nạp tiền',
+                        style: TextStyle(
+                          color: Colors.blue.shade800,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              )
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(bool isDarkMode) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildActionButton(
-            icon: Icons.add,
-            label: 'Nạp tiền',
-            color: Colors.green,
-            onTap: () {
-              _showDepositDialog(isDarkMode);
-            },
-            isDarkMode: isDarkMode,
-          ),
-          _buildActionButton(
-            icon: Icons.send,
-            label: 'Chuyển tiền',
-            color: Colors.blue,
-            onTap: () {
-              // Handle transfer action
-            },
-            isDarkMode: isDarkMode,
-          ),
-          _buildActionButton(
-            icon: Icons.qr_code_scanner,
-            label: 'Quét mã',
-            color: Colors.purple,
-            onTap: () {
-              // Handle scan action
-            },
-            isDarkMode: isDarkMode,
-          ),
-          _buildActionButton(
-            icon: Icons.receipt_long,
-            label: 'Lịch sử',
-            color: Colors.orange,
-            onTap: () {
-              // Chưa có màn hình lịch sử giao dịch, hiển thị thông báo
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Tính năng đang được phát triển'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            isDarkMode: isDarkMode,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-    required bool isDarkMode,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: color.withOpacity(isDarkMode ? 0.2 : 0.1),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 25,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: _textColor,
-            ),
           ),
         ],
       ),
@@ -685,7 +632,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
           ),
           const SizedBox(width: 8),
           Text(
-            '${isIncome ? '+' : '-'} ${formatter.format(transaction.amount)}',
+            '${isIncome ? '+' : ''} ${formatter.format(transaction.amount)}',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,

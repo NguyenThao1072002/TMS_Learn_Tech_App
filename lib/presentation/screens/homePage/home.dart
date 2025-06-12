@@ -134,7 +134,7 @@ class _HomePageState extends State<HomePage> {
                 // Thanh tìm kiếm và thông tin người dùng
                 const HomeUserHeader(),
                 // Khám phá nhanh
-                const HomeDiscoverWidget(),
+                // const HomeDiscoverWidget(),
                 // Banner
                 FutureBuilder<List<BannerModel>>(
                   future: bannersFuture,

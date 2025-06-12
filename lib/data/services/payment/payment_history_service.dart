@@ -39,18 +39,72 @@ class PaymentHistoryService {
     try {
       // Lấy header xác thực
       final headers = await _getAuthHeaders();
+      
+      // Log debugging info
+      print('Calling API for accountId: $accountId');
+      print('API URL: $baseUrl/payments/history/$accountId');
+      print('Headers: ${headers.toString()}');
 
       // Gọi API
       final response = await _dio.get(
         '$baseUrl/payments/history/$accountId',
         options: Options(headers: headers),
       );
+      
+      // Log response data for debugging
+      print('Response status code: ${response.statusCode}');
+      print('Response data type: ${response.data.runtimeType}');
+      print('Response data keys: ${response.data is Map ? (response.data as Map).keys.toList() : "Not a map"}');
+
+      // Validate response data
+      if (response.data == null) {
+        throw Exception('Response data is null');
+      }
+      
+      if (!(response.data is Map<String, dynamic>)) {
+        throw Exception('Response data is not a Map<String, dynamic>: ${response.data.runtimeType}');
+      }
+      
+      // Check required fields
+      final data = response.data as Map<String, dynamic>;
+      if (!data.containsKey('status')) {
+        throw Exception("Response missing 'status' field");
+      }
+      
+      if (!data.containsKey('message')) {
+        throw Exception("Response missing 'message' field");
+      }
+      
+      if (!data.containsKey('data')) {
+        throw Exception("Response missing 'data' field");
+      }
+      
+      // Extra handling for data field - ensure it's a list
+      final dataList = data['data'];
+      if (dataList == null) {
+        print('Warning: data is null, returning empty list');
+        return PaymentHistoryResponse(
+          status: data['status'] as int,
+          message: data['message'] as String,
+          data: [],
+        );
+      }
+      
+      if (!(dataList is List)) {
+        throw Exception("'data' field is not a List: ${dataList.runtimeType}");
+      }
 
       // Chuyển đổi dữ liệu
       return PaymentHistoryResponse.fromJson(response.data);
     } on DioException catch (e) {
+      print('DioException occurred: ${e.type}, message: ${e.message}');
+      if (e.response != null) {
+        print('Response status: ${e.response?.statusCode}');
+        print('Response data: ${e.response?.data}');
+      }
       throw _handleError(e);
     } catch (e) {
+      print('Generic exception caught: ${e.runtimeType} - $e');
       throw Exception('Đã xảy ra lỗi khi lấy lịch sử giao dịch: $e');
     }
   }

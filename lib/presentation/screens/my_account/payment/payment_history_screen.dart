@@ -63,7 +63,21 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
     });
 
     try {
+      // Debug info
+      debugPrint('Fetching payment history for accountId: ${widget.accountId}');
+      
+      if (widget.accountId <= 0) {
+        setState(() {
+          _errorMessage = 'ID tài khoản không hợp lệ';
+          _isLoading = false;
+        });
+        return;
+      }
+
       final payments = await _paymentHistoryUseCase.getPaymentHistory(widget.accountId);
+      
+      // Debug success
+      debugPrint('Successfully fetched ${payments.length} payment records');
 
       setState(() {
         _payments = payments;
@@ -71,8 +85,11 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      // Detailed error logging
+      debugPrint('Error fetching payment history: $e');
+      
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = 'Đã xảy ra lỗi khi lấy lịch sử giao dịch: $e';
         _isLoading = false;
       });
     }

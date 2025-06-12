@@ -52,35 +52,35 @@ class HomeAppBarWidget extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
-        IconButton(
-          icon: Icon(
-            Icons.search,
-            color: iconColor,
-            size: 26,
-          ),
-          onPressed: () {
-            final searchController =
-                Provider.of<UnifiedSearchController>(context, listen: false);
-            showSearch(
-              context: context,
-              delegate: UnifiedSearchDelegate(
-                searchType: SearchType.all,
-                onSearch: (query, type) {
-                  searchController.search(query, type);
-                },
-                itemBuilder: (context, item, type) {
-                  return ListTile(
-                    title: Text(item.toString()),
-                    onTap: () {
-                      // Xử lý khi người dùng nhấp vào một kết quả
-                    },
-                  );
-                },
-                searchController: searchController,
-              ),
-            );
-          },
-        ),
+        // IconButton(
+        //   icon: Icon(
+        //     Icons.search,
+        //     color: iconColor,
+        //     size: 26,
+        //   ),
+        //   onPressed: () {
+        //     final searchController =
+        //         Provider.of<UnifiedSearchController>(context, listen: false);
+        //     showSearch(
+        //       context: context,
+        //       delegate: UnifiedSearchDelegate(
+        //         searchType: SearchType.all,
+        //         onSearch: (query, type) {
+        //           searchController.search(query, type);
+        //         },
+        //         itemBuilder: (context, item, type) {
+        //           return ListTile(
+        //             title: Text(item.toString()),
+        //             onTap: () {
+        //               // Xử lý khi người dùng nhấp vào một kết quả
+        //             },
+        //           );
+        //         },
+        //         searchController: searchController,
+        //       ),
+        //     );
+        //   },
+        // ),
         Stack(
           children: [
             IconButton(
