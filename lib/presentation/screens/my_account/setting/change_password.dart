@@ -50,6 +50,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   // Lấy instance của LoginController để cập nhật mật khẩu đã lưu
   late final LoginController _loginController;
 
+  // Theme colors
+  late Color _backgroundColor;
+  late Color _cardColor;
+  late Color _textColor;
+  late Color _textSecondaryColor;
+  late Color _inputFillColor;
+  late Color _borderColor;
+  late Color _shadowColor;
+
   @override
   void initState() {
     super.initState();
@@ -58,6 +67,26 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
     // Khởi tạo login controller
     _loginController = LoginController(loginUseCase: sl());
+  }
+
+  void _initializeColors(bool isDarkMode) {
+    if (isDarkMode) {
+      _backgroundColor = const Color(0xFF121212);
+      _cardColor = const Color(0xFF1E1E1E);
+      _textColor = Colors.white;
+      _textSecondaryColor = Colors.grey.shade300;
+      _inputFillColor = const Color(0xFF2A2D3E);
+      _borderColor = Colors.grey.shade700;
+      _shadowColor = Colors.black.withOpacity(0.3);
+    } else {
+      _backgroundColor = Colors.white;
+      _cardColor = Colors.white;
+      _textColor = Colors.black87;
+      _textSecondaryColor = Colors.grey.shade700;
+      _inputFillColor = Colors.grey.withOpacity(0.05);
+      _borderColor = Colors.grey.shade300;
+      _shadowColor = Colors.black.withOpacity(0.1);
+    }
   }
 
   @override
@@ -188,6 +217,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   // Hiển thị dialog thông báo đổi mật khẩu thành công
   void _showChangePasswordSuccessDialog() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -201,11 +231,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDarkMode ? const Color(0xFF2A2D3E) : Colors.white,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: _shadowColor,
                   blurRadius: 10,
                   offset: const Offset(0, 5),
                 ),
@@ -230,23 +260,23 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 const SizedBox(height: 20),
 
                 // Tiêu đề
-                const Text(
+                Text(
                   'Đổi mật khẩu thành công! 🎉',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: _textColor,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 15),
 
                 // Nội dung
-                const Text(
+                Text(
                   'Mật khẩu mới của bạn đã được cập nhật.',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.black54,
+                    color: _textSecondaryColor,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -263,22 +293,22 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     ),
                   ),
                   child: Column(
-                    children: const [
+                    children: [
                       Text(
                         'Bạn sẽ được đưa về màn hình đăng nhập',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.black87,
+                          color: _textColor,
                           fontWeight: FontWeight.w500,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      SizedBox(height: 5),
+                      const SizedBox(height: 5),
                       Text(
                         'Vui lòng đăng nhập lại bằng mật khẩu mới.',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.black54,
+                          color: _textSecondaryColor,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -370,6 +400,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   // Hiển thị dialog thông báo đổi mật khẩu thất bại
   void _showChangePasswordFailedDialog({String? errorMessage}) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -382,11 +413,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDarkMode ? const Color(0xFF2A2D3E) : Colors.white,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: _shadowColor,
                   blurRadius: 10,
                   offset: const Offset(0, 5),
                 ),
@@ -411,12 +442,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 const SizedBox(height: 20),
 
                 // Tiêu đề
-                const Text(
+                Text(
                   'Oops! Có gì đó không ổn 😕',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: _textColor,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -426,9 +457,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 Text(
                   errorMessage ??
                       'Đổi mật khẩu không thành công. Vui lòng thử lại sau nhé!',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
-                    color: Colors.black54,
+                    color: _textSecondaryColor,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -466,17 +497,20 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    _initializeColors(isDarkMode);
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: _backgroundColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Đổi mật khẩu',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w500),
+          style: TextStyle(color: _textColor, fontWeight: FontWeight.w500),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: _backgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          icon: Icon(Icons.arrow_back_ios, color: _textColor),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -496,6 +530,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     description:
                         'Nhập mật khẩu hiện tại và mật khẩu mới để thay đổi mật khẩu đăng nhập của bạn.',
                     icon: Icons.lock_outline,
+                    isDarkMode: isDarkMode,
                   ),
                   const SizedBox(height: 24),
 
@@ -517,6 +552,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       }
                       return null;
                     },
+                    isDarkMode: isDarkMode,
                   ),
                   const SizedBox(height: 20),
 
@@ -547,6 +583,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     onChanged: (value) {
                       _checkPasswordStrength(value);
                     },
+                    isDarkMode: isDarkMode,
                   ),
 
                   // Thanh đánh giá độ mạnh mật khẩu
@@ -576,6 +613,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       }
                       return null;
                     },
+                    isDarkMode: isDarkMode,
                   ),
                   const SizedBox(height: 40),
 
@@ -614,7 +652,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   const SizedBox(height: 30),
 
                   // Hướng dẫn mật khẩu mạnh
-                  _buildPasswordTips(),
+                  _buildPasswordTips(isDarkMode),
                 ],
               ),
             ),
@@ -629,13 +667,20 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     required String title,
     required String description,
     required IconData icon,
+    required bool isDarkMode,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.05),
+        color: isDarkMode 
+            ? Colors.blue.withOpacity(0.1) 
+            : Colors.blue.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.withOpacity(0.1)),
+        border: Border.all(
+          color: isDarkMode 
+              ? Colors.blue.withOpacity(0.2) 
+              : Colors.blue.withOpacity(0.1)
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -643,7 +688,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
+              color: isDarkMode 
+                  ? Colors.blue.withOpacity(0.2) 
+                  : Colors.blue.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: Colors.blue, size: 24),
@@ -655,10 +702,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: _textColor,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -666,7 +713,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   description,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[700],
+                    color: _textSecondaryColor,
                   ),
                 ),
               ],
@@ -687,16 +734,17 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     String? errorText,
     String? Function(String?)? validator,
     Function(String)? onChanged,
+    required bool isDarkMode,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Colors.black87,
+            color: _textColor,
           ),
         ),
         const SizedBox(height: 8),
@@ -705,18 +753,19 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           obscureText: !isVisible,
           validator: validator,
           onChanged: onChanged,
+          style: TextStyle(color: _textColor),
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.grey.withOpacity(0.05),
+            fillColor: _inputFillColor,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade300),
+              borderSide: BorderSide(color: _borderColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade300),
+              borderSide: BorderSide(color: _borderColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
@@ -729,12 +778,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             suffixIcon: IconButton(
               icon: Icon(
                 isVisible ? Icons.visibility : Icons.visibility_off,
-                color: Colors.grey,
+                color: isDarkMode ? Colors.grey.shade400 : Colors.grey,
               ),
               onPressed: toggleVisibility,
             ),
             hintText: 'Nhập ${label.toLowerCase()}',
-            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+            hintStyle: TextStyle(
+              color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade400, 
+              fontSize: 14
+            ),
             errorText: isValid ? null : errorText,
           ),
         ),
@@ -778,7 +830,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 'Độ mạnh mật khẩu: ',
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.grey[700],
+                  color: _textSecondaryColor,
                 ),
               ),
               Text(
@@ -805,13 +857,19 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   }
 
   // Widget hiển thị tips mật khẩu mạnh
-  Widget _buildPasswordTips() {
+  Widget _buildPasswordTips(bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.05),
+        color: isDarkMode 
+            ? Colors.grey.withOpacity(0.1) 
+            : Colors.grey.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: isDarkMode 
+              ? Colors.grey.shade700 
+              : Colors.grey.shade200
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -831,18 +889,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          _buildTipItem('Sử dụng ít nhất 8 ký tự'),
-          _buildTipItem('Kết hợp chữ hoa và chữ thường'),
-          _buildTipItem('Bao gồm ít nhất một số'),
-          _buildTipItem('Thêm ký tự đặc biệt (!, @, #, \$, %, ^, &, *)'),
-          _buildTipItem('Không sử dụng thông tin cá nhân dễ đoán'),
+          _buildTipItem('Sử dụng ít nhất 8 ký tự', isDarkMode),
+          _buildTipItem('Kết hợp chữ hoa và chữ thường', isDarkMode),
+          _buildTipItem('Bao gồm ít nhất một số', isDarkMode),
+          _buildTipItem('Thêm ký tự đặc biệt (!, @, #, \$, %, ^, &, *)', isDarkMode),
+          _buildTipItem('Không sử dụng thông tin cá nhân dễ đoán', isDarkMode),
         ],
       ),
     );
   }
 
   // Widget hiển thị mỗi mẹo
-  Widget _buildTipItem(String tip) {
+  Widget _buildTipItem(String tip, bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -855,7 +913,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               tip,
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey[700],
+                color: _textSecondaryColor,
               ),
             ),
           ),

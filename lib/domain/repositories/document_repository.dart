@@ -18,4 +18,6 @@ abstract class DocumentRepository {
   Future<bool> incrementDownload(int documentId);
 
   Future<bool> incrementView(int documentId);
+  
+  Future<bool> trackDocumentDownload(int documentId);
 }

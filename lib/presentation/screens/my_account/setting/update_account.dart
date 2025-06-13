@@ -28,6 +28,15 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
       TextEditingController(text: 'Nam');
   final TextEditingController _birthdayController = TextEditingController();
 
+  // Theme colors
+  late Color _backgroundColor;
+  late Color _cardColor;
+  late Color _textColor;
+  late Color _textSecondaryColor;
+  late Color _inputFillColor;
+  late Color _borderColor;
+  late Color _shadowColor;
+
   // Biến để lưu trạng thái
   File? _profileImage;
   String? _currentImagePath;
@@ -36,6 +45,26 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
 
   // ImagePicker để chọn ảnh từ thư viện hoặc camera
   final ImagePicker _picker = ImagePicker();
+
+  void _initializeColors(bool isDarkMode) {
+    if (isDarkMode) {
+      _backgroundColor = const Color(0xFF121212);
+      _cardColor = const Color(0xFF1E1E1E);
+      _textColor = Colors.white;
+      _textSecondaryColor = Colors.grey.shade300;
+      _inputFillColor = const Color(0xFF2A2D3E);
+      _borderColor = Colors.grey.shade700;
+      _shadowColor = Colors.black.withOpacity(0.3);
+    } else {
+      _backgroundColor = Colors.white;
+      _cardColor = Colors.white;
+      _textColor = Colors.black87;
+      _textSecondaryColor = Colors.grey.shade700;
+      _inputFillColor = Colors.grey.withOpacity(0.05);
+      _borderColor = Colors.grey.shade300;
+      _shadowColor = Colors.black.withOpacity(0.1);
+    }
+  }
 
   @override
   void initState() {
@@ -128,18 +157,20 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
   }
 
   // Hiển thị dialog chọn ảnh
-  void _showImagePickerOptions() {
+  void _showImagePickerOptions(bool isDarkMode) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         margin: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDarkMode ? const Color(0xFF2A2D3E) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: isDarkMode 
+                  ? Colors.black.withOpacity(0.3) 
+                  : Colors.black.withOpacity(0.1),
               blurRadius: 10,
               spreadRadius: 1,
             ),
@@ -154,18 +185,19 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
               width: 50,
               margin: const EdgeInsets.only(top: 12, bottom: 8),
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
 
-            const Padding(
-              padding: EdgeInsets.all(16.0),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Text(
                 'Chọn ảnh đại diện',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : Colors.black,
                 ),
               ),
             ),
@@ -175,7 +207,10 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                 backgroundColor: Colors.blue,
                 child: Icon(Icons.photo_library, color: Colors.white),
               ),
-              title: const Text('Chọn từ thư viện'),
+              title: Text(
+                'Chọn từ thư viện', 
+                style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _pickImageFromGallery();
@@ -187,7 +222,10 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                 backgroundColor: Colors.green,
                 child: Icon(Icons.camera_alt, color: Colors.white),
               ),
-              title: const Text('Chụp ảnh mới'),
+              title: Text(
+                'Chụp ảnh mới',
+                style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _pickImageFromCamera();
@@ -200,7 +238,10 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                   backgroundColor: Colors.red,
                   child: Icon(Icons.delete, color: Colors.white),
                 ),
-                title: const Text('Xóa ảnh hiện tại'),
+                title: Text(
+                  'Xóa ảnh hiện tại',
+                  style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   setState(() {
@@ -343,6 +384,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
 
   // Hiển thị dialog thành công
   void _showSuccessDialog() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -356,11 +398,13 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDarkMode ? const Color(0xFF2A2D3E) : Colors.white,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: isDarkMode 
+                      ? Colors.black.withOpacity(0.3) 
+                      : Colors.black.withOpacity(0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 5),
                 ),
@@ -385,23 +429,23 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                 const SizedBox(height: 20),
 
                 // Tiêu đề
-                const Text(
+                Text(
                   'Cập nhật thành công! 🎉',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: isDarkMode ? Colors.white : Colors.black87,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 15),
 
                 // Nội dung
-                const Text(
+                Text(
                   'Thông tin tài khoản của bạn đã được cập nhật thành công.',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.black54,
+                    color: isDarkMode ? Colors.grey.shade300 : Colors.black54,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -440,21 +484,32 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
 
   // Phương thức để hiện cảnh báo khi có thay đổi chưa lưu
   void _showUnsavedChangesDialog() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: isDarkMode ? const Color(0xFF2A2D3E) : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        title: const Text('Thay đổi chưa được lưu'),
-        content: const Text(
-            'Bạn có thay đổi chưa được lưu. Bạn muốn thoát mà không lưu không?'),
+        title: Text(
+          'Thay đổi chưa được lưu',
+          style: TextStyle(
+            color: isDarkMode ? Colors.white : Colors.black87,
+          ),
+        ),
+        content: Text(
+          'Bạn có thay đổi chưa được lưu. Bạn muốn thoát mà không lưu không?',
+          style: TextStyle(
+            color: isDarkMode ? Colors.grey.shade300 : Colors.black87,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
+            child: Text(
               'Tiếp tục chỉnh sửa',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey),
             ),
           ),
           TextButton(
@@ -474,20 +529,24 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Detect dark mode
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    _initializeColors(isDarkMode);
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: _backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: _backgroundColor,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Cập nhật thông tin',
           style: TextStyle(
-            color: Colors.black,
+            color: _textColor,
             fontWeight: FontWeight.w500,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          icon: Icon(Icons.arrow_back_ios, color: _textColor),
           onPressed: () {
             // Kiểm tra nếu có thay đổi chưa lưu trước khi thoát
             if (_hasUnsavedChanges) {
@@ -504,13 +563,17 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
 
   // Phương thức hiển thị body của màn hình
   Widget _buildBody() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Obx(
       () {
         // Hiển thị loading khi đang tải dữ liệu
         if (_controller.isLoading.value &&
             _controller.userProfile.value == null) {
-          return const Center(
-            child: CircularProgressIndicator(),
+          return Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+            ),
           );
         }
 
@@ -523,11 +586,12 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
               children: [
                 const Icon(Icons.error_outline, color: Colors.red, size: 48),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Đã xảy ra lỗi',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
+                    color: _textColor,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -536,7 +600,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                   child: Text(
                     _controller.errorMessage.value,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey[700]),
+                    style: TextStyle(color: _textSecondaryColor),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -566,17 +630,17 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                   child: Column(
                     children: [
                       GestureDetector(
-                        onTap: _showImagePickerOptions,
+                        onTap: () => _showImagePickerOptions(isDarkMode),
                         child: Stack(
                           children: [
                             CircleAvatar(
                               radius: 60,
-                              backgroundColor: Colors.grey.shade200,
+                              backgroundColor: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
                               backgroundImage: _getProfileImage(),
                               child: _profileImage == null &&
                                       _currentImagePath == null
-                                  ? const Icon(Icons.person,
-                                      size: 60, color: Colors.grey)
+                                  ? Icon(Icons.person,
+                                      size: 60, color: isDarkMode ? Colors.grey.shade600 : Colors.grey)
                                   : null,
                             ),
                             Positioned(
@@ -589,7 +653,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                                   color: Colors.blue,
                                   shape: BoxShape.circle,
                                   border:
-                                      Border.all(color: Colors.white, width: 2),
+                                      Border.all(color: _backgroundColor, width: 2),
                                 ),
                                 child: const Icon(
                                   Icons.camera_alt,
@@ -602,11 +666,11 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Chạm để thay đổi ảnh đại diện',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey,
+                          color: _textSecondaryColor,
                         ),
                       ),
                     ],
@@ -616,12 +680,12 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                 const SizedBox(height: 24),
 
                 // Thông tin cá nhân
-                const Text(
+                Text(
                   'Thông tin cá nhân',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: _textColor,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -633,6 +697,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                   prefixIcon: Icons.person,
                   hintText: 'Nhập họ và tên',
                   onChanged: (_) => _hasUnsavedChanges = true,
+                  isDarkMode: isDarkMode,
                 ),
 
                 // Số điện thoại
@@ -663,6 +728,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                       );
                     }
                   },
+                  isDarkMode: isDarkMode,
                 ),
                 // Email (không cho chỉnh sửa)
                 _buildTextField(
@@ -671,6 +737,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                   prefixIcon: Icons.email,
                   readOnly: true,
                   hintText: 'Email của bạn',
+                  isDarkMode: isDarkMode,
                 ),
 
                 // Giới tính
@@ -686,6 +753,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                       });
                     }
                   },
+                  isDarkMode: isDarkMode,
                 ),
 
                 // Ngày sinh
@@ -694,6 +762,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                   controller: _birthdayController,
                   prefixIcon: Icons.calendar_today,
                   onTap: _selectBirthDate,
+                  isDarkMode: isDarkMode,
                 ),
 
                 const SizedBox(height: 32),
@@ -736,7 +805,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
                 const SizedBox(height: 24),
 
                 // Thông tin bổ sung
-                _buildInfoCard(),
+                _buildInfoCard(isDarkMode),
               ],
             ),
           ),
@@ -769,6 +838,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
     bool readOnly = false,
     TextInputType keyboardType = TextInputType.text,
     Function(String)? onChanged,
+    bool isDarkMode = false,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -777,10 +847,10 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Colors.black87,
+              color: isDarkMode ? Colors.grey.shade300 : Colors.black87,
             ),
           ),
           const SizedBox(height: 8),
@@ -789,28 +859,40 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
             readOnly: readOnly,
             keyboardType: keyboardType,
             onChanged: onChanged,
+            style: TextStyle(
+              color: isDarkMode ? Colors.white : Colors.black,
+            ),
             decoration: InputDecoration(
               hintText: hintText,
-              hintStyle: TextStyle(color: Colors.grey.shade400),
+              hintStyle: TextStyle(
+                color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
+              ),
               contentPadding: const EdgeInsets.symmetric(vertical: 16),
-              prefixIcon: Icon(prefixIcon, color: Colors.blue),
+              prefixIcon: Icon(
+                prefixIcon, 
+                color: isDarkMode ? Colors.blue.withOpacity(0.7) : Colors.blue,
+              ),
               filled: true,
-              fillColor: readOnly ? Colors.grey.shade100 : Colors.grey.shade50,
+              fillColor: readOnly 
+                  ? (isDarkMode ? const Color(0xFF1E1E1E) : Colors.grey.shade100)
+                  : (isDarkMode ? const Color(0xFF2A2D3E) : Colors.grey.shade50),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderSide: BorderSide(
+                  color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.blue, width: 1.5),
+                borderSide: BorderSide(
+                  color: Colors.blue, 
+                  width: 1.5,
+                ),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: Colors.red, width: 1.5),
               ),
-            ),
-            style: TextStyle(
-              color: readOnly ? Colors.grey.shade700 : Colors.black,
             ),
           ),
         ],
@@ -825,6 +907,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
     required TextEditingController controller,
     required List<String> items,
     required Function(String?) onChanged,
+    bool isDarkMode = false,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -833,34 +916,49 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Colors.black87,
+              color: isDarkMode ? Colors.grey.shade300 : Colors.black87,
             ),
           ),
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: isDarkMode ? const Color(0xFF2A2D3E) : Colors.grey.shade50,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
+              border: Border.all(
+                color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+              ),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: controller.text,
                 isExpanded: true,
-                icon: Icon(Icons.arrow_drop_down, color: Colors.grey.shade700),
+                icon: Icon(
+                  Icons.arrow_drop_down, 
+                  color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+                ),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 borderRadius: BorderRadius.circular(12),
+                dropdownColor: isDarkMode ? const Color(0xFF2A2D3E) : Colors.white,
                 items: items.map((String item) {
                   return DropdownMenuItem<String>(
                     value: item,
                     child: Row(
                       children: [
-                        Icon(prefixIcon, color: Colors.blue, size: 22),
+                        Icon(
+                          prefixIcon, 
+                          color: isDarkMode ? Colors.blue.withOpacity(0.7) : Colors.blue, 
+                          size: 22,
+                        ),
                         const SizedBox(width: 12),
-                        Text(item),
+                        Text(
+                          item,
+                          style: TextStyle(
+                            color: isDarkMode ? Colors.white : Colors.black87,
+                          ),
+                        ),
                       ],
                     ),
                   );
@@ -885,6 +983,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
     required TextEditingController controller,
     required IconData prefixIcon,
     required VoidCallback onTap,
+    bool isDarkMode = false,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -893,10 +992,10 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Colors.black87,
+              color: isDarkMode ? Colors.grey.shade300 : Colors.black87,
             ),
           ),
           const SizedBox(height: 8),
@@ -906,20 +1005,31 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: isDarkMode ? const Color(0xFF2A2D3E) : Colors.grey.shade50,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(
+                  color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                ),
               ),
               child: Row(
                 children: [
-                  Icon(prefixIcon, color: Colors.blue),
+                  Icon(
+                    prefixIcon, 
+                    color: isDarkMode ? Colors.blue.withOpacity(0.7) : Colors.blue,
+                  ),
                   const SizedBox(width: 16),
                   Text(
                     controller.text,
-                    style: const TextStyle(fontSize: 16),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: isDarkMode ? Colors.white : Colors.black87,
+                    ),
                   ),
                   const Spacer(),
-                  Icon(Icons.arrow_drop_down, color: Colors.grey.shade700),
+                  Icon(
+                    Icons.arrow_drop_down, 
+                    color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+                  ),
                 ],
               ),
             ),
@@ -930,13 +1040,19 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
   }
 
   // Widget hiển thị thông tin bổ sung
-  Widget _buildInfoCard() {
+  Widget _buildInfoCard(bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.05),
+        color: isDarkMode 
+            ? Colors.blue.withOpacity(0.1) 
+            : Colors.blue.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.withOpacity(0.1)),
+        border: Border.all(
+          color: isDarkMode 
+              ? Colors.blue.withOpacity(0.2) 
+              : Colors.blue.withOpacity(0.1),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -957,20 +1073,24 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
           ),
           const SizedBox(height: 12),
           _buildTipItem(
-              'Cập nhật thông tin cá nhân giúp tài khoản của bạn an toàn hơn'),
+              'Cập nhật thông tin cá nhân giúp tài khoản của bạn an toàn hơn',
+              isDarkMode),
           _buildTipItem(
-              'Ảnh đại diện rõ nét giúp bạn được nhận diện dễ dàng hơn'),
+              'Ảnh đại diện rõ nét giúp bạn được nhận diện dễ dàng hơn',
+              isDarkMode),
           _buildTipItem(
-              'Cập nhật số điện thoại chính xác để nhận được các thông báo quan trọng'),
+              'Cập nhật số điện thoại chính xác để nhận được các thông báo quan trọng',
+              isDarkMode),
           _buildTipItem(
-              'Thông tin cá nhân của bạn được bảo mật và chỉ hiển thị khi cần thiết'),
+              'Thông tin cá nhân của bạn được bảo mật và chỉ hiển thị khi cần thiết',
+              isDarkMode),
         ],
       ),
     );
   }
 
   // Widget hiển thị mỗi mẹo
-  Widget _buildTipItem(String tip) {
+  Widget _buildTipItem(String tip, bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -983,7 +1103,7 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
               tip,
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey[700],
+                color: isDarkMode ? Colors.grey.shade300 : Colors.grey[700],
               ),
             ),
           ),

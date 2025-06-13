@@ -59,6 +59,14 @@ class _ChatScreenState extends State<ChatScreen>
   String? _selectedChatId;
   bool _inChatDetail = false;
 
+  // Màu sắc cho theme
+  late Color _backgroundColor;
+  late Color _cardColor;
+  late Color _textColor;
+  late Color _dividerColor;
+  late Color _inputBackgroundColor;
+  late Color _inputBorderColor;
+
   // Danh sách các cuộc trò chuyện
   final List<ChatInfo> _chatGroups = [
     ChatInfo(
@@ -133,6 +141,17 @@ class _ChatScreenState extends State<ChatScreen>
 
     // Khởi tạo dữ liệu tin nhắn mẫu
     _initSampleMessages();
+  }
+
+  void _initializeColors(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    _backgroundColor = isDarkMode ? Colors.grey[900]! : Colors.white;
+    _cardColor = isDarkMode ? Colors.grey[850]! : Colors.white;
+    _textColor = isDarkMode ? Colors.white : Colors.black;
+    _dividerColor = isDarkMode ? Colors.grey[800]! : Colors.grey[200]!;
+    _inputBackgroundColor = isDarkMode ? Colors.grey[800]! : Colors.grey[50]!;
+    _inputBorderColor = isDarkMode ? Colors.grey[700]! : Colors.grey[200]!;
   }
 
   void _initSampleMessages() {
@@ -294,11 +313,13 @@ class _ChatScreenState extends State<ChatScreen>
 
   @override
   Widget build(BuildContext context) {
+    _initializeColors(context);
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: _backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: _backgroundColor,
+        foregroundColor: _textColor,
         elevation: 0,
         title: _inChatDetail ? _buildChatDetailTitle() : const Text("Tin nhắn"),
         leading: _inChatDetail
@@ -319,7 +340,7 @@ class _ChatScreenState extends State<ChatScreen>
                   decoration: BoxDecoration(
                     border: Border(
                       bottom: BorderSide(
-                        color: Colors.grey.shade200,
+                        color: _dividerColor,
                         width: 1,
                       ),
                     ),
@@ -327,7 +348,9 @@ class _ChatScreenState extends State<ChatScreen>
                   child: TabBar(
                     controller: _tabController,
                     labelColor: Colors.orange,
-                    unselectedLabelColor: Colors.grey.shade600,
+                    unselectedLabelColor: Theme.of(context).brightness == Brightness.dark 
+                        ? Colors.grey[400] 
+                        : Colors.grey[600],
                     indicatorColor: Colors.orange,
                     indicatorWeight: 3,
                     labelStyle: const TextStyle(
@@ -376,9 +399,10 @@ class _ChatScreenState extends State<ChatScreen>
             children: [
               Text(
                 chatInfo.name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: _textColor,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -409,7 +433,9 @@ class _ChatScreenState extends State<ChatScreen>
                 Icon(
                   chats == _chatGroups ? Icons.group : Icons.school,
                   size: 64,
-                  color: Colors.grey.shade300,
+                  color: Theme.of(context).brightness == Brightness.dark 
+                      ? Colors.grey[700] 
+                      : Colors.grey[300],
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -418,7 +444,9 @@ class _ChatScreenState extends State<ChatScreen>
                       : "Chưa có giáo viên nào",
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.grey.shade500,
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? Colors.grey[400] 
+                        : Colors.grey[500],
                   ),
                 ),
               ],
@@ -428,7 +456,7 @@ class _ChatScreenState extends State<ChatScreen>
             padding: const EdgeInsets.symmetric(vertical: 8),
             itemCount: chats.length,
             separatorBuilder: (context, index) => Divider(
-              color: Colors.grey.shade100,
+              color: _dividerColor,
               height: 1,
               indent: 80,
               endIndent: 16,
@@ -441,6 +469,8 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget _buildChatListItem(ChatInfo chat) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       onTap: () {
@@ -466,7 +496,7 @@ class _ChatScreenState extends State<ChatScreen>
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.shade200,
+                  color: isDarkMode ? Colors.black26 : Colors.grey.shade200,
                   blurRadius: 4,
                   spreadRadius: 1,
                 ),
@@ -484,12 +514,12 @@ class _ChatScreenState extends State<ChatScreen>
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: _backgroundColor,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+                  border: Border.all(color: _backgroundColor, width: 2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.shade300,
+                      color: isDarkMode ? Colors.black26 : Colors.grey.shade300,
                       blurRadius: 2,
                       spreadRadius: 0,
                     ),
@@ -509,12 +539,12 @@ class _ChatScreenState extends State<ChatScreen>
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: _backgroundColor,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+                  border: Border.all(color: _backgroundColor, width: 2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.shade300,
+                      color: isDarkMode ? Colors.black26 : Colors.grey.shade300,
                       blurRadius: 2,
                       spreadRadius: 0,
                     ),
@@ -538,6 +568,7 @@ class _ChatScreenState extends State<ChatScreen>
                 fontWeight:
                     chat.unreadCount > 0 ? FontWeight.bold : FontWeight.w500,
                 fontSize: 16,
+                color: _textColor,
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -548,7 +579,7 @@ class _ChatScreenState extends State<ChatScreen>
             style: TextStyle(
               fontSize: 12,
               color:
-                  chat.unreadCount > 0 ? Colors.orange : Colors.grey.shade500,
+                  chat.unreadCount > 0 ? Colors.orange : (isDarkMode ? Colors.grey[400] : Colors.grey[500]),
               fontWeight:
                   chat.unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
             ),
@@ -567,8 +598,8 @@ class _ChatScreenState extends State<ChatScreen>
                 fontWeight:
                     chat.unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
                 color: chat.unreadCount > 0
-                    ? Colors.black87
-                    : Colors.grey.shade600,
+                    ? (isDarkMode ? Colors.grey[200] : Colors.black87)
+                    : (isDarkMode ? Colors.grey[400] : Colors.grey[600]),
               ),
             ),
           ),
@@ -596,17 +627,18 @@ class _ChatScreenState extends State<ChatScreen>
 
   Widget _buildChatDetailScreen() {
     if (_selectedChatId == null) {
-      return const Center(child: Text("Vui lòng chọn cuộc trò chuyện"));
+      return Center(child: Text("Vui lòng chọn cuộc trò chuyện", style: TextStyle(color: _textColor)));
     }
 
     final messages = _chatMessages[_selectedChatId] ?? [];
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       children: [
         // Tin nhắn
         Expanded(
           child: Container(
-            color: Colors.white,
+            color: _backgroundColor,
             child: messages.isEmpty
                 ? Center(
                     child: Column(
@@ -615,13 +647,13 @@ class _ChatScreenState extends State<ChatScreen>
                         Icon(
                           Icons.chat_bubble_outline,
                           size: 64,
-                          color: Colors.grey.shade300,
+                          color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
                         ),
                         const SizedBox(height: 16),
                         Text(
                           "Chưa có tin nhắn. Hãy bắt đầu cuộc trò chuyện!",
                           style: TextStyle(
-                            color: Colors.grey.shade500,
+                            color: isDarkMode ? Colors.grey[400] : Colors.grey[500],
                             fontSize: 15,
                           ),
                         ),
@@ -658,14 +690,14 @@ class _ChatScreenState extends State<ChatScreen>
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
+                                    color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                   child: Text(
                                     "Hôm nay", // Trong thực tế sẽ lấy từ timestamp
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.grey.shade600,
+                                      color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
                                     ),
                                   ),
                                 ),
@@ -689,7 +721,7 @@ class _ChatScreenState extends State<ChatScreen>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
+                    color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
                     shape: BoxShape.circle,
                   ),
                   child: const SizedBox(
@@ -706,7 +738,7 @@ class _ChatScreenState extends State<ChatScreen>
                   "${_selectedChatId!.startsWith('g') ? 'Giáo viên' : 'Người nhận'} đang gõ...",
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -715,17 +747,17 @@ class _ChatScreenState extends State<ChatScreen>
           ),
 
         // Divider trước input
-        Divider(height: 1, color: Colors.grey.shade200),
+        Divider(height: 1, color: _dividerColor),
 
         // Input tin nhắn
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          color: Colors.white,
+          color: _backgroundColor,
           child: Row(
             children: [
               IconButton(
-                icon:
-                    Icon(Icons.add_circle_outline, color: Colors.grey.shade700),
+                icon: Icon(Icons.add_circle_outline, 
+                  color: isDarkMode ? Colors.grey[400] : Colors.grey[700]),
                 onPressed: () {
                   // Chức năng thêm media
                 },
@@ -734,18 +766,19 @@ class _ChatScreenState extends State<ChatScreen>
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
+                    color: _inputBackgroundColor,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.grey.shade200),
+                    border: Border.all(color: _inputBorderColor),
                   ),
                   child: TextField(
                     controller: _messageController,
                     decoration: InputDecoration(
                       hintText: "Nhắn tin...",
-                      hintStyle: TextStyle(color: Colors.grey.shade400),
+                      hintStyle: TextStyle(color: isDarkMode ? Colors.grey[500] : Colors.grey[400]),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     ),
+                    style: TextStyle(color: _textColor),
                     textInputAction: TextInputAction.send,
                     onSubmitted: (_) => _handleSendMessage(),
                   ),
@@ -774,6 +807,8 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget _buildMessageItem(ChatMessage message) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -797,13 +832,12 @@ class _ChatScreenState extends State<ChatScreen>
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: message.isMe
-                    ? const Color(
-                        0xFFF3F3FF) // Màu nhẹ cho tin nhắn của người dùng
-                    : Colors.white,
+                    ? (isDarkMode ? const Color(0xFF2C2C54) : const Color(0xFFF3F3FF))
+                    : (isDarkMode ? Colors.grey[800] : Colors.white),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.shade200,
+                    color: isDarkMode ? Colors.black26 : Colors.grey.shade200,
                     spreadRadius: 1,
                     blurRadius: 1,
                     offset: const Offset(0, 1),
@@ -811,9 +845,8 @@ class _ChatScreenState extends State<ChatScreen>
                 ],
                 border: Border.all(
                   color: message.isMe
-                      ? const Color(
-                          0xFFE6E6FF) // Viền nhẹ cho tin nhắn của người dùng
-                      : Colors.grey.shade100,
+                      ? (isDarkMode ? const Color(0xFF3C3C64) : const Color(0xFFE6E6FF))
+                      : (isDarkMode ? Colors.grey[700]! : Colors.grey[100]!),
                 ),
               ),
               child: Column(
@@ -835,9 +868,10 @@ class _ChatScreenState extends State<ChatScreen>
                   // Nội dung tin nhắn
                   Text(
                     message.text,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       height: 1.3,
+                      color: _textColor,
                     ),
                   ),
 
@@ -853,7 +887,7 @@ class _ChatScreenState extends State<ChatScreen>
                         message.time,
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey.shade500,
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey[500],
                         ),
                       ),
                       if (message.isMe) ...[

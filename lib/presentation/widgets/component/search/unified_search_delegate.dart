@@ -46,19 +46,11 @@ class UnifiedSearchDelegate extends SearchDelegate<String> {
 
   // Các gợi ý mặc định cho từng loại tìm kiếm
   final Map<SearchType, List<String>> _defaultSuggestions = {
-    SearchType.all: ['Python', 'Flutter', 'Java', 'Mobile'],
-    SearchType.course: ['Flutter', 'React Native', 'iOS', 'Android'],
-    SearchType.document: [
-      'Tài liệu Flutter',
-      'Hướng dẫn Python',
-      'Giáo trình Java'
-    ],
-    SearchType.blog: [
-      'Lập trình di động',
-      'Thiết kế UI',
-      'Flutter vs React Native'
-    ],
-    SearchType.practiceTest: ['Flutter', 'React Native', 'Android Development'],
+    SearchType.all: [],
+    SearchType.course: [],
+    SearchType.document: [],
+    SearchType.blog: [],
+    SearchType.practiceTest: [],
   };
 
   // Biến đánh dấu trạng thái tìm kiếm và thời gian debounce
@@ -170,6 +162,42 @@ class UnifiedSearchDelegate extends SearchDelegate<String> {
   Widget _buildSuggestionsWidget(BuildContext context) {
     final suggestions = _defaultSuggestions[searchType] ?? [];
 
+    // Nếu không có gợi ý, hiển thị giao diện đơn giản
+    if (suggestions.isEmpty) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.search,
+                size: 64,
+                color: Colors.grey.shade300,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _searchHints[searchType] ?? 'Tìm kiếm...',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _searchDescriptions[searchType] ?? 'Nhập để tìm kiếm',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Container(
@@ -257,107 +285,55 @@ class UnifiedSearchDelegate extends SearchDelegate<String> {
   }
 
   Widget _buildSearchResultsWidget(BuildContext context) {
-    // Lấy kết quả đầy đủ từ controller theo loại tìm kiếm (không giới hạn)
-    List<dynamic> results;
-    switch (searchType) {
-      case SearchType.all:
-        results = searchController.fullAllResults;
-        break;
-      case SearchType.course:
-        results = searchController.fullCourseResults;
-        break;
-      case SearchType.document:
-        results = searchController.fullDocumentResults;
-        break;
-      case SearchType.blog:
-        results = searchController.fullBlogResults;
-        break;
-      case SearchType.practiceTest:
-        results = searchController.fullPracticeTestResults;
-        break;
-      default:
-        print('No search type matched, showing empty results');
-        results = [];
-    }
+    return ListenableBuilder(
+      listenable: searchController,
+      builder: (context, child) {
+        // Lấy kết quả đầy đủ từ controller theo loại tìm kiếm
+        List<dynamic> results;
+        switch (searchType) {
+          case SearchType.all:
+            results = searchController.fullAllResults;
+            break;
+          case SearchType.course:
+            results = searchController.fullCourseResults;
+            break;
+          case SearchType.document:
+            results = searchController.fullDocumentResults;
+            break;
+          case SearchType.blog:
+            results = searchController.fullBlogResults;
+            break;
+          case SearchType.practiceTest:
+            results = searchController.fullPracticeTestResults;
+            break;
+          default:
+            print('Không tìm thấy loại tìm kiếm phù hợp, hiển thị kết quả trống');
+            results = [];
+        }
 
-    // Kiểm tra có nhiều hơn 3 kết quả không
-    bool hasMoreResults = results.length > 3;
+        // In log để kiểm tra kết quả tìm kiếm
+        print('[SearchDelegate] Xây dựng lại kết quả: ${results.length} tài liệu');
 
-    // Biến để kiểm tra xem có đang hiển thị tất cả kết quả hay không
-    bool _showingAllResults = false;
-
-    // Giới hạn kết quả hiển thị ban đầu là 3
-    List<dynamic> displayResults =
-        hasMoreResults && !_showingAllResults ? results.sublist(0, 3) : results;
-
-    return StatefulBuilder(builder: (context, setState) {
-      return Scaffold(
-        backgroundColor: Colors.white,
-        body: searchController.isLoading
-            ? const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3498DB)),
-                ),
-              )
-            : results.isEmpty
-                ? _buildEmptyResults(context)
-                : Column(
-                    children: [
-                      Expanded(
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: displayResults.length,
-                          itemBuilder: (context, index) {
-                            return itemBuilder(
-                                context, displayResults[index], searchType);
-                          },
-                        ),
-                      ),
-                      // Hiển thị nút "Xem thêm" nếu có nhiều hơn 3 kết quả và chưa đang hiển thị tất cả
-                      if (hasMoreResults && !_showingAllResults)
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                offset: const Offset(0, -3),
-                                blurRadius: 6,
-                              ),
-                            ],
-                          ),
-                          child: ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                // Khi click vào nút Xem thêm, hiển thị tất cả kết quả
-                                _showingAllResults = true;
-                                displayResults = results;
-                              });
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF3498DB),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: Text(
-                              'Xem thêm ${results.length - displayResults.length} kết quả',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: searchController.isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3498DB)),
                   ),
-      );
-    });
+                )
+              : results.isEmpty
+                  ? _buildEmptyResults(context)
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: results.length,
+                      itemBuilder: (context, index) {
+                        return itemBuilder(context, results[index], searchType);
+                      },
+                    ),
+        );
+      },
+    );
   }
 
   Widget _buildEmptyResults(BuildContext context) {

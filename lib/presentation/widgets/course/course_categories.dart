@@ -4,7 +4,7 @@ import 'package:tms_app/data/models/categories/course_category.dart';
 import 'package:tms_app/data/repositories/category_repository_impl.dart';
 import 'package:tms_app/data/services/category_service.dart';
 import 'package:tms_app/domain/usecases/category_usecase.dart';
-import 'package:tms_app/presentation/screens/course/course_screen.dart';
+import 'package:tms_app/presentation/screens/course/courses_by_category_screen.dart';
 
 class CategoryWidget extends StatefulWidget {
   const CategoryWidget({super.key});
@@ -139,9 +139,9 @@ class _CategoryWidgetState extends State<CategoryWidget> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => CourseScreen(
-                                        initialFilter: 'category',
-                                        category: category.name,
+                                      builder: (context) => CoursesByCategoryScreen(
+                                        categoryId: category.id,
+                                        categoryName: category.name,
                                       ),
                                     ),
                                   ).then((_) {

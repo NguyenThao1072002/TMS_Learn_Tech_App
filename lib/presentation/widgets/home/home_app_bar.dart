@@ -14,8 +14,16 @@ class HomeAppBarWidget extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Detect dark mode
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    // Define colors based on theme
+    final backgroundColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+    final textColor = isDarkMode ? Colors.white : const Color(0xFF3498DB);
+    final iconColor = const Color(0xFF3498DB); // Keep accent color for brand identity
+    
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       elevation: 0,
       automaticallyImplyLeading: false,
       title: Row(
@@ -33,10 +41,10 @@ class HomeAppBarWidget extends StatelessWidget implements PreferredSizeWidget {
             ),
           ),
           const SizedBox(width: 10),
-          const Text(
+          Text(
             'TMS Learn Tech',
             style: TextStyle(
-              color: Color(0xFF3498DB),
+              color: textColor,
               fontWeight: FontWeight.bold,
               fontSize: 18,
             ),
@@ -44,41 +52,41 @@ class HomeAppBarWidget extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
-        IconButton(
-          icon: const Icon(
-            Icons.search,
-            color: Color(0xFF3498DB),
-            size: 26,
-          ),
-          onPressed: () {
-            final searchController =
-                Provider.of<UnifiedSearchController>(context, listen: false);
-            showSearch(
-              context: context,
-              delegate: UnifiedSearchDelegate(
-                searchType: SearchType.all,
-                onSearch: (query, type) {
-                  searchController.search(query, type);
-                },
-                itemBuilder: (context, item, type) {
-                  return ListTile(
-                    title: Text(item.toString()),
-                    onTap: () {
-                      // Xử lý khi người dùng nhấp vào một kết quả
-                    },
-                  );
-                },
-                searchController: searchController,
-              ),
-            );
-          },
-        ),
+        // IconButton(
+        //   icon: Icon(
+        //     Icons.search,
+        //     color: iconColor,
+        //     size: 26,
+        //   ),
+        //   onPressed: () {
+        //     final searchController =
+        //         Provider.of<UnifiedSearchController>(context, listen: false);
+        //     showSearch(
+        //       context: context,
+        //       delegate: UnifiedSearchDelegate(
+        //         searchType: SearchType.all,
+        //         onSearch: (query, type) {
+        //           searchController.search(query, type);
+        //         },
+        //         itemBuilder: (context, item, type) {
+        //           return ListTile(
+        //             title: Text(item.toString()),
+        //             onTap: () {
+        //               // Xử lý khi người dùng nhấp vào một kết quả
+        //             },
+        //           );
+        //         },
+        //         searchController: searchController,
+        //       ),
+        //     );
+        //   },
+        // ),
         Stack(
           children: [
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.notifications_none_outlined,
-                color: Color(0xFF3498DB),
+                color: iconColor,
                 size: 26,
               ),
               onPressed: () {
@@ -135,9 +143,16 @@ class HomeSearchDelegate extends SearchDelegate<String> {
   @override
   ThemeData appBarTheme(BuildContext context) {
     final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
+    // Define colors based on theme
+    final backgroundColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+    final inputFillColor = isDarkMode ? const Color(0xFF2A2D3E) : Colors.grey.shade100;
+    final hintColor = isDarkMode ? Colors.grey.shade400 : Colors.grey.shade500;
+    
     return theme.copyWith(
       appBarTheme: AppBarTheme(
-        backgroundColor: Colors.white,
+        backgroundColor: backgroundColor,
         elevation: 0,
         iconTheme: const IconThemeData(color: Color(0xFF3498DB)),
       ),
@@ -147,9 +162,9 @@ class HomeSearchDelegate extends SearchDelegate<String> {
           borderSide: BorderSide.none,
         ),
         filled: true,
-        fillColor: Colors.grey.shade100,
+        fillColor: inputFillColor,
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        hintStyle: TextStyle(color: Colors.grey.shade500),
+        hintStyle: TextStyle(color: hintColor),
       ),
     );
   }
@@ -183,6 +198,16 @@ class HomeSearchDelegate extends SearchDelegate<String> {
 
   @override
   Widget buildSuggestions(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    // Define colors based on theme
+    final backgroundColor = isDarkMode ? const Color(0xFF121212) : Colors.white;
+    final cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+    final textColor = isDarkMode ? Colors.white : const Color(0xFF333333);
+    final shadowColor = isDarkMode 
+        ? Colors.black.withOpacity(0.3) 
+        : Colors.black.withOpacity(0.05);
+    
     final suggestions = query.isEmpty
         ? [
             'Flutter',
@@ -203,7 +228,7 @@ class HomeSearchDelegate extends SearchDelegate<String> {
             .toList();
 
     return Container(
-      color: Colors.white,
+      color: backgroundColor,
       child: ListView.builder(
         itemCount: suggestions.length,
         itemBuilder: (context, index) {
@@ -211,11 +236,11 @@ class HomeSearchDelegate extends SearchDelegate<String> {
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: cardColor,
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: shadowColor,
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -228,8 +253,8 @@ class HomeSearchDelegate extends SearchDelegate<String> {
               ),
               title: Text(
                 suggestion,
-                style: const TextStyle(
-                  color: Color(0xFF333333),
+                style: TextStyle(
+                  color: textColor,
                   fontWeight: FontWeight.w500,
                 ),
               ),

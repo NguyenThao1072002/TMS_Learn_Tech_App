@@ -400,7 +400,7 @@ class CourseService {
 
   Future<List<CourseCardModel>> getRelatedCourse(int categoryId) async {
     try {
-      final endpoint = '$apiUrl/courses/public/filter?categoryId=$categoryId';
+      final endpoint = '$apiUrl/courses/public/filter?categoryIds=$categoryId';
 
       try {
         final response = await dio.get(endpoint,

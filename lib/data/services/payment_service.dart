@@ -4,7 +4,10 @@ import 'package:tms_app/core/utils/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tms_app/data/models/payment/payment_request_model.dart';
 import 'package:tms_app/data/models/payment/payment_response_model.dart';
+import 'package:tms_app/data/models/payment/payment_gateway_request.dart';
+import 'package:tms_app/data/models/payment/payment_gateway_response.dart';
 import 'package:get_it/get_it.dart';
+import 'package:flutter/foundation.dart';
 
 class PaymentService {
   final String baseUrl = Constants.BASE_URL;
@@ -13,8 +16,48 @@ class PaymentService {
   PaymentService([Dio? dioInstance])
       : dio = dioInstance ?? GetIt.instance<Dio>();
 
+  /// Process a successful payment from ZaloPay and deposit into wallet
+  /// 
+  /// [request] The payment gateway request with transaction details
+  Future<PaymentGatewayResponse> processPaymentGateway(PaymentGatewayRequest request) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt');
+      
+      if (token == null || token.isEmpty) {
+        throw Exception("JWT token không tìm thấy. Vui lòng đăng nhập lại.");
+      }
+      
+      debugPrint('Processing payment gateway transaction: ${request.transactionId}');
+      
+      final url = '$baseUrl/api/payments/v2/payment-gateway';
+      
+      final response = await dio.post(
+        url,
+        data: jsonEncode(request.toJson()),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+      
+      debugPrint('Payment gateway response status: ${response.statusCode}');
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return PaymentGatewayResponse.fromJson(response.data);
+      } else {
+        throw Exception('Xử lý thanh toán thất bại: ${response.data}');
+      }
+    } catch (e) {
+      debugPrint('Error processing payment gateway: $e');
+      throw Exception('Xử lý thanh toán thất bại: $e');
+    }
+  }
+
   Future<ApiResponseWrapper<PaymentResponseModel>> createPaymentV2(
-      PaymentRequestModel request) async {
+      PaymentRequestModel request) async {  
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt');
 

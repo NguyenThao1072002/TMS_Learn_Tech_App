@@ -216,6 +216,15 @@ class DocumentController {
       return false;
     }
   }
+  
+  Future<bool> trackDocumentDownload(int documentId) async {
+    try {
+      return await documentUseCase.trackDocumentDownload(documentId);
+    } catch (e) {
+      print('Error tracking document download: $e');
+      return false;
+    }
+  }
 
   void filterDocumentsByFormat(String format) {
     selectedFilter.value = format;

@@ -41,7 +41,7 @@ class LanguageController extends ChangeNotifier {
         // Save the default language
         await prefs.setString(_languageKey, 'vi');
       }
-      notifyListeners();
+        notifyListeners();
     } catch (e) {
       print('Error loading language: $e');
     }

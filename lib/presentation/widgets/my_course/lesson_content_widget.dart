@@ -244,6 +244,9 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
       print('     + Bài học ID: $key, Hoàn thành: $value');
     });
 
+    // Check for dark mode
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return DefaultTabController(
       length: 3,
       child: Column(
@@ -254,10 +257,12 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
               padding: const EdgeInsets.only(
                   left: 16, right: 16, top: 16, bottom: 8),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDarkMode ? Colors.black : Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: isDarkMode 
+                        ? Colors.black.withOpacity(0.2) 
+                        : Colors.black.withOpacity(0.05),
                     offset: const Offset(0, 2),
                     blurRadius: 4,
                   ),
@@ -279,10 +284,18 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
                         constraints: const BoxConstraints(),
                         padding: const EdgeInsets.all(8),
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.grey[100],
-                          foregroundColor: Colors.grey[800],
-                          disabledBackgroundColor: Colors.grey[100],
-                          disabledForegroundColor: Colors.grey[400],
+                          backgroundColor: isDarkMode 
+                              ? Color(0xFF252525) 
+                              : Colors.grey[100],
+                          foregroundColor: isDarkMode 
+                              ? Colors.white 
+                              : Colors.grey[800],
+                          disabledBackgroundColor: isDarkMode 
+                              ? Color(0xFF1A1A1A) 
+                              : Colors.grey[100],
+                          disabledForegroundColor: isDarkMode 
+                              ? Colors.grey[700] 
+                              : Colors.grey[400],
                         ),
                       ),
 
@@ -325,7 +338,9 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
                                         : widget.currentChapter.title,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.grey[700],
+                                      color: isDarkMode 
+                                          ? Colors.grey[400] 
+                                          : Colors.grey[700],
                                       fontWeight: FontWeight.w500,
                                     ),
                                     maxLines: 1,
@@ -340,9 +355,10 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
                             // Tên bài học
                             Text(
                               widget.currentLesson.title,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
+                                color: isDarkMode ? Colors.white : Colors.black,
                               ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -368,10 +384,16 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
                         style: IconButton.styleFrom(
                           backgroundColor: widget.canNavigateToNext
                               ? Colors.orange
-                              : Colors.grey[300],
+                              : isDarkMode 
+                                  ? Color(0xFF252525) 
+                                  : Colors.grey[300],
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor: Colors.grey[300],
-                          disabledForegroundColor: Colors.grey[400],
+                          disabledBackgroundColor: isDarkMode 
+                              ? Color(0xFF1A1A1A) 
+                              : Colors.grey[300],
+                          disabledForegroundColor: isDarkMode 
+                              ? Colors.grey[700] 
+                              : Colors.grey[400],
                         ),
                       ),
                     ],
@@ -391,14 +413,18 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
                                   ? Icons.videocam
                                   : Icons.assignment,
                               size: 14,
-                              color: Colors.grey[700],
+                              color: isDarkMode 
+                                  ? Colors.grey[400] 
+                                  : Colors.grey[700],
                             ),
                             const SizedBox(width: 4),
                             Text(
                               widget.currentLesson.duration,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[700],
+                                color: isDarkMode 
+                                    ? Colors.grey[400] 
+                                    : Colors.grey[700],
                               ),
                             ),
                           ],
@@ -413,7 +439,9 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
                                         widget.currentLesson.id] ==
                                     true
                                 ? Colors.green.withOpacity(0.1)
-                                : Colors.grey[100],
+                                : isDarkMode 
+                                    ? Color(0xFF252525) 
+                                    : Colors.grey[100],
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Row(
@@ -430,7 +458,9 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
                                             widget.currentLesson.id] ==
                                         true
                                     ? Colors.green
-                                    : Colors.grey[700],
+                                    : isDarkMode 
+                                        ? Colors.grey[500] 
+                                        : Colors.grey[700],
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -445,7 +475,9 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
                                               widget.currentLesson.id] ==
                                           true
                                       ? Colors.green
-                                      : Colors.grey[700],
+                                      : isDarkMode 
+                                          ? Colors.grey[500] 
+                                          : Colors.grey[700],
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -464,14 +496,15 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
             SizedBox(
               height: 56,
               child: Material(
-                color: Colors.white,
+                color: isDarkMode ? Colors.black : Colors.white,
                 child: TabBar(
                   controller: widget.tabController,
                   labelColor: Colors.orange,
-                  unselectedLabelColor: Colors.grey[600],
+                  unselectedLabelColor: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                   indicatorColor: Colors.orange,
                   indicatorWeight: 3,
                   dividerHeight: 1,
+                  dividerColor: isDarkMode ? Color(0xFF3A3F55) : Colors.grey[300],
                   labelStyle: const TextStyle(
                       fontWeight: FontWeight.bold, fontSize: 14),
                   unselectedLabelStyle: const TextStyle(fontSize: 14),
@@ -602,9 +635,10 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
     // Lấy ID video và ID bài học từ currentLesson
     final int videoId = widget.currentLesson.videoId ?? 0;
     final int lessonId = int.parse(widget.currentLesson.id);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      color: Colors.white,
+      color: isDarkMode ? Colors.black : Colors.white,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -638,6 +672,8 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
     if (_videoPlayerController != null) {
       _disposeVideoPlayer();
     }
+    
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -701,7 +737,7 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDarkMode ? Color(0xFF252525) : Colors.white,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -750,33 +786,36 @@ class _LessonContentWidgetState extends State<LessonContentWidget> {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.grey[100],
+            color: isDarkMode ? Color(0xFF252525) : Colors.grey[100],
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Thông tin quan trọng',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : Colors.black,
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Bài kiểm tra này đánh giá kiến thức của bạn về nội dung đã học. Bạn cần đạt tối thiểu 70% số câu đúng để vượt qua và mở khóa bài học tiếp theo.',
                 style: TextStyle(
                   fontSize: 15,
                   height: 1.5,
+                  color: isDarkMode ? Colors.grey[300] : Colors.black87,
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Lưu ý:',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : Colors.black,
                 ),
               ),
               const SizedBox(height: 8),
@@ -942,15 +981,19 @@ class _buildTestInstruction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final defaultColor = isDarkMode ? Colors.grey[400] : Colors.grey[700];
+    final defaultTextColor = isDarkMode ? Colors.grey[300] : Colors.grey[800];
+    
     return Row(
       children: [
-        Icon(icon, size: 16, color: color ?? Colors.grey[700]),
+        Icon(icon, size: 16, color: color ?? defaultColor),
         const SizedBox(width: 8),
         Text(
           text,
           style: TextStyle(
             fontSize: 14,
-            color: color ?? Colors.grey[800],
+            color: color ?? defaultTextColor,
           ),
         ),
       ],

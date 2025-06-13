@@ -753,8 +753,12 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
       return Scaffold(
         appBar: AppBar(
           title: Text(widget.courseTitle),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
+          backgroundColor: Theme.of(context).brightness == Brightness.dark 
+              ? Colors.black 
+              : Colors.white,
+          foregroundColor: Theme.of(context).brightness == Brightness.dark 
+              ? Colors.white 
+              : Colors.black,
           elevation: 0,
         ),
         body: const Center(
@@ -776,6 +780,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
     // Kiểm tra kích thước màn hình để quyết định layout
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600; // Coi thiết bị có width > 600 là tablet
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -783,8 +788,8 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
           widget.courseTitle,
           style: const TextStyle(fontSize: 18),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: isDarkMode ? Colors.black : Colors.white,
+        foregroundColor: isDarkMode ? Colors.white : Colors.black,
         elevation: 0,
         actions: [
           IconButton(
@@ -810,16 +815,18 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
 
   // Layout cho màn hình tablet (ngang)
   Widget _buildTabletLayout() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Row(
       children: [
         // Sidebar danh sách chương và bài học (chiếm 30% màn hình)
         Container(
           width: MediaQuery.of(context).size.width * 0.3,
           decoration: BoxDecoration(
-            color: Colors.grey[100],
+            color: isDarkMode ? Color(0xFF121212) : Colors.grey[100],
             border: Border(
               right: BorderSide(
-                color: Colors.grey[300]!,
+                color: isDarkMode ? Color(0xFF3A3F55) : Colors.grey[300]!,
                 width: 1,
               ),
             ),
@@ -837,19 +844,25 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
 
   // Layout cho màn hình điện thoại (dọc)
   Widget _buildMobileLayout() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Column(
       children: [
         // Tab bar cho phép chuyển đổi giữa nội dung và danh sách bài học
         Container(
           height: 48,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDarkMode ? Colors.black : Colors.white,
             border: Border(
-              bottom: BorderSide(color: Colors.grey[300]!),
+              bottom: BorderSide(
+                color: isDarkMode ? Color(0xFF3A3F55) : Colors.grey[300]!,
+              ),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: isDarkMode 
+                    ? Colors.black.withOpacity(0.2) 
+                    : Colors.black.withOpacity(0.05),
                 blurRadius: 5,
                 offset: const Offset(0, 2),
               ),
@@ -881,7 +894,9 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
                       style: TextStyle(
                         color: !_controller.showSidebarInMobile
                             ? Colors.orange
-                            : Colors.grey[700],
+                            : isDarkMode 
+                                ? Colors.grey[400] 
+                                : Colors.grey[700],
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -912,7 +927,9 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
                       style: TextStyle(
                         color: _controller.showSidebarInMobile
                             ? Colors.orange
-                            : Colors.grey[700],
+                            : isDarkMode 
+                                ? Colors.grey[400] 
+                                : Colors.grey[700],
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -935,9 +952,16 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
 
   // Widget xây dựng thanh bên danh sách bài học
   Widget _buildLessonSidebar() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     if (_controller.courseData.isEmpty) {
-      return const Center(
-        child: Text('Không có dữ liệu bài học'),
+      return Center(
+        child: Text(
+          'Không có dữ liệu bài học',
+          style: TextStyle(
+            color: isDarkMode ? Colors.white : Colors.black,
+          ),
+        ),
       );
     }
 
@@ -1172,9 +1196,16 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
 
   // Widget xây dựng nội dung bài học
   Widget _buildLessonContent() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     if (_controller.courseData.isEmpty) {
-      return const Center(
-        child: Text('Không có dữ liệu bài học'),
+      return Center(
+        child: Text(
+          'Không có dữ liệu bài học',
+          style: TextStyle(
+            color: isDarkMode ? Colors.white : Colors.black,
+          ),
+        ),
       );
     }
 
@@ -1205,8 +1236,13 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
     }
 
     if (currentChapter == null) {
-      return const Center(
-        child: Text('Không tìm thấy chương học phù hợp'),
+      return Center(
+        child: Text(
+          'Không tìm thấy chương học phù hợp',
+          style: TextStyle(
+            color: isDarkMode ? Colors.white : Colors.black,
+          ),
+        ),
       );
     }
 
@@ -1215,7 +1251,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.menu_book,
               size: 64,
               color: Colors.orange,
@@ -1224,18 +1260,19 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
             Text(
               'Chương "${currentChapter.title}" chưa có bài học nào',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
+                color: isDarkMode ? Colors.white : Colors.black,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Nội dung đang được cập nhật, vui lòng quay lại sau',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey,
+                color: isDarkMode ? Colors.grey[400] : Colors.grey,
               ),
             ),
           ],
@@ -1742,6 +1779,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
   void _showTestResults(Lesson lesson) {
     // Use controller's test result and check if passed
     final bool isPassed = _controller.isTestPassed();
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
       context: context,
@@ -1852,6 +1890,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
     // Tính số bài học đã hoàn thành
     int totalLessons = 0;
     int completedLessons = 0;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     for (var chapter in _controller.courseData) {
       totalLessons += chapter.lessons.length.toInt();
@@ -1869,23 +1908,27 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      backgroundColor: isDarkMode ? Colors.black : Colors.white,
       builder: (context) => Container(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'Tiến độ khóa học',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
+                color: isDarkMode ? Colors.white : Colors.black,
               ),
             ),
             const SizedBox(height: 24),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: isDarkMode 
+                    ? Color(0xFF252525) 
+                    : Colors.orange.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
@@ -1919,7 +1962,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
                         Container(
                           height: 8,
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
+                            color: isDarkMode ? Color(0xFF3A3F55) : Colors.grey[200],
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: FractionallySizedBox(
@@ -1937,7 +1980,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
                         Text(
                           'Đã hoàn thành $completedLessons/$totalLessons bài học',
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                           ),
                         ),
                       ],
@@ -1947,11 +1990,12 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Chi tiết theo chương',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
+                color: isDarkMode ? Colors.white : Colors.black,
               ),
             ),
             const SizedBox(height: 16),
@@ -1977,7 +2021,10 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       chapter.title,
-                      style: const TextStyle(fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: isDarkMode ? Colors.white : Colors.black,
+                      ),
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1986,7 +2033,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
                         Container(
                           height: 4,
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
+                            color: isDarkMode ? Color(0xFF3A3F55) : Colors.grey[200],
                             borderRadius: BorderRadius.circular(2),
                           ),
                           child: FractionallySizedBox(
@@ -2008,11 +2055,13 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
                           '$chapterCompletedLessons/${chapter.lessons.length} bài học ($chapterPercent%)',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                           ),
                         ),
                         if (index < _controller.courseData.length - 1)
-                          const Divider(),
+                          Divider(
+                            color: isDarkMode ? Color(0xFF3A3F55) : Colors.grey[300],
+                          ),
                       ],
                     ),
                   );
@@ -2027,14 +2076,22 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
 
   // Hiển thị dialog trợ giúp
   void _showHelpDialog() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: isDarkMode ? Color(0xFF252525) : Colors.white,
         title: Row(
           children: [
             Icon(Icons.help_outline, color: Colors.blue[700]),
             const SizedBox(width: 8),
-            const Text('Trợ giúp'),
+            Text(
+              'Trợ giúp',
+              style: TextStyle(
+                color: isDarkMode ? Colors.white : Colors.black,
+              ),
+            ),
           ],
         ),
         content: Column(
@@ -2066,7 +2123,12 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Đã hiểu'),
+            child: Text(
+              'Đã hiểu',
+              style: TextStyle(
+                color: Colors.blue,
+              ),
+            ),
           ),
         ],
       ),
@@ -2079,6 +2141,8 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
     required String title,
     required String description,
   }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2101,15 +2165,17 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : Colors.black,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 description,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
+                  color: isDarkMode ? Colors.grey[400] : Colors.black87,
                 ),
               ),
             ],
@@ -2121,6 +2187,8 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen>
 
   // Xây dựng trình phát video
   Widget _buildVideoPlayer() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       color: Colors.black,
       child: Center(

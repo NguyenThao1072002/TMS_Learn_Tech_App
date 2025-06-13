@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
-  final bool isDarkMode;
-
-  const NotificationSettingsScreen({
-    Key? key,
-    this.isDarkMode = false,
-  }) : super(key: key);
+  const NotificationSettingsScreen({Key? key}) : super(key: key);
 
   @override
   State<NotificationSettingsScreen> createState() =>
@@ -28,14 +23,17 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Lấy trạng thái dark mode từ Theme hiện tại
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     // Colors for dark and light mode
-    final backgroundColor = widget.isDarkMode ? Colors.black : Colors.white;
-    final appBarColor = widget.isDarkMode ? Colors.black : Colors.white;
-    final textColor = widget.isDarkMode ? Colors.white : Colors.black;
-    final secondaryTextColor = widget.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600;
-    final dividerColor = widget.isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200;
-    final cardColor = widget.isDarkMode ? const Color(0xFF1A1A1A) : Colors.white;
-    final iconColor = widget.isDarkMode ? Colors.white : null;
+    final backgroundColor = isDarkMode ? Colors.black : Colors.white;
+    final appBarColor = isDarkMode ? Colors.black : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final secondaryTextColor = isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600;
+    final dividerColor = isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200;
+    final cardColor = isDarkMode ? const Color(0xFF1A1A1A) : Colors.white;
+    final iconColor = isDarkMode ? Colors.white : null;
     
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -61,11 +59,11 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header thông tin
-            _buildInfoHeader(),
+            _buildInfoHeader(isDarkMode),
             const SizedBox(height: 24),
 
             // Nhắc nhở hàng ngày
-            _buildSectionTitle('Nhắc nhở học tập'),
+            _buildSectionTitle('Nhắc nhở học tập', textColor),
             _buildNotificationItem(
               title: 'Nhắc nhở học tập hàng ngày',
               subtitle:
@@ -80,6 +78,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
               onTimeTap: () {
                 _selectTime(context);
               },
+              isDarkMode: isDarkMode,
             ),
             _buildNotificationItem(
               title: 'Nhắc nhở giữ streak',
@@ -91,6 +90,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   _streakReminder = value;
                 });
               },
+              isDarkMode: isDarkMode,
             ),
             _buildNotificationItem(
               title: 'Nhắc nhở kiểm tra và bài tập',
@@ -101,10 +101,11 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   _testReminderNotification = value;
                 });
               },
+              isDarkMode: isDarkMode,
             ),
 
             const SizedBox(height: 8),
-            _buildSectionTitle('Tương tác và cập nhật'),
+            _buildSectionTitle('Tương tác và cập nhật', textColor),
             _buildNotificationItem(
               title: 'Bình luận và phản hồi',
               subtitle:
@@ -115,6 +116,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   _commentNotification = value;
                 });
               },
+              isDarkMode: isDarkMode,
             ),
             _buildNotificationItem(
               title: 'Cập nhật khóa học',
@@ -126,10 +128,11 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   _courseUpdateNotification = value;
                 });
               },
+              isDarkMode: isDarkMode,
             ),
 
             const SizedBox(height: 8),
-            _buildSectionTitle('Thành tích và ưu đãi'),
+            _buildSectionTitle('Thành tích và ưu đãi', textColor),
             _buildNotificationItem(
               title: 'Thông báo thành tích',
               subtitle:
@@ -140,6 +143,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   _achievementNotification = value;
                 });
               },
+              isDarkMode: isDarkMode,
             ),
             _buildNotificationItem(
               title: 'Khuyến mãi và ưu đãi',
@@ -150,6 +154,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   _promotionNotification = value;
                 });
               },
+              isDarkMode: isDarkMode,
             ),
 
             const SizedBox(height: 32),
@@ -184,28 +189,40 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   }
 
   // Widget hiển thị tiêu đề khu vực
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, Color textColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.bold,
-          color: Colors.black87,
+          color: textColor,
         ),
       ),
     );
   }
 
   // Widget hiển thị thông tin header
-  Widget _buildInfoHeader() {
+  Widget _buildInfoHeader(bool isDarkMode) {
+    final headerBgColor = isDarkMode 
+        ? Colors.blue.withOpacity(0.15) 
+        : Colors.blue.withOpacity(0.05);
+    final headerBorderColor = isDarkMode 
+        ? Colors.blue.withOpacity(0.3) 
+        : Colors.blue.withOpacity(0.1);
+    final iconBgColor = isDarkMode 
+        ? Colors.blue.withOpacity(0.2) 
+        : Colors.blue.withOpacity(0.1);
+    final titleColor = isDarkMode ? Colors.white : Colors.black87;
+    final descriptionColor = isDarkMode ? Colors.grey[400] : Colors.grey[700];
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.05),
+        color: headerBgColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.withOpacity(0.1)),
+        border: Border.all(color: headerBorderColor),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -213,7 +230,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
+              color: iconBgColor,
               borderRadius: BorderRadius.circular(10),
             ),
             child:
@@ -224,12 +241,12 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Cài đặt thông báo',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: titleColor,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -237,7 +254,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   'Tùy chỉnh cách bạn nhận thông báo từ ứng dụng. Bạn có thể bật/tắt từng loại thông báo khác nhau.',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[700],
+                    color: descriptionColor,
                   ),
                 ),
               ],
@@ -256,16 +273,25 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     required ValueChanged<bool> onChanged,
     bool hasTimeSelector = false,
     VoidCallback? onTimeTap,
+    required bool isDarkMode,
   }) {
+    final cardBgColor = isDarkMode ? const Color(0xFF1A1A1A) : Colors.white;
+    final cardBorderColor = isDarkMode ? const Color(0xFF3A3F55) : Colors.grey.shade200;
+    final titleColor = isDarkMode ? Colors.white : Colors.black;
+    final subtitleColor = isDarkMode ? Colors.grey[400] : Colors.grey[600];
+    final cardShadowColor = isDarkMode 
+        ? Colors.black.withOpacity(0.3) 
+        : Colors.grey.withOpacity(0.05);
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBgColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: cardBorderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: cardShadowColor,
             blurRadius: 5,
             offset: const Offset(0, 3),
           ),
@@ -276,16 +302,17 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           SwitchListTile(
             title: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
+                color: titleColor,
               ),
             ),
             subtitle: Text(
               subtitle,
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey[600],
+                color: subtitleColor,
               ),
             ),
             value: value,
@@ -312,8 +339,11 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                       ),
                     ),
                     const Spacer(),
-                    const Icon(Icons.arrow_forward_ios,
-                        size: 14, color: Colors.grey),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 14, 
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey,
+                    ),
                   ],
                 ),
               ),
@@ -332,16 +362,22 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
 
   // Hàm chọn thời gian
   Future<void> _selectTime(BuildContext context) async {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final TimeOfDay? pickedTime = await showTimePicker(
       context: context,
       initialTime: _reminderTime,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Colors.blue,
-              onSurface: Colors.black,
-            ),
+            colorScheme: isDarkMode
+                ? const ColorScheme.dark(
+                    primary: Colors.blue,
+                    onSurface: Colors.white,
+                  )
+                : const ColorScheme.light(
+                    primary: Colors.blue,
+                    onSurface: Colors.black,
+                  ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
                 foregroundColor: Colors.blue,
@@ -362,26 +398,37 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
 
   // Hiển thị dialog xác nhận đặt lại
   void _showResetConfirmDialog() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final dialogBgColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          backgroundColor: dialogBgColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text('Đặt lại mặc định?'),
-          content: const Text(
+          title: Text(
+            'Đặt lại mặc định?',
+            style: TextStyle(color: textColor),
+          ),
+          content: Text(
             'Tất cả các cài đặt thông báo sẽ được đặt lại về mặc định. Bạn có chắc chắn muốn tiếp tục?',
+            style: TextStyle(color: isDarkMode ? Colors.grey[300] : Colors.black87),
           ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text(
+              child: Text(
                 'Hủy',
-                style:
-                    TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: isDarkMode ? Colors.grey[400] : Colors.grey,
+                  fontWeight: FontWeight.bold
+                ),
               ),
             ),
             ElevatedButton(

@@ -225,8 +225,17 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           ),
         );
         
-        // Tăng số lượt tải (nếu có API để cập nhật)
+        // Tăng số lượt tải và theo dõi hoạt động tải xuống
         _documentController.incrementDownload(widget.document.id);
+        
+        // Ghi nhận hoạt động tải xuống tài liệu bằng API mới
+        _documentController.trackDocumentDownload(widget.document.id).then((success) {
+          if (success) {
+            print('Đã ghi nhận hoạt động tải tài liệu thành công');
+          } else {
+            print('Không thể ghi nhận hoạt động tải tài liệu');
+          }
+        });
       } else {
         _showDownloadError('Lỗi khi tải xuống: ${response.statusCode}');
       }

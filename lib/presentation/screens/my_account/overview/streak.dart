@@ -25,23 +25,23 @@ class StreakScreen extends StatefulWidget {
 
 class _StreakScreenState extends State<StreakScreen> {
   // Theme colors (temporary replacement for appTheme)
-  final Color primaryColor = Colors.orange;
-  final Color accentColor = Colors.deepOrange;
-  final Color blueColor = Colors.blue;
-  final Color bgColor = Colors.white;
-  final Color gray300 = Colors.grey.shade300;
-  final Color gray600 = Colors.grey.shade600;
-  final Color purpleColor = Colors.purple;
+  late Color primaryColor;
+  late Color accentColor;
+  late Color blueColor;
+  late Color bgColor;
+  late Color gray300;
+  late Color gray600;
+  late Color purpleColor;
+  late Color cardBgColor;
+  late Color textColor;
+  late Color textSecondaryColor;
 
   // Temporary TextStyles (replacement for CustomTextStyles)
-  TextStyle get titleMedium =>
-      const TextStyle(fontSize: 16, fontWeight: FontWeight.w500);
-  TextStyle get titleLarge =>
-      const TextStyle(fontSize: 20, fontWeight: FontWeight.w500);
-  TextStyle get headlineLarge =>
-      const TextStyle(fontSize: 28, fontWeight: FontWeight.w500);
-  TextStyle get bodyMedium => const TextStyle(fontSize: 14);
-  TextStyle get bodySmall => const TextStyle(fontSize: 12);
+  late TextStyle titleMedium;
+  late TextStyle titleLarge;
+  late TextStyle headlineLarge;
+  late TextStyle bodyMedium;
+  late TextStyle bodySmall;
 
   // Simulated streak history for the past 15 days (true = completed, false = missed)
   late List<bool> _streakHistory;
@@ -69,6 +69,25 @@ class _StreakScreenState extends State<StreakScreen> {
 
     // Tải dữ liệu từ API
     _loadData();
+  }
+
+  void _initializeThemeColors(bool isDarkMode) {
+    primaryColor = Colors.orange;
+    accentColor = Colors.deepOrange;
+    blueColor = Colors.blue;
+    bgColor = isDarkMode ? Color(0xFF121212) : Colors.white;
+    cardBgColor = isDarkMode ? Color(0xFF1E1E1E) : Colors.white;
+    gray300 = isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300;
+    gray600 = isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600;
+    purpleColor = Colors.purple;
+    textColor = isDarkMode ? Colors.white : Colors.black87;
+    textSecondaryColor = isDarkMode ? Colors.white70 : Colors.black54;
+    
+    titleMedium = TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: textColor);
+    titleLarge = TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: textColor);
+    headlineLarge = TextStyle(fontSize: 28, fontWeight: FontWeight.w500, color: textColor);
+    bodyMedium = TextStyle(fontSize: 14, color: textColor);
+    bodySmall = TextStyle(fontSize: 12, color: textSecondaryColor);
   }
 
   Future<void> _loadData() async {
@@ -179,9 +198,12 @@ class _StreakScreenState extends State<StreakScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    _initializeThemeColors(isDarkMode);
+    
     return Scaffold(
       backgroundColor: bgColor,
-      appBar: _buildAppBar(),
+      appBar: _buildAppBar(isDarkMode),
       body: _isLoading
           ? Center(
               child: CircularProgressIndicator(
@@ -236,33 +258,33 @@ class _StreakScreenState extends State<StreakScreen> {
                     children: [
                       _buildStreakOverview(),
                       const SizedBox(height: 24),
-                      _buildStreakStats(),
+                      _buildStreakStats(isDarkMode),
                       const SizedBox(height: 24),
-                      _buildActivityCalendar(),
+                      _buildActivityCalendar(isDarkMode),
                       const SizedBox(height: 24),
-                      _buildStreakTips(),
+                      _buildStreakTips(isDarkMode),
                     ],
                   ),
                 ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(bool isDarkMode) {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkMode ? Color(0xFF1E1E1E) : Colors.white,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.black),
+        icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : Colors.black),
         onPressed: () => Navigator.pop(context),
       ),
-      title: const Text(
+      title: Text(
         "Học liên tục",
-        style: TextStyle(color: Colors.black, fontSize: 18),
+        style: TextStyle(color: isDarkMode ? Colors.white : Colors.black, fontSize: 18),
       ),
       actions: [
         // Nút refresh để tải lại dữ liệu
         IconButton(
-          icon: const Icon(Icons.refresh, color: Colors.blue),
+          icon: Icon(Icons.refresh, color: Colors.blue),
           onPressed: _loadData,
         ),
       ],
@@ -391,15 +413,15 @@ class _StreakScreenState extends State<StreakScreen> {
     );
   }
 
-  Widget _buildStreakStats() {
+  Widget _buildStreakStats(bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBgColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -479,7 +501,7 @@ class _StreakScreenState extends State<StreakScreen> {
     );
   }
 
-  Widget _buildActivityCalendar() {
+  Widget _buildActivityCalendar(bool isDarkMode) {
     // Lấy ngày hiện tại
     final now = DateTime.now();
 
@@ -520,11 +542,11 @@ class _StreakScreenState extends State<StreakScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBgColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -566,7 +588,7 @@ class _StreakScreenState extends State<StreakScreen> {
                 icon: const Icon(Icons.chevron_right),
                 onPressed: isCurrentMonth ? null : _nextMonth,
                 color: primaryColor,
-                disabledColor: Colors.grey.shade300,
+                disabledColor: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
               ),
             ],
           ),
@@ -634,6 +656,7 @@ class _StreakScreenState extends State<StreakScreen> {
                 isToday: isToday,
                 isActive: isActive,
                 isCompleted: isCompleted,
+                isDarkMode: isDarkMode,
               );
             },
           ),
@@ -701,10 +724,13 @@ class _StreakScreenState extends State<StreakScreen> {
     bool isToday = false,
     bool isActive = false,
     bool isCompleted = false,
+    required bool isDarkMode,
   }) {
     // Màu mặc định
     Color bgColor = Colors.transparent;
-    Color textColor = isActive ? Colors.black : Colors.grey.shade300;
+    Color textColor = isActive 
+        ? (isDarkMode ? Colors.white : Colors.black) 
+        : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300);
     BoxDecoration decoration;
     FontWeight fontWeight = FontWeight.normal;
 
@@ -780,15 +806,15 @@ class _StreakScreenState extends State<StreakScreen> {
     );
   }
 
-  Widget _buildStreakTips() {
+  Widget _buildStreakTips(bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBgColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),

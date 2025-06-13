@@ -10,31 +10,42 @@ class BottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Detect dark mode
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    // Define colors based on theme
+    final backgroundColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+    final shadowColor = isDarkMode 
+        ? Colors.black.withOpacity(0.3) 
+        : Colors.black.withOpacity(0.1);
+    final selectedItemColor = Colors.lightBlue;
+    final unselectedItemColor = isDarkMode 
+        ? Colors.grey.shade400 
+        : const Color.fromARGB(255, 105, 105, 105);
+    
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white, // Nền trắng
+        color: backgroundColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1), // Màu đổ bóng nhẹ
-            blurRadius: 5, // Mức độ mờ của bóng
-            spreadRadius: 2, // Độ lan của bóng
-            offset: const Offset(0, -3), // Dịch chuyển bóng lên trên một chút
+            color: shadowColor,
+            blurRadius: 5,
+            spreadRadius: 2,
+            offset: const Offset(0, -3),
           ),
         ],
       ),
       child: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        currentIndex: selectedIndex, // Chỉ mục tab hiện tại
-        items: _buildNavBarItems(), // Hàm trả về danh sách các item
-        selectedItemColor: Colors.lightBlue, // Màu xanh lá khi được chọn
-        unselectedItemColor: const Color.fromARGB(
-            255, 105, 105, 105), // Màu đen khi không được chọn
+        currentIndex: selectedIndex,
+        items: _buildNavBarItems(),
+        selectedItemColor: selectedItemColor,
+        unselectedItemColor: unselectedItemColor,
         showUnselectedLabels: true,
         onTap: (index) {
-          // Gọi callback onTap cho tất cả các tab, bao gồm cả tab "Đề thi"
           onTap(index);
         },
-        backgroundColor: Colors.white, // Đảm bảo màu nền trắng
+        backgroundColor: backgroundColor,
       ),
     );
   }

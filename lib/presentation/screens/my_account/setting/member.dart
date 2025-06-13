@@ -9,6 +9,38 @@ class MembershipScreen extends StatefulWidget {
 
 class _MembershipScreenState extends State<MembershipScreen>
     with SingleTickerProviderStateMixin {
+  // Theme colors
+  late Color _backgroundColor;
+  late Color _cardColor;
+  late Color _textColor;
+  late Color _textSecondaryColor;
+  late Color _borderColor;
+  late Color _dividerColor;
+  late Color _tableHeaderColor;
+  late Color _shadowColor;
+  
+  void _initializeColors(bool isDarkMode) {
+    if (isDarkMode) {
+      _backgroundColor = const Color(0xFF121212);
+      _cardColor = const Color(0xFF1E1E1E);
+      _textColor = Colors.white;
+      _textSecondaryColor = Colors.grey.shade300;
+      _borderColor = Colors.grey.shade700;
+      _dividerColor = Colors.grey.shade800;
+      _tableHeaderColor = const Color(0xFF2A2D3E);
+      _shadowColor = Colors.black.withOpacity(0.3);
+    } else {
+      _backgroundColor = Colors.white;
+      _cardColor = Colors.white;
+      _textColor = Colors.black87;
+      _textSecondaryColor = Colors.grey.shade700;
+      _borderColor = Colors.grey.shade200;
+      _dividerColor = Colors.grey.shade200;
+      _tableHeaderColor = Colors.grey.shade100;
+      _shadowColor = Colors.black.withOpacity(0.1);
+    }
+  }
+
   // Loại gói thành viên được chọn
   String _selectedPlan = 'premium';
   String _selectedDuration = '6_month';
@@ -140,20 +172,24 @@ class _MembershipScreenState extends State<MembershipScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Detect dark mode
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    _initializeColors(isDarkMode);
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: _backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: _backgroundColor,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Gói thành viên',
           style: TextStyle(
-            color: Colors.black,
+            color: _textColor,
             fontWeight: FontWeight.w500,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          icon: Icon(Icons.arrow_back_ios, color: _textColor),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -196,21 +232,28 @@ class _MembershipScreenState extends State<MembershipScreen>
 
   // Widget hiển thị banner gói thành viên
   Widget _buildMembershipBanner() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            const Color(0xFF3F51B5),
-            const Color(0xFF5C6BC0),
-          ],
+          colors: isDarkMode 
+              ? [
+                  const Color(0xFF303F9F),
+                  const Color(0xFF3949AB),
+                ]
+              : [
+                  const Color(0xFF3F51B5),
+                  const Color(0xFF5C6BC0),
+                ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3F51B5).withOpacity(0.3),
+            color: const Color(0xFF3F51B5).withOpacity(isDarkMode ? 0.5 : 0.3),
             offset: const Offset(0, 4),
             blurRadius: 12,
           ),
@@ -319,18 +362,21 @@ class _MembershipScreenState extends State<MembershipScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Chọn thời hạn',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
+            color: _textColor,
           ),
         ),
         const SizedBox(height: 16),
         Container(
           height: 56,
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? const Color(0xFF2A2D3E) 
+                : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
@@ -348,6 +394,7 @@ class _MembershipScreenState extends State<MembershipScreen>
   // Widget hiển thị tùy chọn thời hạn
   Widget _buildDurationOption(String id, String label,
       {bool isPopular = false, int? discount}) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final isSelected = _selectedDuration == id;
 
     return Expanded(
@@ -361,7 +408,9 @@ class _MembershipScreenState extends State<MembershipScreen>
           height: 56,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF3F51B5) : Colors.transparent,
+            color: isSelected 
+                ? const Color(0xFF3F51B5) 
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Stack(
@@ -375,7 +424,9 @@ class _MembershipScreenState extends State<MembershipScreen>
                       label,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black,
+                        color: isSelected 
+                            ? Colors.white 
+                            : _textColor,
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
                       ),
@@ -427,11 +478,12 @@ class _MembershipScreenState extends State<MembershipScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Chọn gói thành viên',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
+            color: _textColor,
           ),
         ),
         const SizedBox(height: 16),
@@ -445,6 +497,7 @@ class _MembershipScreenState extends State<MembershipScreen>
 
   // Widget hiển thị thẻ gói thành viên
   Widget _buildPlanCard(MembershipPlan plan) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final isSelected = _selectedPlan == plan.id;
     final currentPrice = _selectedDuration == 'monthly'
         ? plan.monthlyPrice
@@ -462,17 +515,17 @@ class _MembershipScreenState extends State<MembershipScreen>
         duration: const Duration(milliseconds: 300),
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: _cardColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? plan.mainColor : Colors.grey.shade200,
+            color: isSelected ? plan.mainColor : _borderColor,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: [
             BoxShadow(
               color: isSelected
-                  ? plan.mainColor.withOpacity(0.2)
-                  : Colors.grey.shade100,
+                  ? plan.mainColor.withOpacity(isDarkMode ? 0.3 : 0.2)
+                  : _shadowColor,
               offset: const Offset(0, 4),
               blurRadius: 12,
             ),
@@ -484,7 +537,9 @@ class _MembershipScreenState extends State<MembershipScreen>
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isSelected ? plan.mainColor : Colors.grey.shade50,
+                color: isSelected 
+                    ? plan.mainColor 
+                    : (isDarkMode ? const Color(0xFF2A2D3E) : Colors.grey.shade50),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(16),
                   topRight: Radius.circular(16),
@@ -498,7 +553,7 @@ class _MembershipScreenState extends State<MembershipScreen>
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : Colors.black,
+                      color: isSelected ? Colors.white : _textColor,
                     ),
                   ),
                   Row(
@@ -509,7 +564,7 @@ class _MembershipScreenState extends State<MembershipScreen>
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: isSelected ? Colors.white : Colors.black,
+                          color: isSelected ? Colors.white : _textColor,
                         ),
                       ),
                       Text(
@@ -520,7 +575,9 @@ class _MembershipScreenState extends State<MembershipScreen>
                                 : '/năm',
                         style: TextStyle(
                           fontSize: 12,
-                          color: isSelected ? Colors.white70 : Colors.grey,
+                          color: isSelected 
+                              ? Colors.white70 
+                              : (isDarkMode ? Colors.grey.shade400 : Colors.grey),
                         ),
                       ),
                     ],
@@ -554,8 +611,8 @@ class _MembershipScreenState extends State<MembershipScreen>
                               feature,
                               style: TextStyle(
                                 color: isPopular
-                                    ? Colors.black
-                                    : Colors.grey.shade700,
+                                    ? _textColor
+                                    : _textSecondaryColor,
                                 fontWeight: isPopular
                                     ? FontWeight.w600
                                     : FontWeight.normal,
@@ -597,7 +654,7 @@ class _MembershipScreenState extends State<MembershipScreen>
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor:
-                            isSelected ? plan.mainColor : Colors.white,
+                            isSelected ? plan.mainColor : _cardColor,
                         foregroundColor:
                             isSelected ? Colors.white : plan.mainColor,
                         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -623,45 +680,60 @@ class _MembershipScreenState extends State<MembershipScreen>
 
   // Widget hiển thị so sánh tính năng
   Widget _buildFeatureComparison() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'So sánh các gói thành viên',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
+            color: _textColor,
           ),
         ),
         const SizedBox(height: 16),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: DataTable(
-            headingRowColor: MaterialStateProperty.all(Colors.grey.shade100),
+            headingRowColor: MaterialStateProperty.all(_tableHeaderColor),
             columnSpacing: 20,
-            columns: const [
+            columns: [
               DataColumn(
                 label: Text(
                   'Tính năng',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: _textColor,
+                  ),
                 ),
               ),
               DataColumn(
                 label: Text(
                   'Basic',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: _textColor,
+                  ),
                 ),
               ),
               DataColumn(
                 label: Text(
                   'Premium',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: _textColor,
+                  ),
                 ),
               ),
               DataColumn(
                 label: Text(
                   'Business',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: _textColor,
+                  ),
                 ),
               ),
             ],
@@ -693,9 +765,11 @@ class _MembershipScreenState extends State<MembershipScreen>
   // Widget hiển thị hàng trong bảng so sánh
   DataRow _buildFeatureRow(
       String feature, String basic, String premium, String business) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return DataRow(
       cells: [
-        DataCell(Text(feature)),
+        DataCell(Text(feature, style: TextStyle(color: _textColor))),
         DataCell(
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -710,8 +784,9 @@ class _MembershipScreenState extends State<MembershipScreen>
               Text(
                 basic == 'Có' || basic == 'Không' ? '' : basic,
                 style: TextStyle(
-                  color:
-                      basic.contains('Giới hạn') ? Colors.orange : Colors.black,
+                  color: basic.contains('Giới hạn') 
+                      ? Colors.orange 
+                      : (isDarkMode ? Colors.grey.shade300 : Colors.black),
                 ),
               ),
             ],
@@ -731,9 +806,9 @@ class _MembershipScreenState extends State<MembershipScreen>
               Text(
                 premium == 'Có' || premium == 'Không' ? '' : premium,
                 style: TextStyle(
-                  color: premium.contains('Giới hạn')
-                      ? Colors.orange
-                      : Colors.black,
+                  color: premium.contains('Giới hạn') 
+                      ? Colors.orange 
+                      : (isDarkMode ? Colors.grey.shade300 : Colors.black),
                 ),
               ),
             ],
@@ -753,9 +828,9 @@ class _MembershipScreenState extends State<MembershipScreen>
               Text(
                 business == 'Có' || business == 'Không' ? '' : business,
                 style: TextStyle(
-                  color: business.contains('Giới hạn')
-                      ? Colors.orange
-                      : Colors.black,
+                  color: business.contains('Giới hạn') 
+                      ? Colors.orange 
+                      : (isDarkMode ? Colors.grey.shade300 : Colors.black),
                 ),
               ),
             ],
@@ -767,22 +842,25 @@ class _MembershipScreenState extends State<MembershipScreen>
 
   // Widget hiển thị FAQ về gói thành viên
   Widget _buildMembershipFAQ() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Câu hỏi thường gặp',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
+            color: _textColor,
           ),
         ),
         const SizedBox(height: 16),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: _cardColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: _borderColor),
           ),
           child: Column(
             children: [
@@ -812,6 +890,8 @@ class _MembershipScreenState extends State<MembershipScreen>
 
   // Widget hiển thị mục FAQ
   Widget _buildFAQItem(String question, String answer, {bool isLast = false}) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Column(
       children: [
         ExpansionTile(
@@ -819,16 +899,19 @@ class _MembershipScreenState extends State<MembershipScreen>
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           title: Text(
             question,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w500,
               fontSize: 14,
+              color: _textColor,
             ),
           ),
+          iconColor: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+          collapsedIconColor: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
           children: [
             Text(
               answer,
               style: TextStyle(
-                color: Colors.grey.shade700,
+                color: _textSecondaryColor,
                 height: 1.5,
               ),
             ),
@@ -837,7 +920,7 @@ class _MembershipScreenState extends State<MembershipScreen>
         if (!isLast)
           Divider(
             height: 1,
-            color: Colors.grey.shade200,
+            color: _dividerColor,
           ),
       ],
     );

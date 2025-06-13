@@ -72,6 +72,23 @@ class _HomeUserHeaderState extends State<HomeUserHeader> {
     // Kiểm tra xem thiết bị đang sử dụng chế độ tối hay không
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     
+    // Define colors based on theme
+    final backgroundColor = isDarkMode 
+        ? const Color(0xFF1E1E1E).withOpacity(0.7) 
+        : AppStyles.primaryColor.withOpacity(0.05);
+    
+    final textColor = isDarkMode 
+        ? Colors.white 
+        : const Color(0xFF333333);
+    
+    final avatarBgColor = isDarkMode 
+        ? Colors.grey[800] 
+        : Colors.white;
+    
+    final loadingColor = isDarkMode 
+        ? AppStyles.primaryColor.withOpacity(0.7) 
+        : AppStyles.primaryColor;
+    
     return Container(
       padding: const EdgeInsets.only(
         left: AppDimensions.screenPadding / 1.5,
@@ -80,13 +97,20 @@ class _HomeUserHeaderState extends State<HomeUserHeader> {
         bottom: AppDimensions.headingSpacing,
       ),
       decoration: BoxDecoration(
-        color: isDarkMode 
-            ? AppStyles.primaryColor.withOpacity(0.15) 
-            : AppStyles.primaryColor.withOpacity(0.05),
+        color: backgroundColor,
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(AppDimensions.radiusRounded),
           bottomRight: Radius.circular(AppDimensions.radiusRounded),
         ),
+        boxShadow: isDarkMode 
+            ? [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                )
+              ] 
+            : null,
       ),
       child: Row(
         children: [
@@ -94,12 +118,15 @@ class _HomeUserHeaderState extends State<HomeUserHeader> {
           isLoading
               ? CircleAvatar(
                   radius: 25,
-                  backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  backgroundColor: avatarBgColor,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(loadingColor),
+                  ),
                 )
               : CircleAvatar(
                   radius: 25,
-                  backgroundColor: isDarkMode ? Colors.grey[800] : Colors.white,
+                  backgroundColor: avatarBgColor,
                   backgroundImage: userImage != null && userImage!.isNotEmpty
                       ? NetworkImage(userImage!)
                       : null,
@@ -124,7 +151,7 @@ class _HomeUserHeaderState extends State<HomeUserHeader> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: isDarkMode ? Colors.white : Color(0xFF333333),
+                      color: textColor,
                     ),
                   )
                 : errorMessage != null
@@ -133,7 +160,7 @@ class _HomeUserHeaderState extends State<HomeUserHeader> {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: isDarkMode ? Colors.white : Color(0xFF333333),
+                          color: textColor,
                         ),
                       )
                     : Text(
@@ -141,7 +168,7 @@ class _HomeUserHeaderState extends State<HomeUserHeader> {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: isDarkMode ? Colors.white : Color(0xFF333333),
+                          color: textColor,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
