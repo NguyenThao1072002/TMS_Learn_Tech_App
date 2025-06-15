@@ -11,12 +11,13 @@ android {
     ndkVersion = "27.0.12077973"
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = "1.8"
     }
 
     defaultConfig {
@@ -26,7 +27,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        
+      
         // Thêm cấu hình để hỗ trợ Google Sign-In
         manifestPlaceholders["appAuthRedirectScheme"] = "com.example.tms_app"
     }
@@ -57,4 +58,5 @@ dependencies {
     // Thêm dependency cho Google Sign-In
     implementation("com.google.android.gms:play-services-auth:20.7.0")
     implementation(files("../zpdk-release-28052021/zpdk-release-v3.1.aar"))
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

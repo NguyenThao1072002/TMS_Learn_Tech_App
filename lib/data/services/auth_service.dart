@@ -9,6 +9,10 @@ class AuthService {
   final String baseUrl = '${Constants.BASE_URL}/account';
 
   AuthService(this.dio);
+  Future<String?> getJwtToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(SharedPrefs.KEY_JWT_TOKEN);
+  }
 
   // Đăng nhập và lưu thông tin người dùng
   Future<Map<String, dynamic>?> login(Map<String, dynamic> body) async {
@@ -71,7 +75,7 @@ class AuthService {
         queryParameters: {'refreshToken': refreshToken},
         options: Options(
           headers: {'Content-Type': 'application/json'},
-          validateStatus: (status) => true, 
+          validateStatus: (status) => true,
         ),
       );
 

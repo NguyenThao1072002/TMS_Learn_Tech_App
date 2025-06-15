@@ -2925,7 +2925,6 @@ class _CartScreenState extends State<CartScreen> {
         }
       }
     }
-
     return false;
   }
 

@@ -18,6 +18,8 @@ dependencies:
   timeago: ^3.5.0
   flutter_html: ^3.0.0-beta.2
   share_plus: ^11.0.0
+  stomp_dart_client: 2.0.0
+  web_socket_channel: ^2.1.0
 
   # 🌐 UI & Routing
   cupertino_icons: ^1.0.2
@@ -58,6 +60,7 @@ dependencies:
   cached_network_image: ^3.3.1
   chewie: ^1.11.3
   flutter_secure_storage: ^8.0.0
+  flutter_local_notifications: ^19.2.1
   #cupertino_icons: ^1.0.8
 
 dev_dependencies:
