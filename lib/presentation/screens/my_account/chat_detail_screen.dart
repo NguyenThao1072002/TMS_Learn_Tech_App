@@ -149,12 +149,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   Widget _buildChatDetailTitle() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final bool isGroup = widget.chatInfo.type == 'group';
 
     return Row(
       children: [
         CircleAvatar(
           radius: 18,
+          backgroundColor: isGroup ? Colors.orange.shade100 : null,
           backgroundImage: NetworkImage(widget.chatInfo.avatarReceived),
+          child: isGroup
+              ? Icon(Icons.group, color: Colors.orange, size: 18)
+              : null,
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -162,7 +167,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.chatInfo.receivedName,
+                isGroup
+                    ? "Nhóm: ${widget.chatInfo.name}"
+                    : widget.chatInfo.receivedName,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -173,7 +180,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               Text(
                 _isTyping
                     ? "Đang gõ..."
-                    : (widget.chatInfo.type == 'group' ? "Nhóm" : "Trực tuyến"),
+                    : (isGroup
+                        ? "${widget.chatInfo.receivedName}"
+                        : "Trực tuyến"),
                 style: TextStyle(
                   fontSize: 12,
                   color: _isTyping ? Colors.blue : Colors.green,
@@ -389,7 +398,125 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   Widget _buildMessageItem(ChatMessageModel message) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final bool isGroup = widget.chatInfo.type == 'group';
 
+    int userId = int.tryParse(widget.userId) ?? 0;
+    // If it's a group chat, handle it differently
+    if (isGroup) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          mainAxisAlignment: message.fromId == userId
+              ? MainAxisAlignment.end
+              : MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Avatar (only show for messages from others)
+            if (message.fromId != userId) ...[
+              CircleAvatar(
+                radius: 18,
+                backgroundImage: NetworkImage(
+                    message.fromImage?.isNotEmpty == true
+                        ? message.fromImage!
+                        : "https://ui-avatars.com/api/?name=User"),
+              ),
+              const SizedBox(width: 12),
+            ],
+
+            // Message content
+            Flexible(
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: message.fromId == userId
+                      ? (isDarkMode
+                          ? const Color(0xFF2C2C54)
+                          : const Color(0xFFF3F3FF))
+                      : (isDarkMode ? Colors.grey[800] : Colors.white),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isDarkMode ? Colors.black26 : Colors.grey.shade200,
+                      spreadRadius: 1,
+                      blurRadius: 1,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: message.fromId == userId
+                        ? (isDarkMode
+                            ? const Color(0xFF3C3C64)
+                            : const Color(0xFFE6E6FF))
+                        : (isDarkMode ? Colors.grey[700]! : Colors.grey[100]!),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Sender name (only show for messages from others)
+                    if (message.fromId != userId) ...[
+                      Text(
+                        message.senderUsername ?? '',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: Colors.orange,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                    ],
+
+                    // Message content
+                    Text(
+                      message.content,
+                      style: TextStyle(
+                        fontSize: 15,
+                        height: 1.3,
+                        color: _textColor,
+                      ),
+                    ),
+
+                    // Timestamp
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: message.fromId == userId
+                          ? MainAxisAlignment.end
+                          : MainAxisAlignment.start,
+                      children: [
+                        Text(
+                          message.timestamp,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDarkMode
+                                ? Colors.grey[400]
+                                : Colors.grey[500],
+                          ),
+                        ),
+                        if (message.fromId == userId) ...[
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.done_all,
+                            size: 14,
+                            color: Colors.blue,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Space after avatar for own messages
+            if (message.fromId == userId) const SizedBox(width: 8),
+          ],
+        ),
+      );
+    }
+
+    // For non-group chats, use the original code unchanged:
     String avatarToShow = '';
     if (widget.chatInfo.receivedId != widget.userId) {
       avatarToShow = widget.chatInfo.avatarReceived ?? '';

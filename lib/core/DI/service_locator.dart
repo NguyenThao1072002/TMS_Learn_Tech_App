@@ -134,6 +134,11 @@ import 'package:tms_app/data/repositories/chat_repository_impl.dart';
 import 'package:tms_app/domain/repositories/chat_repository.dart';
 import 'package:tms_app/domain/usecases/chat_usecase.dart';
 import 'package:tms_app/presentation/controller/chat_controller.dart';
+import 'package:tms_app/data/services/ranking/ranking_service.dart';
+import 'package:tms_app/data/repositories/ranking_repository_impl.dart';
+import 'package:tms_app/domain/repositories/ranking_repository.dart';
+import 'package:tms_app/domain/usecases/ranking_usecase.dart';
+import 'package:tms_app/presentation/controller/ranking_controller.dart';
 
 // Đảm bảo các import không bị xóa bởi công cụ IDE
 // ignore: unused_element
@@ -488,6 +493,11 @@ void _registerRepositories() {
   sl.registerLazySingleton<ChatRepository>(
     () => ChatRepositoryImpl(chatService: sl<ChatService>()),
   );
+  // Register RankingService using Dio
+  sl.registerLazySingleton<RankingService>(() => RankingService(sl<Dio>()));
+  sl.registerLazySingleton<RankingRepository>(
+    () => RankingRepositoryImpl(rankingService: sl<RankingService>()),
+  );
 }
 
 // Đăng ký tất cả các UseCase
@@ -604,6 +614,11 @@ void _registerUseCases() {
   sl.registerLazySingleton<ChatUsecase>(
     () => ChatUsecase(repository: sl<ChatRepository>()),
   );
+  sl.registerLazySingleton(() => GetRankingsUseCase(sl<RankingRepository>()));
+  sl.registerLazySingleton(
+      () => GetCurrentUserRankingUseCase(sl<RankingRepository>()));
+  sl.registerLazySingleton(
+      () => GetCurrentUserPointsUseCase(sl<RankingRepository>()));
 }
 
 // Thêm một phương thức mới riêng để đăng ký controllers
@@ -716,6 +731,14 @@ void _registerControllers() {
   // Register ChatController
   sl.registerLazySingleton<ChatController>(
     () => ChatController(chatUsecase: sl<ChatUsecase>()),
+  );
+
+  sl.registerLazySingleton<RankingController>(
+    () => RankingController(
+      getRankingsUseCase: sl(),
+      getCurrentUserRankingUseCase: sl(),
+      getCurrentUserPointsUseCase: sl(),
+    ),
   );
 }
 

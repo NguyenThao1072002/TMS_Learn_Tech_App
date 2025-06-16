@@ -42,6 +42,7 @@ class _ChatScreenState extends State<ChatScreen>
 
     // Load user ID
     _loadUserId();
+   
   }
 
   // Load user ID from SharedPrefs
