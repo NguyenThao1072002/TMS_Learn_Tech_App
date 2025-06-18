@@ -6,6 +6,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
+import 'package:tms_app/data/models/payment/payment_resquest_modal_wallet.dart';
 import 'package:tms_app/data/models/payment/payment_request_model.dart';
 import 'package:tms_app/data/models/payment/payment_response_model.dart';
 import 'package:tms_app/presentation/controller/cart_controller.dart';
@@ -120,6 +121,8 @@ class _PaymentScreenState extends State<PaymentScreen>
       _showPaymentUnavailable("VNPay hiện tại đang bảo trì");
     } else if (widget.paymentMethod == 'tms_wallet') {
       _showPaymentUnavailable("Ví TMS hiện tại đang bảo trì");
+    } else if (widget.paymentMethod == 'wallet_mobile') {
+      _processPaymentWalletMobile();
     } else {
       _showPaymentUnavailable("Phương thức thanh toán không hợp lệ");
     }
@@ -289,6 +292,114 @@ class _PaymentScreenState extends State<PaymentScreen>
     }
   }
 
+  // Khởi tạo ZAlopay để nạp tiền vô VÍ
+  Future<void> _processPaymentWalletMobile() async {
+    try {
+      setState(() {
+        _isProcessing = true;
+        _isFailed = false;
+        _isCompleted = false;
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+      final savedEmail = prefs.getString(LoginController.KEY_SAVED_EMAIL) ?? "";
+
+      // Create payload for ZaloPay
+      final paymentRequest = {
+        'appUser': savedEmail,
+        'amount': widget.amount.toDouble(),
+        'description': 'Payment $savedEmail',
+        'bankCode': 'zalopayapp',
+        'items': widget.items.isNotEmpty ? widget.items : null,
+        'embedData': {
+          'promotion_code':
+              widget.promoCode.isNotEmpty ? widget.promoCode : 'NONE',
+          'merchant_info': 'TMS Learning',
+          'redirecturl': 'https://tms.com/payment-result'
+        }
+      };
+
+      // Get ZaloPay token
+      final tokenResponse =
+          await _paymentController.getZaloPayTokenMobile(paymentRequest);
+
+      // Extract ZaloPay token
+      String zpToken = '';
+      if (tokenResponse.containsKey('zp_trans_token')) {
+        zpToken = tokenResponse['zp_trans_token']?.toString() ?? '';
+      } else if (tokenResponse.containsKey('zptoken')) {
+        zpToken = tokenResponse['zptoken']?.toString() ?? '';
+      } else {
+        // Fallback to search for token in any field
+        for (var entry in tokenResponse.entries) {
+          if (entry.value is String &&
+              entry.value.toString().isNotEmpty &&
+              (entry.key.toLowerCase().contains('token') ||
+                  entry.value.toString().length > 20)) {
+            zpToken = entry.value.toString();
+            break;
+          }
+        }
+      }
+
+      if (zpToken.isEmpty) {
+        throw Exception("Không thể lấy được token thanh toán");
+      }
+
+      // Process payment with ZaloPay
+      final result = await _payWithZaloPay(zpToken);
+
+      if (result['status'] == 'success') {
+        // Check payment status
+        final checkStatus =
+            await _paymentController.getQueryPayment(result['appTransID']);
+
+        if (checkStatus["returncode"] == 1) {
+          // Success
+          setState(() {
+            _isProcessing = false;
+            _isCompleted = true;
+            _isFailed = false;
+            _transactionId = checkStatus["apptransid"] ?? result['appTransID'];
+            returncode = checkStatus["returncode"];
+            returnmessage =
+                checkStatus["returnmessage"] ?? "Thanh toán thành công";
+          });
+          // Save payment details to backend after successful payment
+          await _savePaymentToBackendMobile();
+        } else {
+          // Failed
+          setState(() {
+            _isProcessing = false;
+            _isCompleted = false;
+            _isFailed = true;
+            _shouldShowRetry = true;
+            returncode = checkStatus["returncode"];
+            returnmessage =
+                checkStatus["returnmessage"] ?? "Thanh toán thất bại";
+          });
+        }
+      } else {
+        // Failed
+        setState(() {
+          _isProcessing = false;
+          _isCompleted = false;
+          _isFailed = true;
+          _shouldShowRetry = true;
+          returnmessage = result['message'] ?? "Thanh toán thất bại";
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isProcessing = false;
+        _isCompleted = false;
+        _isFailed = true;
+        _shouldShowRetry = true;
+        returnmessage = "Lỗi thanh toán: $e";
+      });
+    }
+  }
+
   // Method to save payment details to backend
   Future<void> _savePaymentToBackend() async {
     try {
@@ -358,6 +469,72 @@ class _PaymentScreenState extends State<PaymentScreen>
       final response =
           await _paymentController.savePaymentRecord(paymentRequest);
       print("Payment saved successfully: ${response.data.id}");
+    } catch (e) {
+      print("Error saving payment: $e");
+    }
+  }
+
+  Future<void> _savePaymentToBackendMobile() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(SharedPrefs.KEY_USER_ID);
+
+      if (userId == null || userId.isEmpty) {
+        print("Error: No user ID found");
+        return;
+      }
+
+      // Chuyển đổi userId từ String sang int
+      final int userIdInt;
+      try {
+        userIdInt = int.parse(userId);
+      } catch (e) {
+        print("Error: Invalid user ID format - $userId");
+        return;
+      }
+      List<Map<String, dynamic>> paymentDetails = [];
+      double subtotal = 0.0;
+      double discountValue = 0.0;
+      double discountPercent = 0.0;
+
+      // Create payment details array
+      paymentDetails = widget.items;
+
+      // Calculate discount
+      subtotal = widget.items.fold(
+          0, (sum, item) => sum + double.parse(item['itemprice'].toString()));
+      discountValue = 0;
+      discountPercent = 0;
+
+      // Create payment payload
+      final PaymentRequestModelWallet paymentRequest =
+          PaymentRequestModelWallet(
+              paymentDate: DateTime.now().toIso8601String(),
+              subTotalPayment: subtotal,
+              totalPayment: widget.amount,
+              totalDiscount: discountValue,
+              discountValue: discountPercent.round(),
+              paymentMethod: "ZaloPay",
+              transactionId: _transactionId,
+              accountId: userIdInt,
+              paymentType: widget.paymentType,
+              status: "COMPLETED",
+              note: "Thanh toán thành công qua ${_transactionId}",
+              paymentDetails: paymentDetails
+                  .map((item) => PaymentDetailModelWallet(
+                        itemid: item['itemid'],
+                        itemname: item['itemname'],
+                        itemprice: item['itemprice'],
+                        itemtype: item['itemtype'],
+                      ))
+                  .toList(),
+              createdAt: DateTime.now().toIso8601String(),
+              updatedAt: DateTime.now().toIso8601String());
+
+      // Send request to backend using the controller
+      final response =
+          await _paymentController.savePaymentRecordMobile(paymentRequest);
+      print("Payment saved successfully: ${response.data?.id}");
     } catch (e) {
       print("Error saving payment: $e");
     }

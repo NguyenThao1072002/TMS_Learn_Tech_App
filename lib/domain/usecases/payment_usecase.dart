@@ -3,6 +3,7 @@ import 'package:tms_app/data/models/payment/payment_request_model.dart';
 import 'package:tms_app/data/models/payment/payment_response_model.dart';
 import 'package:tms_app/data/models/payment/payment_gateway_request.dart';
 import 'package:tms_app/data/models/payment/payment_gateway_response.dart';
+import 'package:tms_app/data/models/payment/payment_resquest_modal_wallet.dart';
 import 'package:flutter/foundation.dart';
 
 class PaymentUseCase {
@@ -12,6 +13,10 @@ class PaymentUseCase {
 
   Future<Map<String, dynamic>> createOrderUseCase(Map<String, dynamic> amount) {
     return paymentRepository.createZaloPayOrder(amount);
+  }
+
+  Future<Map<String, dynamic>> createOrderUseCaseMobile(Map<String, dynamic> amount) {
+    return paymentRepository.createZaloPayOrderMobile(amount);
   }
 
   Future<Map<String, dynamic>> getQueryPaymentUseCase(String appTransId) {
@@ -26,7 +31,8 @@ class PaymentUseCase {
   /// Process a successful payment from ZaloPay and deposit into wallet
   /// 
   /// [request] The payment gateway request with all transaction details
-  Future<PaymentGatewayResponse> processPaymentGateway(PaymentGatewayRequest request) async {
+  Future<PaymentGatewayResponse> processPaymentGateway(
+      PaymentGatewayRequest request) async {
     try {
       // Validate input
       if (request.accountId <= 0) {
@@ -51,6 +57,41 @@ class PaymentUseCase {
         debugPrint('UseCase: Payment gateway processing failed: ${response.message}');
       }
       
+      return response;
+    } catch (e) {
+      debugPrint('UseCase: Error processing payment gateway: $e');
+      rethrow;
+    }
+  }
+  
+  Future<PaymentGatewayResponse> processPaymentGatewayMobile(
+      PaymentRequestModelWallet request) async {
+    try {
+      // Validate input
+      if (request.accountId <= 0) {
+        throw Exception('ID tài khoản không hợp lệ');
+      }
+
+      if (request.transactionId.isEmpty) {
+        throw Exception('ID giao dịch không được để trống');
+      }
+
+      if (request.totalPayment <= 0) {
+        throw Exception('Số tiền thanh toán phải lớn hơn 0');
+      }
+
+      debugPrint(
+          'UseCase: Processing payment gateway for transaction ${request.transactionId}');
+
+      final response = await paymentRepository.processPaymentGatewayMobile(request);
+
+      if (response.isSuccess) {
+        debugPrint('UseCase: Payment gateway processed successfully');
+      } else {
+        debugPrint(
+            'UseCase: Payment gateway processing failed: ${response.message}');
+      }
+
       return response;
     } catch (e) {
       debugPrint('UseCase: Error processing payment gateway: $e');

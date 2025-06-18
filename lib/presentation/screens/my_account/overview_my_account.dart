@@ -219,7 +219,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
   int _totalCourses = 0;
   int _totalDocument = 0;
   double _balanceWallet = 0.0;
-
+  int _walletId = 0;
   // Số lượng cho badges
   int _cartItemCount = 0;
   final int _unreadMessageCount = 5;
@@ -380,6 +380,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
         _totalCourses = overviewData.countCourse;
         _totalDocument = overviewData.countDocument;
         _balanceWallet = overviewData.balanceWallet;
+        _walletId = overviewData.walletId ?? 0;
         _isLoadingOverview = false;
       });
 
@@ -1142,6 +1143,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen>
             MaterialPageRoute(
               builder: (context) => MyWalletScreen(
                 initialBalance: _balanceWallet,
+                walletId: _walletId,  
               ),
             ),
           );

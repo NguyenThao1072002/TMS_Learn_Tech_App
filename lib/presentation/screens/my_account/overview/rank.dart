@@ -1,49 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
-
-class UserRankData {
-  final String name;
-  final String? avatarUrl;
-  final int points;
-  final int rank;
-  final bool isCurrentUser;
-  final int level;
-  final int completedCourses;
-
-  UserRankData({
-    required this.name,
-    this.avatarUrl,
-    required this.points,
-    required this.rank,
-    this.isCurrentUser = false,
-    required this.level,
-    required this.completedCourses,
-  });
-}
-
-// Định nghĩa cấu trúc phần thưởng theo hạng
-class RankReward {
-  final String name;
-  final String description;
-  final IconData icon;
-  final Color color;
-  final int requiredRank;
-  final bool isVoucher;
-  final String? voucherCode;
-  final String? expiryDate;
-
-  RankReward({
-    required this.name,
-    required this.description,
-    required this.icon,
-    required this.color,
-    required this.requiredRank,
-    this.isVoucher = false,
-    this.voucherCode,
-    this.expiryDate,
-  });
-}
+import 'package:tms_app/data/models/ranking/ranking.dart';
+import 'package:tms_app/data/models/reward/rank_reward.dart';
+import 'package:tms_app/presentation/controller/ranking_controller.dart';
 
 class RankScreen extends StatefulWidget {
   const RankScreen({Key? key}) : super(key: key);
@@ -55,13 +16,13 @@ class RankScreen extends StatefulWidget {
 class _RankScreenState extends State<RankScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  late List<UserRankData> _weeklyRankings;
-  late List<UserRankData> _monthlyRankings;
-  late List<UserRankData> _allTimeRankings;
+  late List<Ranking> _weeklyRankings;
+  late List<Ranking> _monthlyRankings;
+  late List<Ranking> _allTimeRankings;
   late List<RankReward> _rewards;
-
+  late List<Ranking> _rankings;
   final List<String> _tabs = ["Tuần này", "Tháng này", "Tổng"];
-
+//
   // Gradient colors for various UI elements
   late List<Color> _gradientColors;
 
@@ -82,9 +43,9 @@ class _RankScreenState extends State<RankScreen>
   late Color _shadowColor;
 
   // Thông tin điểm người dùng
-  final int _userPoints = 250;
+  int _userPoints = 0;
   final int _pointsGainedToday = 25;
-  int _currentUserRank = 8; // Hạng hiện tại của người dùng
+  int _currentUserRank = 0; // Hạng hiện tại của người dùng
   bool _showRewardsPanel = false;
   bool _hasShownCongratulations = false; // Kiểm tra đã hiển thị chúc mừng chưa
 
@@ -92,14 +53,17 @@ class _RankScreenState extends State<RankScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _weeklyRankings = [];
+    _monthlyRankings = [];
+    _allTimeRankings = [];
+    _loadData();
 
     // Initialize colors with default values (light mode)
     _initializeColors(false);
 
     // Generate mock data
-    _generateMockData();
+    // _generateMockData();
     _initializeRewards();
-
     // Thêm hiệu ứng animation khi chuyển tab
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
@@ -123,7 +87,7 @@ class _RankScreenState extends State<RankScreen>
     // Theme-specific colors
     _accentColor = const Color(0xFF5FC6FF);
     _secondaryAccentColor = const Color(0xFFFF5E84);
-    
+
     // Background colors
     if (isDarkMode) {
       _backgroundStartColor = const Color(0xFF121212);
@@ -321,7 +285,7 @@ class _RankScreenState extends State<RankScreen>
     ];
   }
 
-  List<UserRankData> _generateRankings(List<String> names, List<String> avatars,
+  List<Ranking> _generateRankings(List<String> names, List<String> avatars,
       {int multiplier = 1}) {
     // Make a copy of the names and shuffle them to create random rankings
     final shuffledIndices = List<int>.generate(names.length, (i) => i)
@@ -329,7 +293,7 @@ class _RankScreenState extends State<RankScreen>
           math.Random(DateTime.now().millisecondsSinceEpoch + multiplier));
 
     // Create a list of rankings
-    final rankings = <UserRankData>[];
+    final rankings = <Ranking>[];
 
     for (int i = 0; i < names.length; i++) {
       final index = shuffledIndices[i];
@@ -341,11 +305,16 @@ class _RankScreenState extends State<RankScreen>
       final points = (1000 - (i * 50)) * multiplier;
 
       rankings.add(
-        UserRankData(
-          name: names[index],
-          avatarUrl: avatars[index],
-          points: points,
-          rank: i + 1,
+        Ranking(
+          id: 0,
+          accountId: 0,
+          accountName: names[index],
+          periodType: 'week',
+          totalPoints: points,
+          ranking: i + 1,
+          status: true,
+          createdAt: DateTime.now().toIso8601String(),
+          updatedAt: DateTime.now().toIso8601String(),
           isCurrentUser: isCurrentUser,
           level: 1, // Assuming a default level
           completedCourses: 0, // Assuming no completed courses
@@ -354,6 +323,17 @@ class _RankScreenState extends State<RankScreen>
     }
 
     return rankings;
+  }
+
+  Future<void> _loadData() async {
+    final rankingController = GetIt.instance<RankingController>();
+    await rankingController.loadRankings('week');
+    setState(() {
+      _currentUserRank = rankingController.currentUserRanking;
+      _userPoints = rankingController.currentUserPoints;
+      _rankings = rankingController.rankings ?? [];
+      _weeklyRankings = _rankings;
+    });
   }
 
   @override
@@ -366,10 +346,14 @@ class _RankScreenState extends State<RankScreen>
   Widget build(BuildContext context) {
     // Check if dark mode is enabled
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    
+
     // Initialize colors based on theme
     _initializeColors(isDarkMode);
-    
+    _rankings = GetIt.instance<RankingController>().rankings ?? [];
+
+    if (_rankings.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
     return Scaffold(
       body: Stack(
         children: [
@@ -510,7 +494,9 @@ class _RankScreenState extends State<RankScreen>
                           end: Alignment.bottomRight,
                           colors: [
                             isDarkMode ? const Color(0xFF2A2D3E) : Colors.white,
-                            isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFF8F9FF),
+                            isDarkMode
+                                ? const Color(0xFF1E1E1E)
+                                : const Color(0xFFF8F9FF),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(20),
@@ -610,7 +596,7 @@ class _RankScreenState extends State<RankScreen>
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  
+
                                   // Cách tính điểm chi tiết với các icon
                                   _buildPointItem(
                                     icon: Icons.play_circle_filled,
@@ -669,8 +655,8 @@ class _RankScreenState extends State<RankScreen>
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: isDarkMode 
-                                    ? Colors.amber.withOpacity(0.1) 
+                                color: isDarkMode
+                                    ? Colors.amber.withOpacity(0.1)
                                     : const Color(0xFFFFF8E1),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
@@ -1026,7 +1012,7 @@ class _RankScreenState extends State<RankScreen>
     );
   }
 
-  Widget _buildRankingsTab(List<UserRankData> rankings, bool isDarkMode) {
+  Widget _buildRankingsTab(List<Ranking> rankings, bool isDarkMode) {
     // Find the current user's rank for highlighting
     final currentUserIndex = rankings.indexWhere((user) => user.isCurrentUser);
 
@@ -1109,9 +1095,9 @@ class _RankScreenState extends State<RankScreen>
     );
   }
 
-  Widget _buildPodium(List<UserRankData> topThree, bool isDarkMode) {
+  Widget _buildPodium(List<Ranking> topThree, bool isDarkMode) {
     // Sort users by rank to ensure proper podium display
-    topThree.sort((a, b) => a.rank.compareTo(b.rank));
+    topThree.sort((a, b) => a.ranking.compareTo(b.ranking));
 
     return Stack(
       clipBehavior: Clip.none,
@@ -1187,7 +1173,7 @@ class _RankScreenState extends State<RankScreen>
   }
 
   Widget _buildPodiumItem(
-    UserRankData user, {
+    Ranking user, {
     required double height,
     required String medal,
     required Color medalColor,
@@ -1210,7 +1196,7 @@ class _RankScreenState extends State<RankScreen>
           child: Column(
             children: [
               Text(
-                user.name,
+                user.accountName,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
@@ -1219,7 +1205,7 @@ class _RankScreenState extends State<RankScreen>
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
-                '${NumberFormat('#,###').format(user.points)}',
+                '${NumberFormat('#,###').format(user.totalPoints)}',
                 style: TextStyle(
                   color: Colors.grey.shade800,
                   fontSize: 10,
@@ -1253,10 +1239,9 @@ class _RankScreenState extends State<RankScreen>
               child: CircleAvatar(
                 radius: 28,
                 backgroundColor: Colors.white,
-                backgroundImage: user.avatarUrl != null
-                    ? NetworkImage(user.avatarUrl!)
-                    : null,
-                child: user.avatarUrl == null
+                backgroundImage:
+                    user.avatar != null ? NetworkImage(user.avatar!) : null,
+                child: user.avatar == null
                     ? const Icon(Icons.person, size: 28, color: Colors.grey)
                     : null,
               ),
@@ -1344,7 +1329,7 @@ class _RankScreenState extends State<RankScreen>
     );
   }
 
-  Widget _buildRankItem(UserRankData user, bool isDarkMode) {
+  Widget _buildRankItem(Ranking user, bool isDarkMode) {
     return Card(
       elevation: user.isCurrentUser ? 3 : 1,
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
@@ -1368,14 +1353,14 @@ class _RankScreenState extends State<RankScreen>
               height: 36,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: _getRankColors(user.rank),
+                  colors: _getRankColors(user.ranking),
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(user.rank <= 3 ? 8 : 18),
+                borderRadius: BorderRadius.circular(user.ranking <= 3 ? 8 : 18),
               ),
               alignment: Alignment.center,
-              child: _getRankIcon(user.rank),
+              child: _getRankIcon(user.ranking),
             ),
             const SizedBox(width: 12),
 
@@ -1384,9 +1369,9 @@ class _RankScreenState extends State<RankScreen>
               radius: 20,
               backgroundColor: Colors.grey.shade300,
               backgroundImage:
-                  user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
-              child: user.avatarUrl == null
-                  ? Text(user.name[0].toUpperCase(),
+                  user.avatar != null ? NetworkImage(user.avatar!) : null,
+              child: user.avatar == null
+                  ? Text(user.accountName[0].toUpperCase(),
                       style: const TextStyle(fontWeight: FontWeight.bold))
                   : null,
             ),
@@ -1401,7 +1386,7 @@ class _RankScreenState extends State<RankScreen>
                     children: [
                       Expanded(
                         child: Text(
-                          user.name,
+                          user.accountName,
                           style: TextStyle(
                             fontWeight: user.isCurrentUser
                                 ? FontWeight.bold
@@ -1492,12 +1477,12 @@ class _RankScreenState extends State<RankScreen>
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${user.points}',
+                  '${user.totalPoints}',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: user.rank <= 3
-                        ? _getRankColors(user.rank)[1]
+                    color: user.ranking <= 3
+                        ? _getRankColors(user.ranking)[1]
                         : Colors.black87,
                   ),
                 ),

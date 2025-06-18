@@ -1,5 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:stomp_dart_client/stomp_dart_client.dart';
+import 'package:tms_app/core/services/notification_webSocket.dart';
+import 'package:tms_app/data/models/notification_item_model.dart';
+import 'package:tms_app/presentation/controller/notification_controller.dart';
 import 'package:tms_app/presentation/screens/my_account/setting/notification.dart';
+import 'package:tms_app/core/DI/service_locator.dart';
+import 'package:tms_app/core/utils/constants.dart';
+import 'dart:convert';
+import 'package:intl/intl.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({Key? key}) : super(key: key);
@@ -10,83 +20,206 @@ class NotificationScreen extends StatefulWidget {
 
 class _NotificationScreenState extends State<NotificationScreen>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+  late int _userId = 7;
+  final String webSocketUrl = Constants.BASE_URL
+          .replaceFirst('http://', 'ws://')
+          .replaceFirst('https://', 'wss://') +
+      '/ws';
 
-  // Dữ liệu mẫu cho thông báo
-  final List<NotificationItem> _notifications = [
-    NotificationItem(
-      type: NotificationType.payment,
-      title: 'Thanh toán khóa học JAVA thành công',
-      content:
-          'Bạn đã thực hiện thanh toán thành công cho khóa học JAVA với số tiền 299.000đ. Nhấn để kiểm tra giao dịch ngay bạn nhé.',
-      time: '1 giờ trước',
-      isRead: false,
-    ),
-    NotificationItem(
-      type: NotificationType.payment,
-      title: 'Thanh toán khóa học Flutter & Dart thành công',
-      content:
-          'Bạn đã thực hiện thanh toán thành công cho khóa học Flutter & Dart với số tiền 499.000đ. Nhấn để kiểm tra giao dịch ngay bạn nhé.',
-      time: '18 giờ trước',
-      isRead: false,
-    ),
-    NotificationItem(
-      type: NotificationType.transfer,
-      title: 'Chuyển tiền/thanh toán thành công',
-      content:
-          'Bạn đã giao dịch thành công số tiền 45.000đ đến TÀI KHOẢN SINH VIÊN, tài khoản 3326844162.',
-      time: '19 giờ trước',
-      isRead: true,
-    ),
-    NotificationItem(
-      type: NotificationType.system,
-      title: 'Hóa đơn đã đến kỳ thanh toán',
-      content:
-          'Bạn có hóa đơn học phí cần thanh toán trước ngày 15/03. Vui lòng thanh toán để tránh bị trễ hạn.',
-      time: 'Thứ sáu, 07/03',
-      isRead: true,
-    ),
-    NotificationItem(
-      type: NotificationType.offer,
-      title: 'Giảm giá 50% toàn bộ khóa học',
-      content:
-          'Chỉ trong tuần này! Giảm giá 50% toàn bộ khóa học dành cho sinh viên. Đừng bỏ lỡ cơ hội nâng cao kỹ năng của bạn.',
-      time: 'Thứ tư, 05/03',
-      isRead: true,
-    ),
-    NotificationItem(
-      type: NotificationType.study,
-      title: 'Nhắc nhở: Bài tập về nhà',
-      content:
-          'Bạn có bài tập về nhà cần nộp cho khóa học Flutter trước 23:59 hôm nay. Hãy hoàn thành ngay!',
-      time: 'Hôm nay, 08:30',
-      isRead: false,
-    ),
-  ];
+  late StompClient _client;
+  late TabController _tabController;
+  late NotificationController _controller;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+
+    // Initialize the NotificationController
+    _initNotificationController();
+
+    // Configure and connect to WebSocket
+    // _setupWebSocket();
+    _initializeWebSocket();
+  }
+
+  void _initializeWebSocket() {
+    // Khởi tạo StompClient
+    final socket =
+        WebSocketChannel.connect(Uri.parse('ws://192.168.1.156:8080/ws'));
+    _client = StompClient(
+      config: StompConfig(
+        url: 'ws://192.168.1.156:8080/ws', // URL WebSocket của bạn
+        onConnect: (frame) {
+          _client.subscribe(
+            destination: '/user/$_userId/queue/notifications',
+            callback: (frame) {
+              // Khi nhận được tin nhắn từ WebSocket
+              final messageBody = frame.body!;
+              final newNotification =
+                  NotificationItemModel.fromJson(json.decode(messageBody));
+              print(messageBody);
+
+              // Cập nhật danh sách thông báo và số lượng chưa đọc
+              setState(() {
+                _controller.notifications.insert(0, newNotification);
+                _controller.unreadCount.value++;
+              });
+            },
+          );
+        },
+        onWebSocketError: (error) {
+          print('WebSocket error: $error');
+        },
+      ),
+    );
+    _client.activate();
+  }
+
+  void _initNotificationController() {
+    try {
+      // Try to get the controller from GetX
+      _controller = Get.find<NotificationController>();
+    } catch (e) {
+      // If not found, try to get it from service locator
+      try {
+        _controller = sl<NotificationController>();
+        Get.put(_controller);
+      } catch (e) {
+        // If still not found, create a new instance
+        // print('Creating new NotificationController');
+        _controller = NotificationController();
+        Get.put(_controller);
+      }
+    }
+
+    // Load notifications when screen is opened
+    _controller.loadNotifications();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _client.deactivate();
+    _controller.dispose();
     super.dispose();
   }
 
-  // Đếm số thông báo chưa đọc
-  int get _unreadCount => _notifications.where((item) => !item.isRead).length;
+  @override
+  Widget build(BuildContext context) {
+    // Lấy trạng thái dark mode từ Theme hiện tại
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-  // Đánh dấu tất cả là đã đọc
-  void _markAllAsRead() {
-    setState(() {
-      for (var notification in _notifications) {
-        notification.isRead = true;
-      }
-    });
-    _showToast('Đã đánh dấu tất cả thông báo là đã đọc');
+    // Colors for dark and light mode
+    final backgroundColor = isDarkMode ? Colors.black : Colors.grey.shade100;
+    final appBarColor = isDarkMode ? Colors.black : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final iconColor = isDarkMode ? Colors.white : Colors.black;
+    final tabLabelColor = isDarkMode ? Colors.white : Colors.black;
+    final tabUnselectedColor = isDarkMode ? Colors.grey.shade600 : Colors.grey;
+    final indicatorColor = isDarkMode ? Colors.blue : Colors.pinkAccent;
+
+    return Scaffold(
+      backgroundColor: backgroundColor,
+      appBar: AppBar(
+        backgroundColor: appBarColor,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: Text(
+          'Thông báo',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.done_all, color: iconColor),
+            onPressed: () {
+              _controller.markAllAsRead();
+              _showToast('Đã đánh dấu tất cả là đã đọc');
+            },
+            tooltip: 'Đánh dấu tất cả là đã đọc',
+          ),
+          IconButton(
+            icon: Icon(Icons.settings, color: iconColor),
+            onPressed: _showNotificationSettings,
+            tooltip: 'Cài đặt thông báo',
+          ),
+        ],
+        bottom: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          indicatorColor: indicatorColor,
+          labelColor: tabLabelColor,
+          unselectedLabelColor: tabUnselectedColor,
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+          tabs: [
+            Obx(() =>
+                _buildTab('Quan trọng', _controller.unreadCount.toString())),
+            _buildTab(
+                'Ưu đãi',
+                _controller
+                    .getNotificationsByType(NotificationType.offer)
+                    .length
+                    .toString()),
+            _buildTab(
+                'Hệ thống',
+                _controller
+                    .getNotificationsByType(NotificationType.system)
+                    .length
+                    .toString()),
+            _buildTab(
+                'Nhắc học',
+                _controller
+                    .getNotificationsByType(NotificationType.study)
+                    .length
+                    .toString()),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildNotificationList(null), // Tất cả
+          _buildNotificationList(NotificationType.offer), // Ưu đãi
+          _buildNotificationList(NotificationType.system), // Hệ thống
+          _buildNotificationList(NotificationType.study), // Nhắc học
+        ],
+      ),
+    );
+  }
+
+  // Các phương thức khác ở dưới
+
+  // Widget cho tab
+  Widget _buildTab(String text, String count) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final badgeColor = isDarkMode ? const Color(0xFF2A2D3E) : Colors.orange;
+    final badgeTextColor = Colors.white;
+
+    return Tab(
+      child: Row(
+        children: [
+          Text(text),
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: badgeColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              count,
+              style: TextStyle(
+                color: badgeTextColor,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // Hiển thị thông báo dạng toast
@@ -127,20 +260,19 @@ class _NotificationScreenState extends State<NotificationScreen>
   }
 
   // Xóa thông báo
-  void _deleteNotification(NotificationItem notification) {
-    setState(() {
-      _notifications.remove(notification);
-    });
+  void _deleteNotification(NotificationItemModel notification) {
+    // TODO: Implement delete notification functionality
     _showToast('Đã xóa thông báo');
   }
 
   // Hiển thị popup tùy chọn cho thông báo
-  void _showNotificationOptions(NotificationItem notification) {
+  void _showNotificationOptions(NotificationItemModel notification) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final backgroundColor = isDarkMode ? Colors.black : Colors.white;
     final textColor = isDarkMode ? Colors.white : Colors.black;
-    final dividerColor = isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300;
-    
+    final dividerColor =
+        isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -184,9 +316,7 @@ class _NotificationScreenState extends State<NotificationScreen>
               ),
               onTap: () {
                 Navigator.pop(context);
-                setState(() {
-                  notification.isRead = true;
-                });
+                _controller.markAsRead(notification);
                 _showToast('Đã đánh dấu thông báo là đã đọc');
               },
             ),
@@ -233,213 +363,214 @@ class _NotificationScreenState extends State<NotificationScreen>
     );
   }
 
-  // Widget cho switch cài đặt
-  Widget _buildSettingSwitch(String title, bool initialValue) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              color: isDarkMode ? Colors.white : Colors.black,
-            ),
-          ),
-          Switch(
-            value: initialValue,
-            onChanged: (_) {},
-            activeColor: Theme.of(context).primaryColor,
-          ),
-        ],
-      ),
-    );
-  }
-
   // Widget hiển thị thông báo theo mỗi tab
   Widget _buildNotificationList(NotificationType? filterType) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    // Lọc thông báo theo loại nếu cần
-    final filteredNotifications = filterType == null
-        ? _notifications
-        : _notifications.where((item) => item.type == filterType).toList();
 
-    final emptyTextColor = isDarkMode ? Colors.grey.shade400 : Colors.grey;
+    return Obx(() {
+      if (_controller.isLoading.value) {
+        return const Center(child: CircularProgressIndicator());
+      }
 
-    if (filteredNotifications.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.notifications_off, size: 64, color: emptyTextColor),
-              const SizedBox(height: 16),
-              Text(
-                'Không có thông báo nào',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: emptyTextColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+      // Lọc thông báo theo loại nếu cần
+      final filteredNotifications =
+          _controller.getNotificationsByType(filterType);
 
-    return ListView.separated(
-      padding: const EdgeInsets.only(top: 8.0),
-      itemCount: filteredNotifications.length,
-      separatorBuilder: (context, index) => Divider(
-        height: 1,
-        color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
-      ),
-      itemBuilder: (context, index) {
-        final notification = filteredNotifications[index];
-        return _buildNotificationItem(notification);
-      },
-    );
-  }
+      final emptyTextColor = isDarkMode ? Colors.grey.shade400 : Colors.grey;
 
-  // Widget cho từng item thông báo
-  Widget _buildNotificationItem(NotificationItem notification) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = isDarkMode 
-        ? (notification.isRead ? Colors.black : const Color(0xFF1A1A1A)) 
-        : (notification.isRead ? Colors.white : Colors.blue.shade50);
-    
-    final titleColor = isDarkMode ? Colors.white : Colors.black;
-    final contentColor = isDarkMode ? Colors.grey.shade300 : Colors.black87;
-    final metaTextColor = isDarkMode ? Colors.grey.shade500 : Colors.grey;
-    
-    return Container(
-      color: backgroundColor,
-      child: Stack(
-        children: [
-          // Nội dung thông báo
-          ListTile(
-            contentPadding: const EdgeInsets.only(
-                left: 8.0, right: 16.0, top: 12.0, bottom: 12.0),
-            leading: CircleAvatar(
-              radius: 20,
-              backgroundColor:
-                  _getNotificationTypeColor(notification.type).withOpacity(isDarkMode ? 0.2 : 0.1),
-              child: Icon(
-                _getNotificationTypeIcon(notification.type),
-                color: _getNotificationTypeColor(notification.type),
-                size: 22,
-              ),
-            ),
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      if (filteredNotifications.isEmpty) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Hàng đầu tiên: Loại thông báo và thời gian
-                Row(
-                  children: [
-                    // Loại thông báo
-                    Text(
-                      _getNotificationTypeName(notification.type),
-                      style: TextStyle(
-                        color: metaTextColor,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-
-                    // Dấu chấm đen (bullet)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                      child: Text(
-                        "•",
-                        style: TextStyle(
-                          color: metaTextColor,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
-
-                    // Thời gian
-                    Text(
-                      notification.time,
-                      style: TextStyle(
-                        color: metaTextColor,
-                        fontSize: 12,
-                      ),
-                    ),
-
-                    // Phần còn trống để đẩy nút 3 chấm về bên phải
-                    const Spacer(),
-                  ],
-                ),
-
-                // Khoảng cách
-                const SizedBox(height: 4),
-
-                // Tiêu đề thông báo
+                Icon(Icons.notifications_off, size: 64, color: emptyTextColor),
+                const SizedBox(height: 16),
                 Text(
-                  notification.title,
+                  'Không có thông báo nào',
                   style: TextStyle(
-                    fontWeight: notification.isRead
-                        ? FontWeight.normal
-                        : FontWeight.bold,
-                    fontSize: 16,
-                    color: titleColor,
+                    fontSize: 18,
+                    color: emptyTextColor,
                   ),
                 ),
               ],
             ),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 4.0),
-              child: Text(
-                notification.content,
-                style: TextStyle(
-                  color: contentColor,
-                  fontSize: 14,
-                  fontWeight:
-                      notification.isRead ? FontWeight.normal : FontWeight.w500,
-                ),
-              ),
-            ),
-            onTap: () {
-              // Đánh dấu thông báo là đã đọc khi nhấn vào
-              if (!notification.isRead) {
-                setState(() {
-                  notification.isRead = true;
-                });
-              }
-              // TODO: Xử lý khi nhấn vào thông báo
-            },
           ),
+        );
+      }
 
-          // Nút ba chấm ở góc phải trên cùng
-          Positioned(
-            top: 8,
-            right: 2,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () => _showNotificationOptions(notification),
-              child: Padding(
-                padding: const EdgeInsets.all(4),
-                child: Icon(
-                  Icons.more_vert,
-                  size: 18,
-                  color: metaTextColor,
-                ),
-              ),
-            ),
+      return ListView.separated(
+        padding: const EdgeInsets.only(top: 8.0),
+        itemCount: filteredNotifications.length,
+        separatorBuilder: (context, index) => Divider(
+          height: 1,
+          color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+        ),
+        itemBuilder: (context, index) {
+          final notification = filteredNotifications[index];
+          return _buildNotificationItem(notification);
+        },
+      );
+    });
+  }
+
+  // Widget để hiển thị một thông báo
+  Widget _buildNotificationItem(NotificationItemModel notification) {
+    // Lấy trạng thái dark mode từ Theme hiện tại
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    // Các màu sắc dựa trên dark mode
+    final backgroundColor = isDarkMode ? Colors.black : Colors.white;
+    final titleColor = isDarkMode ? Colors.white : Colors.black;
+    final contentColor = isDarkMode ? Colors.grey.shade300 : Colors.black87;
+    final timeColor = isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600;
+    final readIndicatorColor = isDarkMode ? Colors.blue : Colors.pinkAccent;
+
+    // Định dạng lại thời gian
+    final formattedTime = _formatTime(notification.createdAt);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
+      child: InkWell(
+        onTap: () {
+          // Đánh dấu đã đọc khi nhấn vào
+          if (!notification.isRead) {
+            _controller.markAsRead(notification);
+          }
+
+          // Hiển thị chi tiết thông báo
+          _showNotificationDetail(notification);
+        },
+        onLongPress: () {
+          _showNotificationOptions(notification);
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Biểu tượng loại thông báo
+              _buildNotificationIcon(notification.type),
+              const SizedBox(width: 12),
+
+              // Nội dung thông báo
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Tiêu đề thông báo
+                        Expanded(
+                          child: Text(
+                            notification.title ?? 'Thông báo',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: titleColor,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+
+                        // Thời gian
+                        Text(
+                          formattedTime,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: timeColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Nội dung thông báo
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(
+                        notification.message,
+                        style: TextStyle(
+                          color: contentColor,
+                          fontSize: 14,
+                          fontWeight: notification.isRead
+                              ? FontWeight.normal
+                              : FontWeight.w500,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Chỉ báo chưa đọc
+              if (!notification.isRead)
+                Container(
+                  width: 10,
+                  height: 10,
+                  margin: const EdgeInsets.only(left: 8, top: 8),
+                  decoration: BoxDecoration(
+                    color: readIndicatorColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
+  }
+
+  // Định dạng thời gian hiển thị
+  String _formatTime(String? timeStr) {
+    if (timeStr == null || timeStr.isEmpty) {
+      return 'Vừa xong';
+    }
+
+    try {
+      final dateTime = DateTime.parse(timeStr);
+      final now = DateTime.now();
+      final difference = now.difference(dateTime);
+
+      if (difference.inSeconds < 60) {
+        return 'Vừa xong';
+      } else if (difference.inMinutes < 60) {
+        return '${difference.inMinutes} phút trước';
+      } else if (difference.inHours < 24) {
+        return '${difference.inHours} giờ trước';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays} ngày trước';
+      } else {
+        return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+      }
+    } catch (e) {
+      debugPrint('Error parsing date: $e');
+      return timeStr; // Trả về nguyên chuỗi nếu không parse được
+    }
   }
 
   // Lấy tên loại thông báo
   String _getNotificationTypeName(NotificationType type) {
     switch (type) {
       case NotificationType.payment:
-        return 'Điểm thanh toán MoMo';
+        return 'Thanh toán';
       case NotificationType.transfer:
         return 'Chuyển tiền';
       case NotificationType.system:
@@ -483,126 +614,169 @@ class _NotificationScreenState extends State<NotificationScreen>
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // Lấy trạng thái dark mode từ Theme hiện tại
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    
-    // Colors for dark and light mode
-    final backgroundColor = isDarkMode ? Colors.black : Colors.grey.shade100;
-    final appBarColor = isDarkMode ? Colors.black : Colors.white;
-    final textColor = isDarkMode ? Colors.white : Colors.black;
-    final iconColor = isDarkMode ? Colors.white : Colors.black;
-    final tabLabelColor = isDarkMode ? Colors.white : Colors.black;
-    final tabUnselectedColor = isDarkMode ? Colors.grey.shade600 : Colors.grey;
-    final indicatorColor = isDarkMode ? Colors.blue : Colors.pinkAccent;
-    
-    return Scaffold(
-      backgroundColor: backgroundColor,
-      appBar: AppBar(
-        backgroundColor: appBarColor,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Text(
-          'Thông báo',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: textColor,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.done_all, color: iconColor),
-            onPressed: _markAllAsRead,
-            tooltip: 'Đánh dấu tất cả là đã đọc',
-          ),
-          IconButton(
-            icon: Icon(Icons.settings, color: iconColor),
-            onPressed: _showNotificationSettings,
-            tooltip: 'Cài đặt thông báo',
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          indicatorColor: indicatorColor,
-          labelColor: tabLabelColor,
-          unselectedLabelColor: tabUnselectedColor,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-          tabs: [
-            _buildTab('Quan trọng', _unreadCount.toString()),
-            _buildTab('Ưu đãi', '5'),
-            _buildTab('Hệ thống', '3'),
-            _buildTab('Nhắc học', '2'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildNotificationList(null), // Tất cả
-          _buildNotificationList(NotificationType.offer), // Ưu đãi
-          _buildNotificationList(NotificationType.system), // Hệ thống
-          _buildNotificationList(NotificationType.study), // Nhắc học
-        ],
+  // Widget cho biểu tượng loại thông báo
+  Widget _buildNotificationIcon(NotificationType type) {
+    return CircleAvatar(
+      radius: 20,
+      backgroundColor: _getNotificationTypeColor(type).withOpacity(0.2),
+      child: Icon(
+        _getNotificationTypeIcon(type),
+        color: _getNotificationTypeColor(type),
+        size: 22,
       ),
     );
   }
 
-  // Widget cho tab
-  Widget _buildTab(String text, String count) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final badgeColor = isDarkMode ? const Color(0xFF2A2D3E) : Colors.orange;
-    final badgeTextColor = Colors.white;
-    
-    return Tab(
-      child: Row(
-        children: [
-          Text(text),
-          const SizedBox(width: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: badgeColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              count,
-              style: TextStyle(
-                color: badgeTextColor,
-                fontSize: 12,
+  // Show notification detail popup and mark as read
+  void _showNotificationDetail(NotificationItemModel notification) {
+    // Mark notification as read
+    if (!notification.isRead) {
+      _controller.markAsRead(notification);
+    }
+
+    // Format date for display
+    String formattedDate = '';
+    try {
+      final dateTime = DateTime.parse(notification.createdAt);
+      formattedDate = DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
+    } catch (e) {
+      formattedDate = notification.createdAt;
+    }
+
+    // Get notification type name and color
+    final typeName = _getNotificationTypeName(notification.type);
+    final typeColor = _getNotificationTypeColor(notification.type);
+
+    // Show dialog with notification details
+    showDialog(
+      context: context,
+      builder: (context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+        return Dialog(
+          backgroundColor: isDarkMode ? const Color(0xFF2A2D3E) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with notification type and close button
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: typeColor.withOpacity(0.2),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _getNotificationTypeIcon(notification.type),
+                      color: typeColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        typeName,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
               ),
-            ),
+
+              // Notification content
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title
+                    Text(
+                      notification.title ?? 'Thông báo',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Date
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 16,
+                          color: isDarkMode
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          formattedDate,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDarkMode
+                                ? Colors.grey.shade400
+                                : Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Message
+                    Text(
+                      notification.message,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: isDarkMode
+                            ? Colors.grey.shade300
+                            : Colors.grey.shade800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Action button
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: typeColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text('Đóng'),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
-}
-
-// Enum cho các loại thông báo
-enum NotificationType {
-  payment,
-  transfer,
-  system,
-  offer,
-  study,
-}
-
-// Model cho thông báo
-class NotificationItem {
-  final NotificationType type;
-  final String title;
-  final String content;
-  final String time;
-  bool isRead;
-
-  NotificationItem({
-    required this.type,
-    required this.title,
-    required this.content,
-    required this.time,
-    required this.isRead,
-  });
 }

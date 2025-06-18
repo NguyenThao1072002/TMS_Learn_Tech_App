@@ -23,6 +23,9 @@ import 'package:tms_app/presentation/controller/language_controller.dart';
 import 'package:tms_app/core/theme/app_themes.dart';
 import 'package:tms_app/core/localization/app_localization.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:get/get.dart';
+import 'package:tms_app/presentation/controller/notification_controller.dart';
+import 'package:tms_app/domain/repositories/notification_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,6 +38,19 @@ void main() async {
     // Verify AuthManager is registered properly
     final authManager = GetIt.instance<AuthManager>();
     print('AuthManager successfully retrieved: ${authManager != null}');
+
+    // Initialize NotificationController with GetX
+    try {
+      final notificationController = sl<NotificationController>();
+      Get.put(notificationController, permanent: true);
+      // print('NotificationController successfully initialized with GetX');
+
+      // Preload notifications
+      await notificationController.loadNotifications();
+      // print('Notifications preloaded');
+    } catch (e) {
+      print('Error initializing NotificationController: $e');
+    }
   } catch (e) {
     print('Lỗi khi thiết lập Service Locator: $e');
   }
@@ -103,7 +119,7 @@ class MyApp extends StatelessWidget {
       child: Consumer2<ThemeController, LanguageController>(
         builder: (context, themeController, languageController, child) {
           return AppConnectivityWrapper(
-            child: MaterialApp(
+            child: GetMaterialApp(
               title: 'TMS Learn Tech',
               theme: AppThemes.lightTheme,
               darkTheme: AppThemes.darkTheme,
@@ -121,10 +137,12 @@ class MyApp extends StatelessWidget {
                 GlobalWidgetsLocalizations.delegate,
                 GlobalCupertinoLocalizations.delegate,
               ],
-              routes: {
-                '/teaching_staff': (context) => const TeachingStaffScreen(),
-                '/about_us': (context) => const AboutUsScreen(),
-              },
+              getPages: [
+                GetPage(
+                    name: '/teaching_staff',
+                    page: () => const TeachingStaffScreen()),
+                GetPage(name: '/about_us', page: () => const AboutUsScreen()),
+              ],
               // Flow chọn màn hình hiển thị:
               // 1. Nếu chưa xem onboarding -> hiển thị OnboardingScreen
               // 2. Nếu đã xem onboarding nhưng chưa đăng nhập -> hiển thị LoginScreen
