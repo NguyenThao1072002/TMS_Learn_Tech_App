@@ -31,8 +31,10 @@ class Transaction {
 
 class MyWalletScreen extends StatefulWidget {
   final double initialBalance;
+  final int walletId;
 
-  const MyWalletScreen({Key? key, required this.initialBalance})
+  const MyWalletScreen(
+      {Key? key, required this.initialBalance, required this.walletId})
       : super(key: key);
 
   @override
@@ -57,7 +59,7 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
 
   // Transactions from API
   List<WalletTransaction> _walletTransactions = [];
-  
+
   // Mock transaction data
   final List<Transaction> _transactions = [
     Transaction(
@@ -250,29 +252,29 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
           ),
         ],
       ),
-      body: _errorMessage != null 
-        ? Center(
-            child: Text(
-              _errorMessage!,
-              style: TextStyle(color: Colors.red),
-              textAlign: TextAlign.center,
-            ),
-          )
-        : SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Balance card
-                _buildBalanceCard(isDarkMode),
+      body: _errorMessage != null
+          ? Center(
+              child: Text(
+                _errorMessage!,
+                style: TextStyle(color: Colors.red),
+                textAlign: TextAlign.center,
+              ),
+            )
+          : SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Balance card
+                  _buildBalanceCard(isDarkMode),
 
-                // Payment methods
-                _buildPaymentMethods(isDarkMode),
+                  // Payment methods
+                  _buildPaymentMethods(isDarkMode),
 
-                // Recent transactions
-                _buildRecentTransactions(isDarkMode),
-              ],
+                  // Recent transactions
+                  _buildRecentTransactions(isDarkMode),
+                ],
+              ),
             ),
-          ),
     );
   }
 
@@ -540,39 +542,41 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
           ),
           const SizedBox(height: 12),
           _isLoadingTransactions
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: CircularProgressIndicator(),
-                ),
-              )
-            : _walletTransactions.isEmpty
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.all(20.0),
-                    child: Text(
-                      'Chưa có giao dịch nào',
-                      style: TextStyle(color: _textSecondaryColor),
-                    ),
+                    child: CircularProgressIndicator(),
                   ),
                 )
-              : ListView.builder(
-                  physics: const NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  itemCount: _walletTransactions.length > 3 
-                    ? 3 
-                    : _walletTransactions.length,
-                  itemBuilder: (context, index) {
-                    final transaction = _walletTransactions[index];
-                    return _buildWalletTransactionItem(transaction, isDarkMode);
-                  },
-                ),
+              : _walletTransactions.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Text(
+                          'Chưa có giao dịch nào',
+                          style: TextStyle(color: _textSecondaryColor),
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      itemCount: _walletTransactions.length > 3
+                          ? 3
+                          : _walletTransactions.length,
+                      itemBuilder: (context, index) {
+                        final transaction = _walletTransactions[index];
+                        return _buildWalletTransactionItem(
+                            transaction, isDarkMode);
+                      },
+                    ),
         ],
       ),
     );
   }
 
-  Widget _buildWalletTransactionItem(WalletTransaction transaction, bool isDarkMode) {
+  Widget _buildWalletTransactionItem(
+      WalletTransaction transaction, bool isDarkMode) {
     final formatter = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
     final dateFormat = DateFormat('dd/MM/yyyy');
     final isIncome = transaction.transactionType == "TOP_UP";
@@ -654,10 +658,12 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              backgroundColor: isDarkMode ? const Color(0xFF2A2D3E) : Colors.white,
+              backgroundColor:
+                  isDarkMode ? const Color(0xFF2A2D3E) : Colors.white,
               title: Text(
                 'Nạp tiền vào ví',
-                style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87),
+                style: TextStyle(
+                    color: isDarkMode ? Colors.white : Colors.black87),
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -665,14 +671,18 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
                   TextField(
                     controller: amountController,
                     keyboardType: TextInputType.number,
-                    style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87),
+                    style: TextStyle(
+                        color: isDarkMode ? Colors.white : Colors.black87),
                     decoration: InputDecoration(
                       labelText: 'Số tiền (VND)',
-                      labelStyle: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black54),
+                      labelStyle: TextStyle(
+                          color: isDarkMode ? Colors.white70 : Colors.black54),
                       border: const OutlineInputBorder(),
                       enabledBorder: OutlineInputBorder(
                         borderSide: BorderSide(
-                          color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300,
+                          color: isDarkMode
+                              ? Colors.grey.shade600
+                              : Colors.grey.shade300,
                         ),
                       ),
                     ),
@@ -702,12 +712,15 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
                                   setState(() => selectedMethod = value);
                               },
                               activeColor: Colors.pink,
-                              fillColor: MaterialStateProperty.resolveWith<Color>(
+                              fillColor:
+                                  MaterialStateProperty.resolveWith<Color>(
                                 (Set<MaterialState> states) {
                                   if (states.contains(MaterialState.selected)) {
                                     return Colors.pink;
                                   }
-                                  return isDarkMode ? Colors.white70 : Colors.black54;
+                                  return isDarkMode
+                                      ? Colors.white70
+                                      : Colors.black54;
                                 },
                               ),
                             ),
@@ -717,30 +730,35 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
                             Text(
                               'MoMo',
                               style: TextStyle(
-                                color: isDarkMode ? Colors.white : Colors.black87,
+                                color:
+                                    isDarkMode ? Colors.white : Colors.black87,
                               ),
                             ),
                           ],
                         ),
                       ),
                       InkWell(
-                        onTap: () => setState(() => selectedMethod = 'zalopay'),
+                        onTap: () =>
+                            setState(() => selectedMethod = 'wallet_mobile'),
                         child: Row(
                           children: [
                             Radio<String>(
-                              value: 'zalopay',
+                              value: 'wallet_mobile',
                               groupValue: selectedMethod,
                               onChanged: (value) {
                                 if (value != null)
                                   setState(() => selectedMethod = value);
                               },
                               activeColor: Colors.blue,
-                              fillColor: MaterialStateProperty.resolveWith<Color>(
+                              fillColor:
+                                  MaterialStateProperty.resolveWith<Color>(
                                 (Set<MaterialState> states) {
                                   if (states.contains(MaterialState.selected)) {
                                     return Colors.blue;
                                   }
-                                  return isDarkMode ? Colors.white70 : Colors.black54;
+                                  return isDarkMode
+                                      ? Colors.white70
+                                      : Colors.black54;
                                 },
                               ),
                             ),
@@ -750,7 +768,8 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
                             Text(
                               'ZaloPay',
                               style: TextStyle(
-                                color: isDarkMode ? Colors.white : Colors.black87,
+                                color:
+                                    isDarkMode ? Colors.white : Colors.black87,
                               ),
                             ),
                           ],
@@ -767,7 +786,8 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
                   },
                   child: Text(
                     'Hủy',
-                    style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black54),
+                    style: TextStyle(
+                        color: isDarkMode ? Colors.white70 : Colors.black54),
                   ),
                 ),
                 ElevatedButton(
@@ -812,13 +832,22 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
     // TODO: Gọi API nạp tiền ở đây, ví dụ:
     // final result = await WalletService.deposit(amount: amount, method: method);
 
+    final items = [
+      {
+        'itemid': widget.walletId,
+        'itemtype': 'WALLET',
+        'itemprice': amount.toDouble(),
+        'itemname': 'Nạp tiền vào ví',
+      },
+    ];
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => PaymentScreen(
           paymentMethod: method,
           amount: amount.toDouble(), // Truyền tham số với giá tiền đã giảm
-          items: [],
+          items: items,
           promoCode: "",
           discountpercent: 0,
           paymentType: "WALLET",
@@ -914,10 +943,12 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
                             controller: scrollController,
                             padding: const EdgeInsets.all(16.0),
                             itemCount: transactions.length,
-                            separatorBuilder: (context, index) => Divider(color: _dividerColor),
+                            separatorBuilder: (context, index) =>
+                                Divider(color: _dividerColor),
                             itemBuilder: (context, index) {
                               final transaction = transactions[index];
-                              return _buildWalletTransactionItem(transaction, isDarkMode);
+                              return _buildWalletTransactionItem(
+                                  transaction, isDarkMode);
                             },
                           ),
                         );
@@ -937,11 +968,12 @@ class _MyWalletScreenState extends State<MyWalletScreen> {
   Future<List<WalletTransaction>> _loadAllTransactions() async {
     try {
       // Lấy 50 giao dịch gần nhất khi xem tất cả
-      final response = await _walletTransactionService.getCurrentUserWalletTransactions(
+      final response =
+          await _walletTransactionService.getCurrentUserWalletTransactions(
         page: 0,
         size: 50, // Lấy 50 giao dịch gần nhất
       );
-      
+
       return response.data.content;
     } catch (e) {
       print('Lỗi khi tải tất cả giao dịch: $e');
