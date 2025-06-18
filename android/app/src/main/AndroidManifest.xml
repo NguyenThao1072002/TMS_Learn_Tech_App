@@ -13,7 +13,7 @@
         android:minSdkVersion="30" />
         
     <application
-        android:label="tms_app"
+        android:label="TMS Learn Tech"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true">
