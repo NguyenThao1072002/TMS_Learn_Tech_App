@@ -219,8 +219,6 @@ class _CourseScreenState extends State<CourseScreen>
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     int? tempCategoryId =
         _selectedCategoryIds.isNotEmpty ? _selectedCategoryIds.first : null;
-    String? tempTeacherFilter =
-        _selectedTeachers.isNotEmpty ? _selectedTeachers.first : null;
     List<Map<String, dynamic>> tempDiscountRanges =
         _selectedDiscountValues.isNotEmpty
             ? _selectedDiscountValues
@@ -346,63 +344,6 @@ class _CourseScreenState extends State<CourseScreen>
                       ),
                       const SizedBox(height: 20),
 
-                      // Filter by teacher
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Giảng viên',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: isDarkMode ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          _teachers.isEmpty
-                              ? Text(
-                                  'Không có giảng viên nào để hiển thị',
-                                  style: TextStyle(
-                                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                                  ),
-                                )
-                              : Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: _teachers.map((teacher) {
-                                    final isSelected =
-                                        _selectedTeachers.contains(teacher);
-
-                                    return FilterChip(
-                                      label: Text(teacher),
-                                      selected: isSelected,
-                                      onSelected: (selected) {
-                                        setModalState(() {
-                                          if (selected) {
-                                            _selectedTeachers.add(teacher);
-                                          } else {
-                                            _selectedTeachers.remove(teacher);
-                                          }
-                                        });
-                                      },
-                                      backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey.shade200,
-                                      selectedColor: const Color(0xFF3498DB),
-                                      labelStyle: TextStyle(
-                                        color: isSelected
-                                            ? Colors.white
-                                            : (isDarkMode ? Colors.white70 : Colors.black),
-                                        fontWeight: isSelected
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 20),
-
                       // Filter by discount range
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -480,9 +421,6 @@ class _CourseScreenState extends State<CourseScreen>
                           _selectedCategoryIds = _selectedCategoryIds.isNotEmpty
                               ? _selectedCategoryIds
                               : [];
-                          _selectedTeachers = _selectedTeachers.isNotEmpty
-                              ? _selectedTeachers
-                              : [];
                           _selectedDiscountValues =
                               _selectedDiscountValues.isNotEmpty
                                   ? _selectedDiscountValues
@@ -543,30 +481,14 @@ class _CourseScreenState extends State<CourseScreen>
       needsBaseReload = false;
     }
 
-    // Apply teacher filter if selected
-    if (_selectedTeachers.isNotEmpty && _selectedTeachers.first != null) {
-      List<CourseCardModel> courses;
-
-      if (needsBaseReload) {
-        // If no filter applied yet, use all courses
-        courses = _controller.allCourses.value;
-      } else {
-        // Otherwise, filter the already filtered courses
-        courses = _controller.filteredCourses.value;
-      }
-
-      final teacherFiltered = courses
-          .where((course) => _selectedTeachers.contains(course.author))
-          .toList();
-
-      _controller.filteredCourses.value = teacherFiltered;
-    }
+    // Remove teacher filtering logic
+    // Teacher filter has been hidden from UI
   }
 
   void _resetComprehensiveFilters() {
     setState(() {
       _selectedCategoryIds = [];
-      _selectedTeachers = [];
+      _selectedTeachers = []; // Keep this to avoid errors, but it won't be used
       _selectedDiscountValues = [];
     });
 
@@ -578,7 +500,6 @@ class _CourseScreenState extends State<CourseScreen>
 
   bool get _hasActiveFilters =>
       _selectedCategoryIds.isNotEmpty ||
-      _selectedTeachers.isNotEmpty ||
       _selectedDiscountValues.isNotEmpty;
 
   void _toggleTopSection() {
@@ -783,24 +704,6 @@ class _CourseScreenState extends State<CourseScreen>
                                     onDeleted: () {
                                       setState(() {
                                         _selectedCategoryIds = [];
-                                      });
-                                      _applyComprehensiveFilters();
-                                    },
-                                    backgroundColor: isDarkMode ? Color(0xFF2A2D3E) : Colors.grey[200],
-                                    deleteIconColor: isDarkMode ? Colors.white70 : Colors.black54,
-                                  ),
-                                if (_selectedTeachers.isNotEmpty &&
-                                    _selectedTeachers.first != null)
-                                  Chip(
-                                    label: Text(
-                                      'Giảng viên: ${_selectedTeachers.first}',
-                                      style: TextStyle(
-                                        color: isDarkMode ? Colors.white : Colors.black87,
-                                      ),
-                                    ),
-                                    onDeleted: () {
-                                      setState(() {
-                                        _selectedTeachers = [];
                                       });
                                       _applyComprehensiveFilters();
                                     },

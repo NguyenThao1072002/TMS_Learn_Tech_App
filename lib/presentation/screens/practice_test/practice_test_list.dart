@@ -571,7 +571,7 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Premium Tests',
+                              'Bài thi thử chất lượng',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -580,29 +580,29 @@ class _PracticeTestListScreenState extends State<PracticeTestListScreen>
                             ),
                             const SizedBox(height: 8),
                             const Text(
-                              'Mở khóa tất cả các đề thi để nâng cao kỹ năng',
+                              'Luyện tập trước các bài thi thử để tự tin hơn trước khi thi thực tế',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 14,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                              onPressed: () {},
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFF3498DB),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 10),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                              ),
-                              child: const Text(
-                                'Đăng ký ngay',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
+                            // const SizedBox(height: 12),
+                            // ElevatedButton(
+                            //   onPressed: () {},
+                            //   style: ElevatedButton.styleFrom(
+                            //     backgroundColor: Colors.white,
+                            //     foregroundColor: const Color(0xFF3498DB),
+                            //     padding: const EdgeInsets.symmetric(
+                            //         horizontal: 16, vertical: 10),
+                            //     shape: RoundedRectangleBorder(
+                            //       borderRadius: BorderRadius.circular(30),
+                            //     ),
+                            //   ),
+                            //   child: const Text(
+                            //     'Đăng ký ngay',
+                            //     style: TextStyle(fontWeight: FontWeight.bold),
+                            //   ),
+                            // ),
                           ],
                         ),
                       ),
