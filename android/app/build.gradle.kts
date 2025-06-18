@@ -46,12 +46,21 @@ android {
             dirs("../zpdk-release-28052021")
         }
     }
+    
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
-            storeFile = keystoreProperties["storeFile"]?.let { file(it) }
-            storePassword = keystoreProperties["storePassword"] as String
+            if (keystorePropertiesFile.exists()) {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            } else {
+                // Fallback to debug signing config if no key.properties exists
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+                storeFile = file("${System.getenv("ANDROID_HOME")}/debug.keystore") 
+                storePassword = "android"
+            }
         }
     }
 
